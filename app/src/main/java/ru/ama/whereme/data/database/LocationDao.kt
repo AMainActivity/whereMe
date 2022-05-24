@@ -7,14 +7,14 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
 @Dao
-interface TestInfoDao {
+interface LocationDao {
 
-@Query("SELECT * FROM test_info  ORDER BY testId asc ")
-    fun getTestInfo(): List<TestInfoDbModel>
+@Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
+    fun getLocations(): List<LocationDbModel>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTestInfo(testInfo: TestInfoDbModel)
+    suspend fun insertLocation(mLoc: LocationDbModel)
 	
 	@Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTestList(testList: List<TestInfoDbModel>):List<Long>
+    suspend fun insertLocationList(locList: List<LocationDbModel>):List<Long>
 }

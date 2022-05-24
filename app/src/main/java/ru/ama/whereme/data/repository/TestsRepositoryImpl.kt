@@ -2,10 +2,12 @@ package ru.ama.whereme.data.repository
 
 import android.app.Application
 import android.location.Location
+import android.util.Log
+import androidx.lifecycle.LiveData
 import com.google.android.gms.location.sample.foregroundlocation.data.LocationRepository
 import kotlinx.coroutines.flow.StateFlow
-import ru.ama.whereme.data.database.TestInfoDao
-import ru.ama.whereme.data.database.TestQuestionsDao
+import ru.ama.whereme.data.database.LocationDao
+import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.data.mapper.TestMapper
 import ru.ama.whereme.domain.entity.TestInfo
 import ru.ama.whereme.domain.entity.TestQuestion
@@ -15,8 +17,7 @@ import javax.inject.Inject
 
 class TestsRepositoryImpl @Inject constructor(
     private val mapper: TestMapper,
-    private val testQuestionsDao: TestQuestionsDao,
-    private val testInfoDao: TestInfoDao,
+    private val locationDao: LocationDao,
     private val application: Application,
     private val locRepo: LocationRepository
 ) : TestsRepository {
@@ -24,22 +25,15 @@ class TestsRepositoryImpl @Inject constructor(
 
 
     override fun getQuestionsInfoList(testId: Int,limit:Int): List<TestQuestion>{
-      ///  var rl:MutableList<TestQuestion> = mutableListOf<TestQuestion>()
-        val list=testQuestionsDao.getQuestionListByTestId(testId,limit)
-     ///   Log.e("getQuestionsrl1","${testId} ${limit} ${list.toString()}")
-		val llist2=list.map {
+       var rl:MutableList<TestQuestion> = mutableListOf<TestQuestion>()
+     /*   val list=testQuestionsDao.getQuestionListByTestId(testId,limit)
+   	val llist2=list.map {
             mapper.mapDbModelToEntity(it)
         }
 
-     ///   for (l in list)
-     ///   {
-      ///      rl.add(mapper.mapDbModelToEntity(l))
-      ///  }
-      ///  Log.e("getQuestionsrl","${testId} ${limit} ${rl.toString()}")
+   */
 		
-		
-		
-        return llist2
+        return rl
 
     }
    /*  fun getQuestionsInfoList2(): LiveData<List<TestQuestion>> {
@@ -51,20 +45,12 @@ class TestsRepositoryImpl @Inject constructor(
     }*/
 
     override fun getTestInfo(): List<TestInfo> {
-      /*  Log.e("getTestInfo1",testInfoDao.toString())
-        Log.e("getTestInfo",testInfoDao.getTestInfo().toString())
-       // if(testInfoDao.getTestInfo().value!=null)
-        var rl:MutableList<TestInfo> = mutableListOf<TestInfo>()
-        for (l in testInfoDao.getTestInfo())
-        {
-            rl.add(mapper.mapDataDbModelToEntity(l))
-        }*/
+
 		
-			val rl=(testInfoDao.getTestInfo()).map  {mapper.mapDataDbModelToEntity(it)}
+			val rl= mutableListOf<TestInfo>()//(testInfoDao.getTestInfo()).map  {mapper.mapDataDbModelToEntity(it)}
 		
         return rl
-       // return  mapper.mapDataDbModelToEntity(testInfoDao.getTestInfo(testId))
-    }
+   }
 
     override suspend fun loadData():List<Int>  {
         var listOfItems:MutableList<Int> = mutableListOf<Int>()
@@ -78,6 +64,28 @@ class TestsRepositoryImpl @Inject constructor(
     override fun getLocation(): StateFlow<Location?> {
        return locRepo.lastLocation
     }
+    override suspend fun stopData(): Int{
 
+        locRepo.stopLocationUpdates()
+        return 1
+    }
 
+override suspend fun saveLocationOnBD(): Int {
+		locRepo.startLocationUpdates()
+		val mLocation = locRepo.lastLocation
+   /* mLocation?.let {
+        val res= LocationDbModel(
+            it.time.toString(),
+            it.latitude.toLong(),
+            it.longitude.toLong(),
+            1,
+            it.accuracy.toInt(),
+            it.speed.toInt()
+        )
+        val itemsCount= locationDao.insertLocation(res)
+        Log.e("insertLocation",res.toString())
+    }*/
+
+    return  1
+    }
 }

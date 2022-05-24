@@ -12,8 +12,8 @@ import ru.ama.whereme.presentation.MyApp
 @ApplicationScope
 @Component(
     modules = [
-       // DataModule::class,
-       // ViewModelModule::class
+        DataModule::class,
+        ViewModelModule::class
     ]
 )
 interface ApplicationComponent {

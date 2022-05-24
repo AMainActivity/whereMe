@@ -12,8 +12,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import ru.ama.whereme.data.database.AppDatabase
-import ru.ama.whereme.data.database.TestInfoDao
-import ru.ama.whereme.data.database.TestQuestionsDao
+import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.repository.TestsRepositoryImpl
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.repository.TestsRepository
@@ -28,18 +27,12 @@ interface DataModule {
 
         @Provides
         @ApplicationScope
-        fun provideTestDao(
+        fun provideLocationDao(
             application: Application
-        ): TestQuestionsDao {
-            return AppDatabase.getInstance(application).testQuestionsDao()
+        ): LocationDao {
+            return AppDatabase.getInstance(application).locationDao()
         }
-        @Provides
-        @ApplicationScope
-        fun provideInfoDao(
-            application: Application
-        ): TestInfoDao {
-            return AppDatabase.getInstance(application).testInfoDao()
-        }
+
 
         @Provides
         @ApplicationScope

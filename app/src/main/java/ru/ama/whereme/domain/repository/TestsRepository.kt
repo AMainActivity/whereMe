@@ -12,5 +12,10 @@ interface TestsRepository {
     fun getTestInfo():List<TestInfo>
 
     suspend fun loadData():List<Int>
-    fun getLocation(): StateFlow<Location?>
+	
+	suspend fun saveLocationOnBD(): Int
+	
+	suspend fun stopData(): Int
+	
+    fun getLocation() : StateFlow<Location?>
 }

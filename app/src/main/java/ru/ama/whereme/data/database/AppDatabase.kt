@@ -6,8 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [TestQuestionsDbModel::class,TestInfoDbModel::class], version = 1, exportSchema = false)
-@TypeConverters(AnswersConverter::class,CorrectConverter::class)
+@Database(entities = [LocationDbModel::class], version = 1, exportSchema = false)
+//@TypeConverters(AnswersConverter::class,CorrectConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     companion object {
 
@@ -33,6 +33,5 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 
-    abstract fun testQuestionsDao(): TestQuestionsDao
-    abstract fun testInfoDao(): TestInfoDao
+    abstract fun locationDao(): LocationDao
 }

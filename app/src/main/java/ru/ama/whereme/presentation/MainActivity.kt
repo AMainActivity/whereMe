@@ -9,13 +9,18 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import android.view.Menu
 import android.view.MenuItem
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.ActivityMainBinding
+import javax.inject.Inject
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var viewModel: TestListViewModel
+    @Inject
+    lateinit var viewModelFactory: ViewModelFactory
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private val component by lazy {
@@ -25,7 +30,11 @@ class MainActivity : AppCompatActivity() {
         component.inject(this)
 
         super.onCreate(savedInstanceState)
-
+ viewModel = ViewModelProvider(this, viewModelFactory)[TestListViewModel::class.java]
+           /*viewModel.canStart.observe(this) {
+               startActivity(Intent(this,MainActivity::class.java))
+               finish()
+           }*/
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

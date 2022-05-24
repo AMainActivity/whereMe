@@ -4,14 +4,27 @@ import android.os.CountDownTimer
 import android.util.Log
 import androidx.lifecycle.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
 import ru.ama.whereme.domain.entity.*
 import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
 class TestListViewModel @Inject constructor(
+    private val getLocation: GetLocation,
+    private val stopLocationsUpdateUseCase: StopLocationsUpdateUseCase
 ) : ViewModel() {
 
     init {
+		viewModelScope.launch {
+            getLocation().collect {
+                Log.e("getLocation",it.toString())
+            }
+		}
+		
+		viewModelScope.launch {
+			delay(1000*60)
+		stopLocationsUpdateUseCase()
+		}
        /* val d=viewModelScope.async(Dispatchers.IO)
         {
             val r=getTestInfoUseCase()
