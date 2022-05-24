@@ -4,7 +4,7 @@ package ru.ama.whereme.di
 import android.app.Application
 import dagger.BindsInstance
 import dagger.Component
-import ru.ama.ottest.di.ViewModelModule
+import ru.ama.whereme.di.ViewModelModule
 import ru.ama.whereme.diO.DataModule
 import ru.ama.whereme.presentation.MainActivity
 import ru.ama.whereme.presentation.MyApp

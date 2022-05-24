@@ -1,4 +1,4 @@
-package ru.ama.ottest.di
+package ru.ama.whereme.di
 
 import androidx.lifecycle.ViewModel
 
