@@ -9,6 +9,7 @@ import com.google.android.gms.location.sample.foregroundlocation.data.LocationRe
 import kotlinx.coroutines.flow.StateFlow
 import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.database.LocationDbModel
+import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.mapper.TestMapper
 import ru.ama.whereme.domain.entity.TestInfo
 import ru.ama.whereme.domain.entity.TestQuestion
@@ -62,20 +63,32 @@ class TestsRepositoryImpl @Inject constructor(
      
     }
 
-    override fun getLocation(): MutableLiveData<Location?> {
-        locRepo.startLocationUpdates()
+    override suspend fun getLocation(): LocationLiveData {
+         val locationData = LocationLiveData(application)
+
+        return locationData
+     /*   locRepo.startLocationUpdates()
         Log.e("locrepo",locRepo.toString())
-       return locRepo._infoLocation
+       return locRepo._infoLocation*/
+    }
+
+    override suspend fun getLocation2():LiveData<Location?> {
+        locRepo.startLocationUpdates()
+        return locRepo.infoLocation
+     /*   locRepo.startLocationUpdates()
+        Log.e("locrepo",locRepo.toString())
+       return locRepo._infoLocation*/
     }
     override suspend fun stopData(): Int{
         locRepo.stopLocationUpdates()
         return 1
     }
 
-override suspend fun saveLocationOnBD(): Int {
-		locRepo.startLocationUpdates()
-		val mLocation = locRepo.lastLocation
-   /* mLocation?.let {
+override suspend fun saveLocationOnBD(lld:LocationLiveData): Int {
+		//locRepo.startLocationUpdates()
+	//	val mLocation = locRepo.lastLocation
+    Log.e("insertLocation2",lld.toString())
+    lld.value?.let {
         val res= LocationDbModel(
             it.time.toString(),
             it.latitude.toLong(),
@@ -86,7 +99,7 @@ override suspend fun saveLocationOnBD(): Int {
         )
         val itemsCount= locationDao.insertLocation(res)
         Log.e("insertLocation",res.toString())
-    }*/
+    }
 
     return  1
     }

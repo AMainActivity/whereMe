@@ -20,6 +20,7 @@ import android.annotation.SuppressLint
 import android.location.Location
 import android.os.Looper
 import android.util.Log
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -39,7 +40,9 @@ class LocationRepository @Inject constructor(
     val isReceivingLocationUpdates = _isReceivingUpdates.asStateFlow()
 
     private val _lastLocation = MutableStateFlow<Location?>(null)
-    val _infoLocation = MutableLiveData<Location?>(null)
+    private val _infoLocation = MutableLiveData<Location?>()
+    val infoLocation: LiveData<Location?>
+        get() = _infoLocation
     val lastLocation = _lastLocation.asStateFlow()
 
     @SuppressLint("MissingPermission") // Only called when holding location permission.

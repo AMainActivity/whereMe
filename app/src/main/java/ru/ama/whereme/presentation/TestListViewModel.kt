@@ -6,23 +6,31 @@ import android.util.Log
 import androidx.lifecycle.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
+import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.domain.entity.*
 import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
 class TestListViewModel @Inject constructor(
     private val getLocation: GetLocation,
+    private val getLocation2: GetLocation2,
+    private val saveLocationOnBD: SaveLocationOnBD,
     private val stopLocationsUpdateUseCase: StopLocationsUpdateUseCase
 ) : ViewModel() {
 
-    init {
-        val sd=getLocation()
-//            _testInfo.value=sd.value
-        Log.e("getLocation",sd.value.toString())
-		viewModelScope.launch {
+     var lld : LocationLiveData?=null
+     var lld2 : LiveData<Location?>?=null
 
-		}
-		
+
+    init {
+       // val sd=getLocation()
+//            _testInfo.value=sd.value
+     //   Log.e("getLocation",sd.value.toString())
+viewModelScope.launch {
+    lld=getLocation()
+    lld2 = getLocation2()
+    //saveLocationOnBD(lld!!)
+}
 		viewModelScope.launch {
 			delay(1000*60)
 		stopLocationsUpdateUseCase()
@@ -39,7 +47,10 @@ class TestListViewModel @Inject constructor(
             _testInfo.value = p
         */
     }
-   private val _testInfo = MutableLiveData<Location>()
+
+
+
+    private val _testInfo = MutableLiveData<Location>()
     val testInfo: LiveData<Location>
         get() = _testInfo
 

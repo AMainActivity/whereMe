@@ -32,9 +32,13 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
  viewModel = ViewModelProvider(this, viewModelFactory)[TestListViewModel::class.java]
-           viewModel.testInfo.observe(this) {
+           viewModel.lld?.observe(this) {
 
                Log.e("getLocation2",it.toString())
+           }
+           viewModel.lld2?.observe(this) {
+
+               Log.e("getLocation22",it.toString())
            }
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)

@@ -13,6 +13,7 @@ import dagger.Module
 import dagger.Provides
 import ru.ama.whereme.data.database.AppDatabase
 import ru.ama.whereme.data.database.LocationDao
+import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.repository.TestsRepositoryImpl
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.repository.TestsRepository
@@ -32,7 +33,13 @@ interface DataModule {
         ): LocationDao {
             return AppDatabase.getInstance(application).locationDao()
         }
-
+       /* @Provides
+        @ApplicationScope
+        fun provideLocationLiveData(
+            application: Application
+        ) : LocationLiveData {
+            return LocationServices.getFusedLocationProviderClient(application)
+        }*/
 
         @Provides
         @ApplicationScope
