@@ -2,6 +2,7 @@ package ru.ama.whereme.domain.repository
 
 import android.location.Location
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.flow.StateFlow
 import ru.ama.whereme.domain.entity.*
 
@@ -17,5 +18,5 @@ interface TestsRepository {
 	
 	suspend fun stopData(): Int
 	
-    fun getLocation() : StateFlow<Location?>
+    fun getLocation() : MutableLiveData<Location?>
 }

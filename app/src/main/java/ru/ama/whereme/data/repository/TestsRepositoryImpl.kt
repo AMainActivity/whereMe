@@ -4,6 +4,7 @@ import android.app.Application
 import android.location.Location
 import android.util.Log
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.location.sample.foregroundlocation.data.LocationRepository
 import kotlinx.coroutines.flow.StateFlow
 import ru.ama.whereme.data.database.LocationDao
@@ -61,11 +62,12 @@ class TestsRepositoryImpl @Inject constructor(
      
     }
 
-    override fun getLocation(): StateFlow<Location?> {
-       return locRepo.lastLocation
+    override fun getLocation(): MutableLiveData<Location?> {
+        locRepo.startLocationUpdates()
+        Log.e("locrepo",locRepo.toString())
+       return locRepo._infoLocation
     }
     override suspend fun stopData(): Int{
-
         locRepo.stopLocationUpdates()
         return 1
     }

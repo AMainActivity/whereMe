@@ -7,5 +7,5 @@ class GetLocation @Inject constructor(
     private val repository: TestsRepository
 ) {
 
-    operator suspend fun invoke() = repository.getLocation()
+    operator  fun invoke() = repository.getLocation()
 }

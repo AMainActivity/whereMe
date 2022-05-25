@@ -1,6 +1,7 @@
 package ru.ama.whereme.presentation
 
 import android.os.Bundle
+import android.util.Log
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
@@ -31,10 +32,10 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
  viewModel = ViewModelProvider(this, viewModelFactory)[TestListViewModel::class.java]
-           /*viewModel.canStart.observe(this) {
-               startActivity(Intent(this,MainActivity::class.java))
-               finish()
-           }*/
+           viewModel.testInfo.observe(this) {
+
+               Log.e("getLocation2",it.toString())
+           }
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

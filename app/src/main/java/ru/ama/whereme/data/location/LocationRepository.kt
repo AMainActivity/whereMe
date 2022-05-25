@@ -19,6 +19,8 @@ package com.google.android.gms.location.sample.foregroundlocation.data
 import android.annotation.SuppressLint
 import android.location.Location
 import android.os.Looper
+import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -37,13 +39,14 @@ class LocationRepository @Inject constructor(
     val isReceivingLocationUpdates = _isReceivingUpdates.asStateFlow()
 
     private val _lastLocation = MutableStateFlow<Location?>(null)
+    val _infoLocation = MutableLiveData<Location?>(null)
     val lastLocation = _lastLocation.asStateFlow()
 
     @SuppressLint("MissingPermission") // Only called when holding location permission.
     fun startLocationUpdates() {
         val request = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            interval = 10_000 // 10 seconds
+            interval = 1000 // 10 seconds
         }
         // Note: For this sample it's fine to use the main looper, so our callback will run on the
         // main thread. If your callback will perform any intensive operations (writing to disk,
@@ -52,21 +55,31 @@ class LocationRepository @Inject constructor(
         // See https://developer.android.com/reference/android/os/HandlerThread.
         fusedLocationProviderClient.requestLocationUpdates(
             request,
-            callback,
+            /*object : LocationCallback() {
+                override fun onLocationResult(locationResult: LocationResult) {
+                    super.onLocationResult(locationResult)
+                    Log.e("getLocation0",locationResult.lastLocation.toString())
+                }}*/callback,
             Looper.getMainLooper()
         )
         _isReceivingUpdates.value = true
+        Log.e("getLocation00",fusedLocationProviderClient.toString())
     }
 
     fun stopLocationUpdates() {
+        Log.e("getLocationStop",fusedLocationProviderClient.toString())
         fusedLocationProviderClient.removeLocationUpdates(callback)
         _isReceivingUpdates.value = false
         _lastLocation.value = null
+        _infoLocation.value = null
     }
 
-    private inner class Callback : LocationCallback() {
+    private inner class Callback: LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
+            super.onLocationResult(result)
+            _infoLocation.value = result.lastLocation
             _lastLocation.value = result.lastLocation
+            Log.e("getLocation0",result.lastLocation.toString())
         }
     }
 }

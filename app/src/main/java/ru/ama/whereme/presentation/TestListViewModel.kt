@@ -1,5 +1,6 @@
 package ru.ama.whereme.presentation
 
+import android.location.Location
 import android.os.CountDownTimer
 import android.util.Log
 import androidx.lifecycle.*
@@ -15,10 +16,11 @@ class TestListViewModel @Inject constructor(
 ) : ViewModel() {
 
     init {
+        val sd=getLocation()
+//            _testInfo.value=sd.value
+        Log.e("getLocation",sd.value.toString())
 		viewModelScope.launch {
-            getLocation().collect {
-                Log.e("getLocation",it.toString())
-            }
+
 		}
 		
 		viewModelScope.launch {
@@ -37,8 +39,8 @@ class TestListViewModel @Inject constructor(
             _testInfo.value = p
         */
     }
-   private val _testInfo = MutableLiveData<List<TestInfo>>()
-    val testInfo: LiveData<List<TestInfo>>
+   private val _testInfo = MutableLiveData<Location>()
+    val testInfo: LiveData<Location>
         get() = _testInfo
 
     companion object {}
