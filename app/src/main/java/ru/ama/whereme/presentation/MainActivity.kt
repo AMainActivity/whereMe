@@ -32,10 +32,10 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
  viewModel = ViewModelProvider(this, viewModelFactory)[TestListViewModel::class.java]
-           viewModel.lld?.observe(this) {
+           /*viewModel.lld?.observe(this) {
 
                Log.e("getLocation2",it.toString())
-           }
+           }*/
            viewModel.lld2?.observe(this) {
 
                Log.e("getLocation22",it.toString())

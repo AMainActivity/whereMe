@@ -11,12 +11,16 @@ import com.google.android.gms.location.LocationServices
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import ru.ama.whereme.data.database.AppDatabase
 import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.repository.TestsRepositoryImpl
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.repository.TestsRepository
+import kotlin.coroutines.CoroutineContext
 
 @Module
 interface DataModule {
@@ -59,6 +63,14 @@ interface DataModule {
             application.preferencesDataStoreFile("prefs")
         }
     }
+        @ApplicationScope
+        @Provides
+        fun providesCoroutineScope() = CoroutineScope(SupervisorJob() +  Dispatchers.IO)
+       /* @Provides
+        @ApplicationScope
+        fun provideCoroutineScope(application: Application)= CoroutineScope(application as CoroutineContext)
+*/
+
     }
 	
 	/*

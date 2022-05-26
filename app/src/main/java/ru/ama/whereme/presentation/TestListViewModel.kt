@@ -18,7 +18,7 @@ class TestListViewModel @Inject constructor(
     private val stopLocationsUpdateUseCase: StopLocationsUpdateUseCase
 ) : ViewModel() {
 
-     var lld : LocationLiveData?=null
+     //var lld : LocationLiveData?=null
      var lld2 : LiveData<Location?>?=null
 
 
@@ -27,7 +27,7 @@ class TestListViewModel @Inject constructor(
 //            _testInfo.value=sd.value
      //   Log.e("getLocation",sd.value.toString())
 viewModelScope.launch {
-    lld=getLocation()
+   // lld=getLocation()
     lld2 = getLocation2()
     //saveLocationOnBD(lld!!)
 }
