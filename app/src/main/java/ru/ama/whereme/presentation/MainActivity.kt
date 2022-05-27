@@ -1,6 +1,10 @@
 package ru.ama.whereme.presentation
 
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
@@ -10,6 +14,9 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
@@ -19,6 +26,7 @@ import javax.inject.Inject
 
 class MainActivity : AppCompatActivity() {
 
+    val REQUEST_PERMISSION_LOCATION = 10
     private lateinit var viewModel: TestListViewModel
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
@@ -37,7 +45,7 @@ class MainActivity : AppCompatActivity() {
                Log.e("getLocation2",it.toString())
            }*/
            viewModel.lld2?.observe(this) {
-
+Toast.makeText(this,it.toString(),Toast.LENGTH_SHORT).show()
                Log.e("getLocation22",it.toString())
            }
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -45,12 +53,35 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
 
-       // val navController = findNavController(R.id.nav_host_fragment_content_main)
+        //val navController = findNavController(R.id.nav_host_fragment_content_main)
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment_content_main) as NavHostFragment
         val navController = navHostFragment.navController
         appBarConfiguration = AppBarConfiguration(navController.graph)
-        setupActionBarWithNavController(navController, appBarConfiguration)
+		
+		 if (checkPermissionForLocation())
+        {
+			setupActionBarWithNavController(navController, appBarConfiguration)
+        }
+
+		/*else{
+			 val builder = AlertDialog.Builder(this)
+        builder.setMessage("")
+            .setCancelable(false)
+            .setPositiveButton("Yes") { dialog, id ->
+                startActivityForResult(
+                    Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                    , 11)
+            }
+            .setNegativeButton("No") { dialog, id ->
+                dialog.cancel()
+                finish()
+            }
+        val alert: AlertDialog = builder.create()
+        alert.show()
+		}*/
+		
+        
 
         binding.fab.setOnClickListener { view ->
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
@@ -79,4 +110,70 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
     }
+	
+	
+	
+	    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            if (requestCode == REQUEST_PERMISSION_LOCATION) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                //startLocationUpdate()
+			//	setupActionBarWithNavController(navController, appBarConfiguration)
+            } else {
+                Toast.makeText(this, "нет доступа", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+	
+	
+	  fun checkPermissionForLocation(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M&&Build.VERSION.SDK_INT<Build.VERSION_CODES.Q) {
+
+            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                ==PackageManager.PERMISSION_GRANTED
+                &&checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                ==PackageManager.PERMISSION_GRANTED)
+            {
+                true
+            } else {
+                ActivityCompat.requestPermissions(
+                    this, arrayOf(
+                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                        android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                        android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                    ),
+                    REQUEST_PERMISSION_LOCATION
+                )
+                false
+            }
+        } else
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                    ==PackageManager.PERMISSION_GRANTED
+                    &&checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                    ==PackageManager.PERMISSION_GRANTED
+                    &&checkSelfPermission(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                    ==PackageManager.PERMISSION_GRANTED)
+                {
+                    true
+                } else {
+                    ActivityCompat.requestPermissions(
+                        this, arrayOf(
+                            android.Manifest.permission.ACCESS_FINE_LOCATION,
+                            android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                            android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                        ),
+                        REQUEST_PERMISSION_LOCATION
+                    )
+                    false
+                }else
+        {
+            true
+        }
+    }
+	
 }

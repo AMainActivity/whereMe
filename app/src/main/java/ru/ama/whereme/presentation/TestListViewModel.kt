@@ -32,7 +32,7 @@ viewModelScope.launch {
     //saveLocationOnBD(lld!!)
 }
 		viewModelScope.launch {
-			delay(1000*60)
+			delay(1000*120)
 		stopLocationsUpdateUseCase()
 		}
        /* val d=viewModelScope.async(Dispatchers.IO)
