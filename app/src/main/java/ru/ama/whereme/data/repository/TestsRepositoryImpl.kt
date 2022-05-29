@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.database.LocationDbModel
+import ru.ama.whereme.data.location.KalmanLatLong
 import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.mapper.TestMapper
 import ru.ama.whereme.di.ApplicationScope
@@ -153,7 +154,21 @@ class TestsRepositoryImpl @Inject constructor(
             locationDao.addLocations(myLocationEntities)
         }
 */
+val ll=infoLocation.value
+			val kalmanLatLong = KalmanLatLong(1f)
+            ll?.let {
+                kalmanLatLong.Process(ll.latitude,
+                    ll.longitude,
+                    ll.accuracy,
+                    ll.time
+                )
+            }
 
+			//kalmanLatLong.get_lat()
+		//	kalmanLatLong.get_lng()
+			Log.e("kalmanLatLong",ll?.latitude.toString() +"#"+ll?.longitude.toString())
+			Log.e("kalmanLatLong2",kalmanLatLong.get_lat().toString() +"#"+kalmanLatLong.get_lng().toString())
+			
             ProcessLifecycleOwner.get().lifecycleScope.launch  {Log.e("insertLocation2",infoLocation.value.toString())
                 result.lastLocation.let {
                     val res= LocationDbModel(
