@@ -119,7 +119,7 @@ Toast.makeText(this,it.toString(),Toast.LENGTH_SHORT).show()
         grantResults: IntArray
     ) {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-            if (requestCode == REQUEST_PERMISSION_LOCATION) {
+            if (requestCode == REQUEST_PERMISSION_LOCATION && grantResults.isNotEmpty()) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 //startLocationUpdate()
 			//	setupActionBarWithNavController(navController, appBarConfiguration)

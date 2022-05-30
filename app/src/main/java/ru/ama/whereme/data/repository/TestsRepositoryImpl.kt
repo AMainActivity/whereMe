@@ -1,26 +1,16 @@
 package ru.ama.whereme.data.repository
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Application
-import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Looper
 import android.util.Log
-import androidx.core.app.ActivityCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.sample.foregroundlocation.data.LocationRepository
+import com.google.android.gms.location.*
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.database.LocationDbModel
@@ -42,6 +32,7 @@ class TestsRepositoryImpl @Inject constructor(
     @ApplicationScope private val externalScope: CoroutineScope
 ) : TestsRepository {
 
+    val kalmanLatLong = KalmanLatLong(1f)
     private val callback = Callback()
 
     private val _infoLocation = MutableLiveData<Location?>()
@@ -155,7 +146,6 @@ class TestsRepositoryImpl @Inject constructor(
         }
 */
 val ll=infoLocation.value
-			val kalmanLatLong = KalmanLatLong(1f)
             ll?.let {
                 kalmanLatLong.Process(ll.latitude,
                     ll.longitude,
@@ -170,6 +160,7 @@ val ll=infoLocation.value
 			Log.e("kalmanLatLong2",kalmanLatLong.get_lat().toString() +"#"+kalmanLatLong.get_lng().toString())
 			
             ProcessLifecycleOwner.get().lifecycleScope.launch  {Log.e("insertLocation2",infoLocation.value.toString())
+
                 result.lastLocation.let {
                     val res= LocationDbModel(
                         it.time.toString(),
@@ -202,11 +193,25 @@ val ll=infoLocation.value
         Log.e("locrepo",locRepo.toString())
        return locRepo._infoLocation*/
     }
+    @SuppressLint("MissingPermission")
+    override suspend fun getLastLocation():LiveData<Location?> {
+
+        fusedLocationProviderClient.lastLocation.addOnSuccessListener {
+            //val d=fusedLocationProviderClient.lastLocation.result
+            _infoLocation.value = it
+            Log.e("getflpc",it.toString())
+        }
+            return infoLocation
+        /*   locRepo.startLocationUpdates()
+           Log.e("locrepo",locRepo.toString())
+          return locRepo._infoLocation*/
+    }
+
     //@SuppressLint("MissingPermission")
     override suspend fun getLocation2():LiveData<Location?> {
        // Log.e("getflpc",fusedLocationProviderClient.lastLocation.result.toString())
         startLocationUpdates()
-        inf()
+     //   inf()
         return infoLocation
      /*   locRepo.startLocationUpdates()
         Log.e("locrepo",locRepo.toString())

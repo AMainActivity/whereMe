@@ -15,8 +15,10 @@ class KalmanLatLong(Q_metres_per_second1:Float)  {
 
 
     fun get_TimeStamp():Long { return TimeStamp_milliseconds }
-     fun get_lat(): Double = lat
-     fun get_lng(): Double = lng
+     fun get_lat(): Double {
+         return lat
+     }
+     fun get_lng(): Double {return  lng}
      fun get_accuracy() :Float  =  (Math.sqrt(variance.toDouble()) ).toFloat()
 
     fun SetState( lat: Double,  lng: Double,  accuracy:Float,  TimeStamp_milliseconds: Long) {

@@ -14,6 +14,7 @@ import javax.inject.Inject
 class TestListViewModel @Inject constructor(
     private val getLocation: GetLocation,
     private val getLocation2: GetLocation2,
+    private val getLastLocation: GetLastLocation,
     private val saveLocationOnBD: SaveLocationOnBD,
     private val stopLocationsUpdateUseCase: StopLocationsUpdateUseCase
 ) : ViewModel() {
@@ -26,9 +27,14 @@ class TestListViewModel @Inject constructor(
        // val sd=getLocation()
 //            _testInfo.value=sd.value
      //   Log.e("getLocation",sd.value.toString())
+        val sd=viewModelScope.async {
+            lld2=getLastLocation() }
 viewModelScope.launch {
    // lld=getLocation()
-    lld2 = getLocation2()
+
+    sd.await()
+        lld2 = getLocation2()
+
     //saveLocationOnBD(lld!!)
 }
 		viewModelScope.launch {
