@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
+import ru.ama.whereme.presentation.MapViewModel
 import ru.ama.whereme.presentation.TestListViewModel
 
 @Module
@@ -13,4 +14,8 @@ interface ViewModelModule {
     @IntoMap
     @ViewModelKey(TestListViewModel::class)
     fun bindTestListViewModel(viewModel: TestListViewModel): ViewModel
+ @Binds
+    @IntoMap
+    @ViewModelKey(MapViewModel::class)
+    fun bindMapViewModel(viewModel: MapViewModel): ViewModel
 }

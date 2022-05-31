@@ -39,29 +39,26 @@ class MainActivity : AppCompatActivity() {
         component.inject(this)
 
         super.onCreate(savedInstanceState)
- viewModel = ViewModelProvider(this, viewModelFactory)[TestListViewModel::class.java]
-           /*viewModel.lld?.observe(this) {
-
-               Log.e("getLocation2",it.toString())
-           }*/
+ /*viewModel = ViewModelProvider(this, viewModelFactory)[TestListViewModel::class.java]
+           
            viewModel.lld2?.observe(this) {
 Toast.makeText(this,it.toString(),Toast.LENGTH_SHORT).show()
                Log.e("getLocation22",it.toString())
-           }
+           }*/
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
 
         //val navController = findNavController(R.id.nav_host_fragment_content_main)
-        val navHostFragment = supportFragmentManager
+     /**   val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment_content_main) as NavHostFragment
         val navController = navHostFragment.navController
         appBarConfiguration = AppBarConfiguration(navController.graph)
-		
+		**/
 		 if (checkPermissionForLocation())
         {
-			setupActionBarWithNavController(navController, appBarConfiguration)
+		//	setupActionBarWithNavController(navController, appBarConfiguration)
         }
 
 		/*else{
