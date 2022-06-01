@@ -12,37 +12,19 @@ import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
 class MapViewModel @Inject constructor(
-    private val getLocation: GetLocation,
-    private val getLocation2: GetLocation2,
-    private val getLastLocation: GetLastLocation,
-    private val saveLocationOnBD: SaveLocationOnBD,
-    private val stopLocationsUpdateUseCase: StopLocationsUpdateUseCase
+    private val getLocationsFromBd: GetLocationsFromBd
 ) : ViewModel() {
 
-     var lld2 : LiveData<Location?>?=null
+     var lld2 : LiveData<List<LocationDb>>?=null
 
     init {
       
-        val sd=viewModelScope.async {
-            lld2=getLastLocation() }
 viewModelScope.launch {
-    sd.await()
-        lld2 = getLocation2()
+        lld2 = getLocationsFromBd()
 }
-		viewModelScope.launch {
-			delay(1000*120)
-		stopLocationsUpdateUseCase()
-		}
+		
     }
 
-
-
-
-
-
-    private val _testInfo = MutableLiveData<Location>()
-    val testInfo: LiveData<Location>
-        get() = _testInfo
 
     companion object {}
 }

@@ -5,10 +5,7 @@ import android.app.Application
 import android.location.Location
 import android.os.Looper
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.*
 import com.google.android.gms.location.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -18,6 +15,7 @@ import ru.ama.whereme.data.location.KalmanLatLong
 import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.mapper.TestMapper
 import ru.ama.whereme.di.ApplicationScope
+import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.entity.TestInfo
 import ru.ama.whereme.domain.entity.TestQuestion
 import ru.ama.whereme.domain.repository.TestsRepository
@@ -67,6 +65,14 @@ class TestsRepositoryImpl @Inject constructor(
         return rl
    }
 
+    override suspend fun GetLocationsFromBd():LiveData<List<LocationDb>>  {
+      return Transformations.map(locationDao.getLocations()) {
+            it.map {
+                mapper.mapDbModelToEntity(it)
+            }
+        }      
+    }
+	
     override suspend fun loadData():List<Int>  {
         var listOfItems:MutableList<Int> = mutableListOf<Int>()
 
@@ -207,9 +213,10 @@ val ll=infoLocation.value
           return locRepo._infoLocation*/
     }
 
+
     //@SuppressLint("MissingPermission")
     override suspend fun getLocation2():LiveData<Location?> {
-       // Log.e("getflpc",fusedLocationProviderClient.lastLocation.result.toString())
+       Log.e("getLocation2","getLocation2")
         startLocationUpdates()
      //   inf()
         return infoLocation

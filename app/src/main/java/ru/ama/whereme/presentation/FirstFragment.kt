@@ -16,6 +16,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
+import com.google.gson.Gson
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentFirstBinding
 import javax.inject.Inject
@@ -59,10 +60,12 @@ class FirstFragment : Fragment() {
            viewModel.lld2?.observe(viewLifecycleOwner) {
 					Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
                Log.e("getLocation22",it.toString())
-			   val postData="[{\"title\": \"место 1\", " +
+			   
+			   val postData= Gson().toJson(it)
+			  /* "[{\"title\": \"место 1\", " +
                        " \"lat\": \"${it?.latitude.toString()}\", " +
                        " \"lon\": \"${it?.longitude.toString()}\","+
-               "\"accuracy\": \"${it?.accuracy.toString()}\"}]";
+               "\"accuracy\": \"${it?.accuracy.toString()}\"}]";*/
 			   binding.frgmntLocations.evaluateJavascript("javascript:fromAndroid(${postData})", null)
 
                Log.e("getLocation23",postData)

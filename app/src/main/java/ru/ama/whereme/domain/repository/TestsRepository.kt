@@ -14,6 +14,7 @@ interface TestsRepository {
     fun getTestInfo():List<TestInfo>
 
     suspend fun loadData():List<Int>
+    suspend fun GetLocationsFromBd():LiveData<List<LocationDb>>
 	
 	suspend fun saveLocationOnBD(lld:LocationLiveData): Int
 	

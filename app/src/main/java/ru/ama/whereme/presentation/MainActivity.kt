@@ -17,6 +17,7 @@ import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
@@ -49,7 +50,10 @@ Toast.makeText(this,it.toString(),Toast.LENGTH_SHORT).show()
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
-
+ ContextCompat.startForegroundService(
+                this,
+                MyForegroundService.newIntent(this)
+            )
         //val navController = findNavController(R.id.nav_host_fragment_content_main)
      /**   val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment_content_main) as NavHostFragment

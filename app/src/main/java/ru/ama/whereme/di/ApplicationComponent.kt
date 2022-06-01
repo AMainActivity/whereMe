@@ -10,6 +10,7 @@ import ru.ama.whereme.diO.DataModule
 import ru.ama.whereme.presentation.FirstFragment
 import ru.ama.whereme.presentation.MainActivity
 import ru.ama.whereme.presentation.MyApp
+import ru.ama.whereme.presentation.MyForegroundService
 
 @ApplicationScope
 @Component(
@@ -22,6 +23,7 @@ interface ApplicationComponent {
 
     fun inject(activity: MainActivity)
     fun inject(fragment: FirstFragment)
+    fun inject(myForegroundService: MyForegroundService)
    // fun inject(application: MyApp)
 
 
