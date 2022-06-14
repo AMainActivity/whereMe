@@ -7,5 +7,5 @@ class RunWorkerUpdateUseCase @Inject constructor(
     private val repository: TestsRepository
 ) {
 
-    operator suspend fun invoke(timeInterval:Int) = repository.runWorker(timeInterval)
+    operator suspend fun invoke(timeInterval:Long) = repository.runWorker(timeInterval)
 }

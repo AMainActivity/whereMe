@@ -25,7 +25,7 @@ interface ApplicationComponent {
     fun inject(activity: MainActivity)
     fun inject(fragment: FirstFragment)
     fun inject(myForegroundService: MyForegroundService)
-   // fun inject(application: MyApp)
+    fun inject(application: MyApp)
 
 
     @Component.Factory

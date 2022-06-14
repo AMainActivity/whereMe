@@ -16,7 +16,7 @@ interface TestsRepository {
 	suspend fun saveLocationOnBD(lld:LocationLiveData): Int
 	
 	suspend fun stopData(): Int
-	fun runWorker(timeInterval:Int)
+	fun runWorker(timeInterval:Long)
 
     suspend fun getLocation() : LocationLiveData
     suspend fun getLocation2() : LiveData<Location?>

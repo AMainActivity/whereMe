@@ -1,40 +1,47 @@
 package ru.ama.whereme.data.workers
 
+import android.app.ActivityManager
 import android.content.Context
+import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.work.*
-import ru.ama.whereme.data.database.CoinInfoDao
-import ru.ama.whereme.data.mapper.CoinMapper
-import ru.ama.whereme.data.network.ApiService
-import kotlinx.coroutines.delay
+import ru.ama.whereme.data.database.LocationDao
+import ru.ama.whereme.data.mapper.TestMapper
+import ru.ama.whereme.presentation.MyForegroundService
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 class RefreshDataWorker(
     context: Context,
     workerParameters: WorkerParameters,
-    private val coinInfoDao: CoinInfoDao,
-    private val apiService: ApiService,
-    private val mapper: CoinMapper
+    private val locationDao: LocationDao,
+    // private val apiService: ApiService,
+    private val mapper: TestMapper
 ) : CoroutineWorker(context, workerParameters) {
-/*
+    /*
 
-fun Context.isMyServiceRunning(serviceClass: Class<*>): Boolean {
-    val manager = this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-    return manager.getRunningServices(Integer.MAX_VALUE)
-            .any { it.service.className == serviceClass.name }
-}
-*/
+    fun Context.isMyServiceRunning(serviceClass: Class<*>): Boolean {
+        val manager = this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return manager.getRunningServices(Integer.MAX_VALUE)
+                .any { it.service.className == serviceClass.name }
+    }
+    */
     fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
-            val manager = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
-                if (serviceClass.name == service.service.className) {
-                    return true
-                }
+        val manager =
+            applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.name == service.service.className) {
+                return true
             }
-            return false
         }
+        return false
+    }
 
 
     override suspend fun doWork(): Result {
+        val ctx: Context = applicationContext
         /*while (true) {
             try {
                 val topCoins = apiService.getTopCoinsInfo(limit = 50)
@@ -47,91 +54,90 @@ fun Context.isMyServiceRunning(serviceClass: Class<*>): Boolean {
             }
             delay(10000)
         }*/
-		 try {
-			 /*
-			  ContextCompat.startForegroundService(
-                this,
-                MyForegroundService.newIntent(this)
-            )
-			 */
-			 
-			 
-              /*  val intent1 = Intent(context, task_service::class.java)
-                intent1.setAction("startService")
-                val jWorkTime= Gson().fromJson(
-                    settings.getInstance(applicationContext).worktime,
-                    adrrResponse.WorkTime::class.java
-                )*/
-                val b=isTime1BolseTime2(SimpleDateFormat("HH:mm").format(Date()),"18:00")
-               // Log.e("isTime1BolseTime3",b.toString())
-               // Log.e("isTime1BolseTimeInterv",set.intervalOfWorker.toString())
-                if (!b)
-                {
-                    if (isMyServiceRunning(MyForegroundService::class.java)) {
-                       ContextCompat.startForegroundService(
-                this,
-                MyForegroundService.newIntent(this)
-            )
-                        Log.e("onStartCommand","isMyServiceRunning")
-                    }
-					/*
-					 val workManager = WorkManager.getInstance(application)
-        workManager.enqueueUniqueWork(
-            RefreshDataWorker.NAME,
-            ExistingWorkPolicy.REPLACE,
-            RefreshDataWorker.makeRequest()
-        )
-					*/
-					
-                  /*  val request = OneTimeWorkRequestBuilder<MyWorker>().setInitialDelay(set.intervalOfWorker,TimeUnit.MINUTES).addTag("LocationWork").build()
-                    WorkManager.getInstance(context).enqueueUniqueWork("LocationWork",ExistingWorkPolicy.KEEP,request )*/
-                }
-                else
-                {
-                    //set.isGetLocation=false
-                    WorkManager.getInstance(context).cancelAllWorkByTag(RefreshDataWorker.NAME)
-                    if (isMyServiceRunning(MyForegroundService::class.java))
-                    context.stopService(intent1)
-                }
+        try {
+            /*
+             ContextCompat.startForegroundService(
+               this,
+               MyForegroundService.newIntent(this)
+           )
+            */
 
 
-                 Result.success()
-            } catch (e: Exception) {
-                Log.d("doWork", "Exception getting location -->  ${e.message}")
-                val workManager = WorkManager.getInstance(context)
-			workManager.enqueueUniqueWork(
-            RefreshDataWorker.NAME,
-            ExistingWorkPolicy.REPLACE,
-            RefreshDataWorker.makeRequest(120)
-        )
-                 Result.failure()
+            /*  val intent1 = Intent(context, task_service::class.java)
+              intent1.setAction("startService")
+              val jWorkTime= Gson().fromJson(
+                  settings.getInstance(applicationContext).worktime,
+                  adrrResponse.WorkTime::class.java
+              )*/
+            val b = isTime1BolseTime2(SimpleDateFormat("HH:mm").format(Date()), "18:00")
+            // Log.e("isTime1BolseTime3",b.toString())
+            // Log.e("isTime1BolseTimeInterv",set.intervalOfWorker.toString())
+            if (!b) {
+                if (isMyServiceRunning(MyForegroundService::class.java)) {
+                    ContextCompat.startForegroundService(
+                        ctx,
+                        MyForegroundService.newIntent(ctx)
+                    )
+                    Log.e("onStartCommand", "isMyServiceRunning")
+                }
+                /*
+                 val workManager = WorkManager.getInstance(application)
+    workManager.enqueueUniqueWork(
+        RefreshDataWorker.NAME,
+        ExistingWorkPolicy.REPLACE,
+        RefreshDataWorker.makeRequest()
+    )
+                */
+
+                /*  val request = OneTimeWorkRequestBuilder<MyWorker>().setInitialDelay(set.intervalOfWorker,TimeUnit.MINUTES).addTag("LocationWork").build()
+                  WorkManager.getInstance(context).enqueueUniqueWork("LocationWork",ExistingWorkPolicy.KEEP,request )*/
+            } else {
+                //set.isGetLocation=false
+                WorkManager.getInstance(ctx).cancelAllWorkByTag(RefreshDataWorker.NAME)
+                if (isMyServiceRunning(MyForegroundService::class.java))
+                    ctx.stopService(MyForegroundService.newIntent(ctx))
             }
-		
+
+
+          return  Result.success()
+        } catch (e: Exception) {
+            Log.d("doWork", "Exception getting location -->  ${e.message}")
+            val workManager = WorkManager.getInstance(ctx)
+            workManager.enqueueUniqueWork(
+                RefreshDataWorker.NAME,
+                ExistingWorkPolicy.REPLACE,
+                RefreshDataWorker.makeRequest(120)
+            )
+            return Result.failure()
+        }
+
     }
 
 
-//проверка время1 больше время2
-fun isTime1BolseTime2(time1:String,time2:String):Boolean
-{
-    val sdf = SimpleDateFormat("HH:mm")
-    val tim1=sdf.parse(time1)
-    val tim2=sdf.parse(time2)
-    return tim1.compareTo(tim2)>0
-}
+    //проверка время1 больше время2
+    fun isTime1BolseTime2(time1: String, time2: String): Boolean {
+        val sdf = SimpleDateFormat("HH:mm")
+        val tim1 = sdf.parse(time1)
+        val tim2 = sdf.parse(time2)
+        return tim1.compareTo(tim2) > 0
+    }
 
     companion object {
 
         const val NAME = "RefreshDataWorker"
 
-        fun makeRequest(timeInterval:Int): OneTimeWorkRequest {
-            return OneTimeWorkRequestBuilder<RefreshDataWorker>().setInitialDelay(timeInterval, TimeUnit.SECONDS).addTag(NAME).build()
+        fun makeRequest(timeInterval: Long): OneTimeWorkRequest {
+            return OneTimeWorkRequestBuilder<RefreshDataWorker>().setInitialDelay(
+                timeInterval,
+                TimeUnit.SECONDS
+            ).addTag(NAME).build()
         }
     }
 
     class Factory @Inject constructor(
-        private val coinInfoDao: CoinInfoDao,
-        private val apiService: ApiService,
-        private val mapper: CoinMapper
+        private val locationDao: LocationDao,
+
+        private val mapper: TestMapper
     ) : ChildWorkerFactory {
 
         override fun create(
@@ -141,8 +147,7 @@ fun isTime1BolseTime2(time1:String,time2:String):Boolean
             return RefreshDataWorker(
                 context,
                 workerParameters,
-                coinInfoDao,
-                apiService,
+                locationDao,
                 mapper
             )
         }

@@ -54,7 +54,7 @@ class MyForegroundService : Service() {
         Toast.makeText(applicationContext,lloc.toString(), Toast.LENGTH_SHORT).show()
         log(lld2?.value.toString())
 		
-		if(repo.isEnathAccuracy.value) stopSelf()
+		if(repo.isEnathAccuracy.value!!) stopSelf()
 		
         return START_STICKY
     }

@@ -1,11 +1,15 @@
 package ru.ama.whereme.data.repository
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.app.Application
+import android.content.Context
 import android.location.Location
 import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.*
+import androidx.work.ExistingWorkPolicy
+import androidx.work.WorkManager
 import com.google.android.gms.location.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +19,7 @@ import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.data.location.KalmanLatLong
 import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.mapper.TestMapper
+import ru.ama.whereme.data.workers.RefreshDataWorker
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.repository.TestsRepository
@@ -38,8 +43,8 @@ class TestsRepositoryImpl @Inject constructor(
     val infoLocation: LiveData<Location?>
         get() = _infoLocation
 		
-    private val _isEnathAccuracy = MutableLiveData<Unit>()
-    val isEnathAccuracy: LiveData<Unit>
+    private val _isEnathAccuracy = MutableLiveData<Boolean>()
+    val isEnathAccuracy: LiveData<Boolean>
         get() = _isEnathAccuracy
 
 
@@ -52,7 +57,7 @@ fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
 
 
 
-  override fun runWorker(timeInterval:Int) {
+  override fun runWorker(timeInterval:Long) {
         val workManager = WorkManager.getInstance(application)
         workManager.enqueueUniqueWork(
             RefreshDataWorker.NAME,
@@ -217,13 +222,13 @@ val ll=infoLocation.value
                                 it.speed
                             )
                             val itemsCount = locationDao.insertLocation(res)
-_isEnathAccuracy.value=Unit
+_isEnathAccuracy.value=true
                             Log.e("insertLocation", res.toString())
                         }
                         else
                         {
                             updateValueDb(lastDbValue._id.toInt(),getDate(lastDbValue.datetime.toLong())+"#"+getDate(it.time))
-_isEnathAccuracy.value=Unit
+_isEnathAccuracy.value=true
                         }
                     }
                     else
@@ -238,7 +243,7 @@ _isEnathAccuracy.value=Unit
                             it.speed
                         )
                         val itemsCount = locationDao.insertLocation(res)
-_isEnathAccuracy.value=Unit
+_isEnathAccuracy.value=true
 
                         Log.e("insertLocationNull", res.toString())
                     }
