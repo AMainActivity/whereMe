@@ -3,9 +3,9 @@ package ru.ama.whereme.domain.usecase
 import ru.ama.whereme.domain.repository.TestsRepository
 import javax.inject.Inject
 
-class GetQuestionsListUseCase @Inject constructor(
+class RunWorkerUpdateUseCase @Inject constructor(
     private val repository: TestsRepository
 ) {
 
-    operator fun invoke(testId:Int,limit:Int) = repository.getQuestionsInfoList(testId,limit)
+    operator suspend fun invoke(timeInterval:Int) = repository.runWorker(timeInterval)
 }

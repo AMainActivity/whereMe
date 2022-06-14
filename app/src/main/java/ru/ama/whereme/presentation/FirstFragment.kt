@@ -58,10 +58,10 @@ class FirstFragment : Fragment() {
 
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
            viewModel.lld2?.observe(viewLifecycleOwner) {
-					Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
+				//	Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
                Log.e("getLocation22",it.toString())
 			   
-			   val postData= Gson().toJson(it)
+			   val postData= Gson().toJson(it).toString()
 			  /* "[{\"title\": \"место 1\", " +
                        " \"lat\": \"${it?.latitude.toString()}\", " +
                        " \"lon\": \"${it?.longitude.toString()}\","+

@@ -7,11 +7,12 @@ import ru.ama.whereme.data.database.LocationDbModel.Companion.tabTestInfo
 @Entity(tableName = tabTestInfo)
 data class LocationDbModel(
   val datetime: String,
-  val latitude : Long,
-  val longitude: Long,
+  val info: String?=null,
+  val latitude : Double,
+  val longitude: Double,
   val sourceId:Int,
-  val accuracy: Int,
-  val velocity: Int
+  val accuracy: Float,
+  val velocity: Float
 )
 {
 	   @PrimaryKey(autoGenerate = true)

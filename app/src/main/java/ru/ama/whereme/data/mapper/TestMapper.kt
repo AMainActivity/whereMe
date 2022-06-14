@@ -2,8 +2,6 @@ package ru.ama.whereme.data.mapper
 
 import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.domain.entity.LocationDb
-import ru.ama.whereme.domain.entity.TestInfo
-import ru.ama.whereme.domain.entity.TestQuestion
 import javax.inject.Inject
 
 class TestMapper @Inject constructor() {
@@ -12,6 +10,7 @@ class TestMapper @Inject constructor() {
 
     fun mapDbModelToEntity(dbModel: LocationDbModel) = LocationDb(
            datetime=dbModel.datetime,
+           info=dbModel.info,
 			latitude=dbModel.latitude,
 		longitude=dbModel.longitude,
 		sourceId=dbModel.sourceId,
@@ -21,6 +20,7 @@ class TestMapper @Inject constructor() {
 
     fun mapEntityToDbModel(db: LocationDb) = LocationDbModel(
         datetime=db.datetime,
+		info=db.info,
 			latitude=db.latitude,
 		longitude=db.longitude,
 		sourceId=db.sourceId,

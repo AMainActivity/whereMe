@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.lifecycle.*
 import com.google.android.gms.location.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.database.LocationDbModel
@@ -16,9 +17,9 @@ import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.mapper.TestMapper
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.LocationDb
-import ru.ama.whereme.domain.entity.TestInfo
-import ru.ama.whereme.domain.entity.TestQuestion
 import ru.ama.whereme.domain.repository.TestsRepository
+import java.text.SimpleDateFormat
+import java.util.*
 import javax.inject.Inject
 
 
@@ -36,34 +37,41 @@ class TestsRepositoryImpl @Inject constructor(
     private val _infoLocation = MutableLiveData<Location?>()
     val infoLocation: LiveData<Location?>
         get() = _infoLocation
-
-    override fun getQuestionsInfoList(testId: Int,limit:Int): List<TestQuestion>{
-       var rl:MutableList<TestQuestion> = mutableListOf<TestQuestion>()
-     /*   val list=testQuestionsDao.getQuestionListByTestId(testId,limit)
-   	val llist2=list.map {
-            mapper.mapDbModelToEntity(it)
-        }
-
-   */
 		
-        return rl
+    private val _isEnathAccuracy = MutableLiveData<Unit>()
+    val isEnathAccuracy: LiveData<Unit>
+        get() = _isEnathAccuracy
 
+
+
+fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
+    val manager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    return manager.getRunningServices(Integer.MAX_VALUE)
+            .any { it.service.className == serviceClass.name }
+}
+
+
+
+  override fun runWorker(timeInterval:Int) {
+        val workManager = WorkManager.getInstance(application)
+        workManager.enqueueUniqueWork(
+            RefreshDataWorker.NAME,
+            ExistingWorkPolicy.REPLACE,
+            RefreshDataWorker.makeRequest(timeInterval)
+        )
     }
-   /*  fun getQuestionsInfoList2(): LiveData<List<TestQuestion>> {
-        return Transformations.map(testQuestionsDao.getQuestionList()) {
-            it.map {
-                mapper.mapDbModelToEntity(it)
-            }
-        }
-    }*/
 
-    override fun getTestInfo(): List<TestInfo> {
+/*
+  override fun loadData() {
+        val workManager = WorkManager.getInstance(application)
+        workManager.enqueueUniqueWork(
+            RefreshDataWorker.NAME,
+            ExistingWorkPolicy.REPLACE,
+            RefreshDataWorker.makeRequest()
+        )
+    }
+*/
 
-		
-			val rl= mutableListOf<TestInfo>()//(testInfoDao.getTestInfo()).map  {mapper.mapDataDbModelToEntity(it)}
-		
-        return rl
-   }
 
     override suspend fun GetLocationsFromBd():LiveData<List<LocationDb>>  {
       return Transformations.map(locationDao.getLocations()) {
@@ -119,22 +127,41 @@ class TestsRepositoryImpl @Inject constructor(
         Log.e("getLocation00",fusedLocationProviderClient.toString())
     }
 
-    suspend fun inf()
+  /*  suspend fun inf()
     {
         Log.e("insertLocation2",infoLocation.value.toString())
         infoLocation.value?.let {
             val res= LocationDbModel(
                 it.time.toString(),
-                it.latitude.toLong(),
-                it.longitude.toLong(),
+                it.latitude,
+                it.longitude,
                 1,
-                it.accuracy.toInt(),
-                it.speed.toInt()
+                it.accuracy,
+                it.speed
             )
             val itemsCount= locationDao.insertLocation(res)
             Log.e("insertLocation",res.toString())
         }
+    }*/
+
+
+    fun updateValueDb(id:Int, newInfo:String):Int
+    {
+        return locationDao.updateLocationById(id, newInfo)
     }
+    fun getLastValueFromDb():LocationDbModel
+    {
+        val d=locationDao.getLastValue()
+        return locationDao.getLastValue()
+    }
+
+    fun getDate(milliSeconds: Long): String? {
+        val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
+        val calendar: Calendar = Calendar.getInstance()
+        calendar.setTimeInMillis(milliSeconds)
+        return formatter.format(calendar.getTime())
+    }
+
 
     private inner class Callback: LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
@@ -165,19 +192,59 @@ val ll=infoLocation.value
 			Log.e("kalmanLatLong",ll?.latitude.toString() +"#"+ll?.longitude.toString())
 			Log.e("kalmanLatLong2",kalmanLatLong.get_lat().toString() +"#"+kalmanLatLong.get_lng().toString())
 			
-            ProcessLifecycleOwner.get().lifecycleScope.launch  {Log.e("insertLocation2",infoLocation.value.toString())
+            ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO)  {Log.e("insertLocation2",infoLocation.value.toString())
+                val lastDbValue=getLastValueFromDb()
 
                 result.lastLocation.let {
-                    val res= LocationDbModel(
-                        it.time.toString(),
-                        it.latitude.toLong(),
-                        it.longitude.toLong(),
-                        1,
-                        it.accuracy.toInt(),
-                        it.speed.toInt()
-                    )
-                    val itemsCount= locationDao.insertLocation(res)
-                    Log.e("insertLocation",res.toString())
+                    if (lastDbValue!=null)
+                    {
+                        val locA=Location("lastValue")
+                        locA.latitude=lastDbValue.latitude
+                        locA.longitude=lastDbValue.longitude
+                        val locB=Location("newValue")
+                        locB.latitude=it.latitude
+                        locB.longitude=it.longitude
+                        val dist=locA.distanceTo(locB)
+                        Log.e("distanceLastNew",dist.toString())
+                        if (dist>50) {
+                            val res = LocationDbModel(
+                                it.time.toString(),
+                                getDate(it.time),
+                                it.latitude,
+                                it.longitude,
+                                1,
+                                it.accuracy,
+                                it.speed
+                            )
+                            val itemsCount = locationDao.insertLocation(res)
+_isEnathAccuracy.value=Unit
+                            Log.e("insertLocation", res.toString())
+                        }
+                        else
+                        {
+                            updateValueDb(lastDbValue._id.toInt(),getDate(lastDbValue.datetime.toLong())+"#"+getDate(it.time))
+_isEnathAccuracy.value=Unit
+                        }
+                    }
+                    else
+                    {
+                        val res = LocationDbModel(
+                            it.time.toString(),
+                            getDate(it.time),
+                            it.latitude,
+                            it.longitude,
+                            1,
+                            it.accuracy,
+                            it.speed
+                        )
+                        val itemsCount = locationDao.insertLocation(res)
+_isEnathAccuracy.value=Unit
+
+                        Log.e("insertLocationNull", res.toString())
+                    }
+
+
+
                 }
 
             }
@@ -236,11 +303,12 @@ override suspend fun saveLocationOnBD(lld:LocationLiveData): Int {
     lld.value?.let {
         val res= LocationDbModel(
             it.time.toString(),
-            it.latitude.toLong(),
-            it.longitude.toLong(),
+            it.time.toString(),
+            it.latitude,
+            it.longitude,
             1,
-            it.accuracy.toInt(),
-            it.speed.toInt()
+            it.accuracy,
+            it.speed
         )
         val itemsCount= locationDao.insertLocation(res)
         Log.e("insertLocation",res.toString())

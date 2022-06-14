@@ -50,10 +50,13 @@ Toast.makeText(this,it.toString(),Toast.LENGTH_SHORT).show()
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
- ContextCompat.startForegroundService(
+ /*ContextCompat.startForegroundService(
                 this,
                 MyForegroundService.newIntent(this)
-            )
+            )*/
+			
+			
+			
         //val navController = findNavController(R.id.nav_host_fragment_content_main)
      /**   val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment_content_main) as NavHostFragment

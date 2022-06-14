@@ -8,10 +8,7 @@ import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.domain.entity.*
 
 interface TestsRepository {
-	
-    fun getQuestionsInfoList(testId:Int,limit:Int): List<TestQuestion>
 
-    fun getTestInfo():List<TestInfo>
 
     suspend fun loadData():List<Int>
     suspend fun GetLocationsFromBd():LiveData<List<LocationDb>>
@@ -19,6 +16,7 @@ interface TestsRepository {
 	suspend fun saveLocationOnBD(lld:LocationLiveData): Int
 	
 	suspend fun stopData(): Int
+	fun runWorker(timeInterval:Int)
 
     suspend fun getLocation() : LocationLiveData
     suspend fun getLocation2() : LiveData<Location?>

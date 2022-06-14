@@ -6,9 +6,10 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class LocationDb(
       val datetime: String,
-  val latitude : Long,
-  val longitude: Long,
+      val info: String?=null,
+  val latitude : Double,
+  val longitude: Double,
   val sourceId:Int,
-  val accuracy: Int,
-  val velocity: Int
+  val accuracy: Float,
+  val velocity: Float
 ) : Parcelable

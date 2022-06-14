@@ -44,15 +44,18 @@ class MyForegroundService : Service() {
 
         val sd=coroutineScope.async {
             lloc=repo.getLastLocation().value
-            Toast.makeText(application,lloc.toString(), Toast.LENGTH_SHORT).show()
+            //Toast.makeText(applicationContext,lloc.toString(), Toast.LENGTH_SHORT).show()
 
             Log.d("SERVICE_TAG2", "MyForegroundService: ${lloc.toString()}")}
         coroutineScope.launch {
             sd.await()
             lloc = repo.getLocation2().value
         }
-        Toast.makeText(application,lloc.toString(), Toast.LENGTH_SHORT).show()
+        Toast.makeText(applicationContext,lloc.toString(), Toast.LENGTH_SHORT).show()
         log(lld2?.value.toString())
+		
+		if(repo.isEnathAccuracy.value) stopSelf()
+		
         return START_STICKY
     }
 
@@ -70,7 +73,7 @@ class MyForegroundService : Service() {
     }
 
     private fun log(message: String) {
-        Log.d("SERVICE_TAG", "MyForegroundService: $message")
+        Log.e("SERVICE_TAG", "MyForegroundService: $message")
     }
 
     private fun createNotificationChannel() {

@@ -16,7 +16,8 @@ import ru.ama.whereme.presentation.MyForegroundService
 @Component(
     modules = [
         DataModule::class,
-        ViewModelModule::class
+        ViewModelModule::class,
+        WorkerModule::class
     ]
 )
 interface ApplicationComponent {

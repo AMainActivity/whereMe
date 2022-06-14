@@ -15,6 +15,12 @@ interface LocationDao {
 @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
     fun getLocations(): LiveData<List<LocationDbModel>>
 
+    @Query("SELECT * FROM tab_locations  ORDER BY _id desc limit 1 ")
+    fun getLastValue(): LocationDbModel
+
+    @Query("update tab_locations  set info =  :newInfo  where _id=:id")
+    fun updateLocationById(id:Int, newInfo:String):Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLocation(mLoc: LocationDbModel)
 	
