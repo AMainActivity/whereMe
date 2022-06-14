@@ -1,7 +1,7 @@
 package ru.ama.whereme.di
 
 import ru.ama.whereme.data.workers.ChildWorkerFactory
-import ru.ama.whereme.data.workers.RefreshDataWorker
+import ru.ama.whereme.data.workers.GetLocationDataWorker
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
@@ -11,6 +11,6 @@ interface WorkerModule {
 
     @Binds
     @IntoMap
-    @WorkerKey(RefreshDataWorker::class)
-    fun bindRefreshDataWorkerFactory(worker: RefreshDataWorker.Factory): ChildWorkerFactory
+    @WorkerKey(GetLocationDataWorker::class)
+    fun bindRefreshDataWorkerFactory(worker: GetLocationDataWorker.Factory): ChildWorkerFactory
 }

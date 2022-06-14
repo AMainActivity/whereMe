@@ -16,17 +16,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import ru.ama.whereme.data.database.AppDatabase
 import ru.ama.whereme.data.database.LocationDao
-import ru.ama.whereme.data.location.LocationLiveData
-import ru.ama.whereme.data.repository.TestsRepositoryImpl
+import ru.ama.whereme.data.repository.WmRepositoryImpl
 import ru.ama.whereme.di.ApplicationScope
-import ru.ama.whereme.domain.repository.TestsRepository
-import kotlin.coroutines.CoroutineContext
+import ru.ama.whereme.domain.repository.WmRepository
 
 @Module
 interface DataModule {
     @Binds
     @ApplicationScope
-    fun bindCoinRepository(impl: TestsRepositoryImpl): TestsRepository
+    fun bindCoinRepository(impl: WmRepositoryImpl): WmRepository
 
     companion object {
 

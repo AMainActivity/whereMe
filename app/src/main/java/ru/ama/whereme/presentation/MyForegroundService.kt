@@ -2,22 +2,21 @@ package ru.ama.whereme.presentation
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.os.Build
-import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.LiveData
 import kotlinx.coroutines.*
 import ru.ama.whereme.R
-import ru.ama.whereme.data.repository.TestsRepositoryImpl
+import ru.ama.whereme.data.repository.WmRepositoryImpl
 import javax.inject.Inject
 
-class MyForegroundService : Service() {
+class MyForegroundService : LifecycleService() {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
   private val component by lazy {
@@ -26,7 +25,7 @@ class MyForegroundService : Service() {
      var lld2 : LiveData<Location?>?=null
     
 	@Inject
-    lateinit var repo: TestsRepositoryImpl
+    lateinit var repo: WmRepositoryImpl
 	
     override fun onCreate() {
 		component.inject(this)
@@ -37,6 +36,7 @@ class MyForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         log("onStartCommand")
        /*coroutineScope.launch {
         lld2 = repo.getLocation2()
@@ -53,8 +53,18 @@ class MyForegroundService : Service() {
         }
         Toast.makeText(applicationContext,lloc.toString(), Toast.LENGTH_SHORT).show()
         log(lld2?.value.toString())
-		
-		if(repo.isEnathAccuracy.value==true) stopSelf()
+        log(repo.isEnathAccuracy.value.toString() +"")
+        repo.isEnathAccuracy.observe(this)
+        {
+            if(it) {
+                coroutineScope.launch {
+                    repo.runWorker(300)
+                }
+                stopSelf()
+            }
+        }
+
+
 		
         return START_STICKY
     }
@@ -68,9 +78,7 @@ class MyForegroundService : Service() {
         log("onDestroy")
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        TODO("Not yet implemented")
-    }
+
 
     private fun log(message: String) {
         Log.e("SERVICE_TAG", "MyForegroundService: $message")

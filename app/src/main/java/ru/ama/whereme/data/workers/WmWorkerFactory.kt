@@ -7,7 +7,7 @@ import androidx.work.WorkerParameters
 import javax.inject.Inject
 import javax.inject.Provider
 
-class CoinWorkerFactory @Inject constructor(
+class WmWorkerFactory @Inject constructor(
     private val workerProviders: @JvmSuppressWildcards Map<Class<out ListenableWorker>, Provider<ChildWorkerFactory>>
 ) : WorkerFactory() {
 
@@ -17,8 +17,8 @@ class CoinWorkerFactory @Inject constructor(
         workerParameters: WorkerParameters
     ): ListenableWorker? {
         return when (workerClassName) {
-            RefreshDataWorker::class.qualifiedName -> {
-                val childWorkerFactory = workerProviders[RefreshDataWorker::class.java]?.get()
+            GetLocationDataWorker::class.qualifiedName -> {
+                val childWorkerFactory = workerProviders[GetLocationDataWorker::class.java]?.get()
                 return childWorkerFactory?.create(appContext, workerParameters)
             }
             else -> null

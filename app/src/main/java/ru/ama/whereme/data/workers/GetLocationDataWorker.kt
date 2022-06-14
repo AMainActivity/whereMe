@@ -6,19 +6,18 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.work.*
 import ru.ama.whereme.data.database.LocationDao
-import ru.ama.whereme.data.mapper.TestMapper
+import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.presentation.MyForegroundService
 import java.text.SimpleDateFormat
-import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
-class RefreshDataWorker(
+class GetLocationDataWorker(
     context: Context,
     workerParameters: WorkerParameters,
     private val locationDao: LocationDao,
     // private val apiService: ApiService,
-    private val mapper: TestMapper
+    private val mapper: WmMapper
 ) : CoroutineWorker(context, workerParameters) {
     /*
 
@@ -69,7 +68,7 @@ class RefreshDataWorker(
                   settings.getInstance(applicationContext).worktime,
                   adrrResponse.WorkTime::class.java
               )*/
-            val b = isTime1BolseTime2(SimpleDateFormat("HH:mm").format(Date()), "18:00")
+            val b = false//isTime1BolseTime2(SimpleDateFormat("HH:mm").format(Date()), "18:00")
              Log.e("isTime1BolseTime3",b.toString())
             if (!b) {
                 if (!isMyServiceRunning(MyForegroundService::class.java)) {
@@ -97,7 +96,7 @@ class RefreshDataWorker(
                   WorkManager.getInstance(context).enqueueUniqueWork("LocationWork",ExistingWorkPolicy.KEEP,request )*/
             } else {
                 //set.isGetLocation=false
-                WorkManager.getInstance(ctx).cancelAllWorkByTag(RefreshDataWorker.NAME)
+                WorkManager.getInstance(ctx).cancelAllWorkByTag(GetLocationDataWorker.NAME)
                 if (isMyServiceRunning(MyForegroundService::class.java))
                     ctx.stopService(MyForegroundService.newIntent(ctx))
             }
@@ -108,9 +107,9 @@ class RefreshDataWorker(
             Log.d("doWork", "Exception getting location -->  ${e.message}")
             val workManager = WorkManager.getInstance(ctx)
             workManager.enqueueUniqueWork(
-                RefreshDataWorker.NAME,
+                GetLocationDataWorker.NAME,
                 ExistingWorkPolicy.REPLACE,
-                RefreshDataWorker.makeRequest(120)
+                GetLocationDataWorker.makeRequest(120)
             )
             return Result.failure()
         }
@@ -131,7 +130,7 @@ class RefreshDataWorker(
         const val NAME = "RefreshDataWorker"
 
         fun makeRequest(timeInterval: Long): OneTimeWorkRequest {
-            return OneTimeWorkRequestBuilder<RefreshDataWorker>().setInitialDelay(
+            return OneTimeWorkRequestBuilder<GetLocationDataWorker>().setInitialDelay(
                 timeInterval,
                 TimeUnit.SECONDS
             ).addTag(NAME).build()
@@ -141,14 +140,14 @@ class RefreshDataWorker(
     class Factory @Inject constructor(
         private val locationDao: LocationDao,
 
-        private val mapper: TestMapper
+        private val mapper: WmMapper
     ) : ChildWorkerFactory {
 
         override fun create(
             context: Context,
             workerParameters: WorkerParameters
         ): ListenableWorker {
-            return RefreshDataWorker(
+            return GetLocationDataWorker(
                 context,
                 workerParameters,
                 locationDao,

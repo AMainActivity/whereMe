@@ -1,26 +1,17 @@
 package ru.ama.whereme.presentation
 
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
-import android.util.Log
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.fragment.findNavController
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.ActivityMainBinding
 import javax.inject.Inject
@@ -28,7 +19,7 @@ import javax.inject.Inject
 class MainActivity : AppCompatActivity() {
 
     val REQUEST_PERMISSION_LOCATION = 10
-    private lateinit var viewModel: TestListViewModel
+    private lateinit var viewModel: MaViewModel
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
     private lateinit var appBarConfiguration: AppBarConfiguration

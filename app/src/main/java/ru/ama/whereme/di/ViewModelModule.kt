@@ -6,14 +6,14 @@ import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
 import ru.ama.whereme.presentation.MapViewModel
-import ru.ama.whereme.presentation.TestListViewModel
+import ru.ama.whereme.presentation.MaViewModel
 
 @Module
 interface ViewModelModule {
  @Binds
     @IntoMap
-    @ViewModelKey(TestListViewModel::class)
-    fun bindTestListViewModel(viewModel: TestListViewModel): ViewModel
+    @ViewModelKey(MaViewModel::class)
+    fun bindTestListViewModel(viewModel: MaViewModel): ViewModel
  @Binds
     @IntoMap
     @ViewModelKey(MapViewModel::class)

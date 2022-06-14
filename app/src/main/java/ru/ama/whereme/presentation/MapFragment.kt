@@ -22,7 +22,7 @@ import ru.ama.whereme.databinding.FragmentFirstBinding
 import javax.inject.Inject
 
 
-class FirstFragment : Fragment() {
+class MapFragment : Fragment() {
 
     private var _binding: FragmentFirstBinding? = null
     private val binding get() = _binding ?: throw RuntimeException("FragmentFirstBinding == null")

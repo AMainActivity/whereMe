@@ -18,23 +18,23 @@ import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.data.location.KalmanLatLong
 import ru.ama.whereme.data.location.LocationLiveData
-import ru.ama.whereme.data.mapper.TestMapper
-import ru.ama.whereme.data.workers.RefreshDataWorker
+import ru.ama.whereme.data.mapper.WmMapper
+import ru.ama.whereme.data.workers.GetLocationDataWorker
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.LocationDb
-import ru.ama.whereme.domain.repository.TestsRepository
+import ru.ama.whereme.domain.repository.WmRepository
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 
 
-class TestsRepositoryImpl @Inject constructor(
-    private val mapper: TestMapper,
+class WmRepositoryImpl @Inject constructor(
+    private val mapper: WmMapper,
     private val locationDao: LocationDao,
     private val application: Application,
     private val fusedLocationProviderClient: FusedLocationProviderClient,
     @ApplicationScope private val externalScope: CoroutineScope
-) : TestsRepository {
+) : WmRepository {
 
     val kalmanLatLong = KalmanLatLong(1f)
     private val callback = Callback()
@@ -60,9 +60,9 @@ fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
   override fun runWorker(timeInterval:Long) {
         val workManager = WorkManager.getInstance(application)
         workManager.enqueueUniqueWork(
-            RefreshDataWorker.NAME,
+            GetLocationDataWorker.NAME,
             ExistingWorkPolicy.REPLACE,
-            RefreshDataWorker.makeRequest(timeInterval)
+            GetLocationDataWorker.makeRequest(timeInterval)
         )
       Log.e("runWorker",""+timeInterval)
     }
@@ -198,7 +198,7 @@ val ll=infoLocation.value
 			Log.e("kalmanLatLong",ll?.latitude.toString() +"#"+ll?.longitude.toString())
 			Log.e("kalmanLatLong2",kalmanLatLong.get_lat().toString() +"#"+kalmanLatLong.get_lng().toString())
 			
-            ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO)  {Log.e("insertLocation2",infoLocation.value.toString())
+            ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO)  {//Log.e("insertLocation2",infoLocation.value.toString())
                 val lastDbValue=getLastValueFromDb()
 
                 result.lastLocation.let {
@@ -223,13 +223,13 @@ val ll=infoLocation.value
                                 it.speed
                             )
                             val itemsCount = locationDao.insertLocation(res)
-_isEnathAccuracy.value=true
+_isEnathAccuracy.postValue(true)
                             Log.e("insertLocation", res.toString())
                         }
                         else
                         {
                             updateValueDb(lastDbValue._id.toInt(),getDate(lastDbValue.datetime.toLong())+"#"+getDate(it.time))
-_isEnathAccuracy.value=true
+_isEnathAccuracy.postValue(true)
                         }
                     }
                     else
@@ -244,7 +244,7 @@ _isEnathAccuracy.value=true
                             it.speed
                         )
                         val itemsCount = locationDao.insertLocation(res)
-_isEnathAccuracy.value=true
+_isEnathAccuracy.postValue(true)
 
                         Log.e("insertLocationNull", res.toString())
                     }

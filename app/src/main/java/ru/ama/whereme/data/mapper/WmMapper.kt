@@ -4,7 +4,7 @@ import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.domain.entity.LocationDb
 import javax.inject.Inject
 
-class TestMapper @Inject constructor() {
+class WmMapper @Inject constructor() {
 
 
 

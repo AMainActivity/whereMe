@@ -1,21 +1,17 @@
 package ru.ama.whereme.presentation
 
 import android.location.Location
-import android.os.CountDownTimer
 import android.util.Log
 import androidx.lifecycle.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
-import ru.ama.whereme.data.location.LocationLiveData
-import ru.ama.whereme.domain.entity.*
 import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
-class TestListViewModel @Inject constructor(
-    private val getLocation: GetLocation,
-    private val getLocation2: GetLocation2,
-    private val getLastLocation: GetLastLocation,
-    private val saveLocationOnBD: SaveLocationOnBD,
+class MaViewModel @Inject constructor(
+    private val getLocationUseCase: GetLocationUseCase,
+    private val getLocation2UseCase: GetLocation2UseCase,
+    private val getLastLocationUseCase: GetLastLocationUseCase,
+    private val saveLocationOnBDUseCase: SaveLocationOnBDUseCase,
     private val stopLocationsUpdateUseCase: StopLocationsUpdateUseCase,
     private val runWorkerUpdateUseCase: RunWorkerUpdateUseCase
 ) : ViewModel() {
@@ -28,12 +24,12 @@ class TestListViewModel @Inject constructor(
         val sd=viewModelScope.async {
            // runWorkerUpdateUseCase(15)
             Log.e("runWorker1","15")
-          lld2=getLastLocation()
+          lld2=getLastLocationUseCase()
         }
 viewModelScope.launch {
 
     sd.await()
-        lld2 = getLocation2()
+        lld2 = getLocation2UseCase()
 
 }
 		viewModelScope.launch {

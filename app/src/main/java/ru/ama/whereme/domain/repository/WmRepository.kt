@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.domain.entity.*
 
-interface TestsRepository {
+interface WmRepository {
 
 
     suspend fun loadData():List<Int>
