@@ -70,15 +70,19 @@ class RefreshDataWorker(
                   adrrResponse.WorkTime::class.java
               )*/
             val b = isTime1BolseTime2(SimpleDateFormat("HH:mm").format(Date()), "18:00")
-            // Log.e("isTime1BolseTime3",b.toString())
-            // Log.e("isTime1BolseTimeInterv",set.intervalOfWorker.toString())
+             Log.e("isTime1BolseTime3",b.toString())
             if (!b) {
-                if (isMyServiceRunning(MyForegroundService::class.java)) {
+                if (!isMyServiceRunning(MyForegroundService::class.java)) {
                     ContextCompat.startForegroundService(
                         ctx,
                         MyForegroundService.newIntent(ctx)
                     )
                     Log.e("onStartCommand", "isMyServiceRunning")
+                }
+                else
+                {
+                    Log.e("onStartCommand2", "isMyServiceRunning")
+
                 }
                 /*
                  val workManager = WorkManager.getInstance(application)

@@ -12,7 +12,8 @@ import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
 class MapViewModel @Inject constructor(
-    private val getLocationsFromBd: GetLocationsFromBd
+    private val getLocationsFromBd: GetLocationsFromBd,
+    private val runWorkerUpdateUseCase: RunWorkerUpdateUseCase
 ) : ViewModel() {
 
      var lld2 : LiveData<List<LocationDb>>?=null
@@ -20,6 +21,8 @@ class MapViewModel @Inject constructor(
     init {
       
 viewModelScope.launch {
+    runWorkerUpdateUseCase(15)
+    Log.e("runWorker1","15")
         lld2 = getLocationsFromBd()
 }
 		

@@ -64,6 +64,7 @@ fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
             ExistingWorkPolicy.REPLACE,
             RefreshDataWorker.makeRequest(timeInterval)
         )
+      Log.e("runWorker",""+timeInterval)
     }
 
 /*
@@ -96,7 +97,7 @@ fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
     }
     @SuppressLint("MissingPermission") // Only called when holding location permission.
     fun startLocationUpdates() {
-
+        _isEnathAccuracy.value=false
         val request = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
             interval = 4000 // 10 seconds

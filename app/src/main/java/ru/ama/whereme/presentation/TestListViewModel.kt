@@ -25,19 +25,16 @@ class TestListViewModel @Inject constructor(
 
 
     init {
-       // val sd=getLocation()
-//            _testInfo.value=sd.value
-     //   Log.e("getLocation",sd.value.toString())
         val sd=viewModelScope.async {
-            runWorkerUpdateUseCase(15)
-            lld2=getLastLocation() }
+           // runWorkerUpdateUseCase(15)
+            Log.e("runWorker1","15")
+          lld2=getLastLocation()
+        }
 viewModelScope.launch {
-   // lld=getLocation()
 
     sd.await()
         lld2 = getLocation2()
 
-    //saveLocationOnBD(lld!!)
 }
 		viewModelScope.launch {
 			delay(1000*120)
