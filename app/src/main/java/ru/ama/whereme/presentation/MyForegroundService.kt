@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -38,6 +39,7 @@ class MyForegroundService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         log("onStartCommand")
+        repo.updateStartTime(SystemClock.elapsedRealtime())
        /*coroutineScope.launch {
         lld2 = repo.getLocation2()
 }*/   var lloc:Location?=null

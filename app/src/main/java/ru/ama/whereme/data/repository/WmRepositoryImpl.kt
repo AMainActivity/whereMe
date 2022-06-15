@@ -6,6 +6,7 @@ import android.app.Application
 import android.content.Context
 import android.location.Location
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.*
 import androidx.work.ExistingWorkPolicy
@@ -36,35 +37,34 @@ class WmRepositoryImpl @Inject constructor(
     @ApplicationScope private val externalScope: CoroutineScope
 ) : WmRepository {
 
+    private var timeOfWorkinService:Long=0
     val kalmanLatLong = KalmanLatLong(1f)
     private val callback = Callback()
 
     private val _infoLocation = MutableLiveData<Location?>()
     val infoLocation: LiveData<Location?>
         get() = _infoLocation
-		
+
     private val _isEnathAccuracy = MutableLiveData<Boolean>()
     val isEnathAccuracy: LiveData<Boolean>
         get() = _isEnathAccuracy
 
 
-
-fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
-    val manager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-    return manager.getRunningServices(Integer.MAX_VALUE)
+    fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
+        val manager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return manager.getRunningServices(Integer.MAX_VALUE)
             .any { it.service.className == serviceClass.name }
-}
+    }
 
 
-
-  override fun runWorker(timeInterval:Long) {
+    override fun runWorker(timeInterval: Long) {
         val workManager = WorkManager.getInstance(application)
         workManager.enqueueUniqueWork(
             GetLocationDataWorker.NAME,
             ExistingWorkPolicy.REPLACE,
             GetLocationDataWorker.makeRequest(timeInterval)
         )
-      Log.e("runWorker",""+timeInterval)
+        Log.e("runWorker", "" + timeInterval)
     }
 
 /*
@@ -79,29 +79,29 @@ fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
 */
 
 
-    override suspend fun GetLocationsFromBd():LiveData<List<LocationDb>>  {
-      return Transformations.map(locationDao.getLocations()) {
+    override suspend fun GetLocationsFromBd(): LiveData<List<LocationDb>> {
+        return Transformations.map(locationDao.getLocations()) {
             it.map {
                 mapper.mapDbModelToEntity(it)
             }
-        }      
+        }
     }
-	
-    override suspend fun loadData():List<Int>  {
-        var listOfItems:MutableList<Int> = mutableListOf<Int>()
 
-			  return listOfItems
-		
- 
-     
+    override suspend fun loadData(): List<Int> {
+        var listOfItems: MutableList<Int> = mutableListOf<Int>()
+
+        return listOfItems
+
+
     }
+
     @SuppressLint("MissingPermission") // Only called when holding location permission.
     fun startLocationUpdates() {
-        _isEnathAccuracy.value=false
+        _isEnathAccuracy.value = false
         val request = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
             interval = 4000 // 10 seconds
-            fastestInterval=2000
+            fastestInterval = 2000
         }
         // Note: For this sample it's fine to use the main looper, so our callback will run on the
         // main thread. If your callback will perform any intensive operations (writing to disk,
@@ -117,47 +117,46 @@ fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
                 }}*/callback,
             Looper.getMainLooper()
         )
-       /* if (ActivityCompat.checkSelfPermission(
-                application,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                application,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-*/
+        /* if (ActivityCompat.checkSelfPermission(
+                 application,
+                 Manifest.permission.ACCESS_FINE_LOCATION
+             ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                 application,
+                 Manifest.permission.ACCESS_COARSE_LOCATION
+             ) != PackageManager.PERMISSION_GRANTED
+         ) {
+ */
 //            Log.e("getflpc",fusedLocationProviderClient.lastLocation.result.toString())
-         //   _infoLocation.value =fusedLocationProviderClient.lastLocation.result
-       /*     return
-        }*/
-        Log.e("getLocation00",fusedLocationProviderClient.toString())
+        //   _infoLocation.value =fusedLocationProviderClient.lastLocation.result
+        /*     return
+         }*/
+        Log.e("getLocation00", fusedLocationProviderClient.toString())
     }
 
-  /*  suspend fun inf()
-    {
-        Log.e("insertLocation2",infoLocation.value.toString())
-        infoLocation.value?.let {
-            val res= LocationDbModel(
-                it.time.toString(),
-                it.latitude,
-                it.longitude,
-                1,
-                it.accuracy,
-                it.speed
-            )
-            val itemsCount= locationDao.insertLocation(res)
-            Log.e("insertLocation",res.toString())
-        }
-    }*/
+    /*  suspend fun inf()
+      {
+          Log.e("insertLocation2",infoLocation.value.toString())
+          infoLocation.value?.let {
+              val res= LocationDbModel(
+                  it.time.toString(),
+                  it.latitude,
+                  it.longitude,
+                  1,
+                  it.accuracy,
+                  it.speed
+              )
+              val itemsCount= locationDao.insertLocation(res)
+              Log.e("insertLocation",res.toString())
+          }
+      }*/
 
 
-    fun updateValueDb(id:Int, newInfo:String):Int
-    {
+    fun updateValueDb(id: Int, newInfo: String): Int {
         return locationDao.updateLocationById(id, newInfo)
     }
-    fun getLastValueFromDb():LocationDbModel
-    {
-        val d=locationDao.getLastValue()
+
+    fun getLastValueFromDb(): LocationDbModel {
+        val d = locationDao.getLastValue()
         return locationDao.getLastValue()
     }
 
@@ -169,12 +168,18 @@ fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
     }
 
 
-    private inner class Callback: LocationCallback() {
+    fun updateStartTime(mTime: Long) {
+        Log.e("updateStartTimeBefore", "(${timeOfWorkinService}) onLocationChanged ${mTime}: ")
+        timeOfWorkinService = mTime
+        Log.e("updateStartTimeAfter", "(${timeOfWorkinService}) onLocationChanged ${mTime}: ")
+    }
+
+    private inner class Callback : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
             _infoLocation.value = result.lastLocation
-          //  Log.e("getflpc2",result.lastLocation.toString())
-          //  if( result.lastLocation== null)
+            //  Log.e("getflpc2",result.lastLocation.toString())
+            //  if( result.lastLocation== null)
 
 //externalScope.launch {  }
 /*
@@ -184,35 +189,46 @@ fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
             locationDao.addLocations(myLocationEntities)
         }
 */
-val ll=infoLocation.value
+
+            val endTime = SystemClock.elapsedRealtime()
+            var mMinutes = ((endTime - timeOfWorkinService) / 1000) / 60
+            Log.e(
+                "onLocationChanged1",
+                "(${timeOfWorkinService}) onLocationChanged ${endTime}: " + mMinutes.toString()
+            )
+            if (mMinutes < 3){
+            val ll = infoLocation.value
             ll?.let {
-                kalmanLatLong.Process(ll.latitude,
+                kalmanLatLong.Process(
+                    ll.latitude,
                     ll.longitude,
                     ll.accuracy,
                     ll.time
                 )
             }
 
-			//kalmanLatLong.get_lat()
-		//	kalmanLatLong.get_lng()
-			Log.e("kalmanLatLong",ll?.latitude.toString() +"#"+ll?.longitude.toString())
-			Log.e("kalmanLatLong2",kalmanLatLong.get_lat().toString() +"#"+kalmanLatLong.get_lng().toString())
-			
-            ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO)  {//Log.e("insertLocation2",infoLocation.value.toString())
-                val lastDbValue=getLastValueFromDb()
+            //kalmanLatLong.get_lat()
+            //	kalmanLatLong.get_lng()
+            Log.e("kalmanLatLong", ll?.latitude.toString() + "#" + ll?.longitude.toString())
+            Log.e(
+                "kalmanLatLong2",
+                kalmanLatLong.get_lat().toString() + "#" + kalmanLatLong.get_lng().toString()
+            )
+
+            ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {//Log.e("insertLocation2",infoLocation.value.toString())
+                val lastDbValue = getLastValueFromDb()
 
                 result.lastLocation.let {
-                    if (lastDbValue!=null)
-                    {
-                        val locA=Location("lastValue")
-                        locA.latitude=lastDbValue.latitude
-                        locA.longitude=lastDbValue.longitude
-                        val locB=Location("newValue")
-                        locB.latitude=it.latitude
-                        locB.longitude=it.longitude
-                        val dist=locA.distanceTo(locB)
-                        Log.e("distanceLastNew",dist.toString())
-                        if (dist>50) {
+                    if (lastDbValue != null) {
+                        val locA = Location("lastValue")
+                        locA.latitude = lastDbValue.latitude
+                        locA.longitude = lastDbValue.longitude
+                        val locB = Location("newValue")
+                        locB.latitude = it.latitude
+                        locB.longitude = it.longitude
+                        val dist = locA.distanceTo(locB)
+                        Log.e("distanceLastNew", dist.toString())
+                        if (dist > 50) {
                             val res = LocationDbModel(
                                 it.time.toString(),
                                 getDate(it.time),
@@ -223,17 +239,16 @@ val ll=infoLocation.value
                                 it.speed
                             )
                             val itemsCount = locationDao.insertLocation(res)
-_isEnathAccuracy.postValue(true)
+                            _isEnathAccuracy.postValue(true)
                             Log.e("insertLocation", res.toString())
+                        } else {
+                            updateValueDb(
+                                lastDbValue._id.toInt(),
+                                getDate(lastDbValue.datetime.toLong()) + "#" + getDate(it.time)
+                            )
+                            _isEnathAccuracy.postValue(true)
                         }
-                        else
-                        {
-                            updateValueDb(lastDbValue._id.toInt(),getDate(lastDbValue.datetime.toLong())+"#"+getDate(it.time))
-_isEnathAccuracy.postValue(true)
-                        }
-                    }
-                    else
-                    {
+                    } else {
                         val res = LocationDbModel(
                             it.time.toString(),
                             getDate(it.time),
@@ -244,43 +259,44 @@ _isEnathAccuracy.postValue(true)
                             it.speed
                         )
                         val itemsCount = locationDao.insertLocation(res)
-_isEnathAccuracy.postValue(true)
+                        _isEnathAccuracy.postValue(true)
 
                         Log.e("insertLocationNull", res.toString())
                     }
 
 
-
                 }
 
             }
-          /*  */
-
-            Log.e("getLocation0",infoLocation.value.toString())
+            /*  */
+            }else _isEnathAccuracy.postValue(true)
+            Log.e("getLocation0", infoLocation.value.toString())
         }
     }
+
     fun stopLocationUpdates() {
-        Log.e("getLocationStop",fusedLocationProviderClient.toString())
+        Log.e("getLocationStop", fusedLocationProviderClient.toString())
         _infoLocation.value = null
         fusedLocationProviderClient.removeLocationUpdates(callback)
     }
 
     override suspend fun getLocation(): LocationLiveData {
-         val locationData = LocationLiveData(application)
+        val locationData = LocationLiveData(application)
         return locationData
-     /*   locRepo.startLocationUpdates()
-        Log.e("locrepo",locRepo.toString())
-       return locRepo._infoLocation*/
+        /*   locRepo.startLocationUpdates()
+           Log.e("locrepo",locRepo.toString())
+          return locRepo._infoLocation*/
     }
+
     @SuppressLint("MissingPermission")
-    override suspend fun getLastLocation():LiveData<Location?> {
+    override suspend fun getLastLocation(): LiveData<Location?> {
 
         fusedLocationProviderClient.lastLocation.addOnSuccessListener {
             //val d=fusedLocationProviderClient.lastLocation.result
             _infoLocation.value = it
-            Log.e("getflpc",it.toString())
+            it.let { Log.e("getflpc", "$it") }
         }
-            return infoLocation
+        return infoLocation
         /*   locRepo.startLocationUpdates()
            Log.e("locrepo",locRepo.toString())
           return locRepo._infoLocation*/
@@ -288,42 +304,42 @@ _isEnathAccuracy.postValue(true)
 
 
     //@SuppressLint("MissingPermission")
-    override suspend fun getLocation2():LiveData<Location?> {
-       Log.e("getLocation2","getLocation2")
+    override suspend fun getLocation2(): LiveData<Location?> {
+        Log.e("getLocation2", "getLocation2")
         startLocationUpdates()
-     //   inf()
+        //   inf()
         return infoLocation
-     /*   locRepo.startLocationUpdates()
-        Log.e("locrepo",locRepo.toString())
-       return locRepo._infoLocation*/
+        /*   locRepo.startLocationUpdates()
+           Log.e("locrepo",locRepo.toString())
+          return locRepo._infoLocation*/
     }
-    override suspend fun stopData(): Int{
+
+    override suspend fun stopData(): Int {
         stopLocationUpdates()
         return 1
     }
 
-override suspend fun saveLocationOnBD(lld:LocationLiveData): Int {
-		//locRepo.startLocationUpdates()
-	//	val mLocation = locRepo.lastLocation
-    Log.e("insertLocation2",lld.toString())
-    lld.value?.let {
-        val res= LocationDbModel(
-            it.time.toString(),
-            it.time.toString(),
-            it.latitude,
-            it.longitude,
-            1,
-            it.accuracy,
-            it.speed
-        )
-        val itemsCount= locationDao.insertLocation(res)
-        Log.e("insertLocation",res.toString())
-    }
+    override suspend fun saveLocationOnBD(lld: LocationLiveData): Int {
+        //locRepo.startLocationUpdates()
+        //	val mLocation = locRepo.lastLocation
+        Log.e("insertLocation2", lld.toString())
+        lld.value?.let {
+            val res = LocationDbModel(
+                it.time.toString(),
+                it.time.toString(),
+                it.latitude,
+                it.longitude,
+                1,
+                it.accuracy,
+                it.speed
+            )
+            val itemsCount = locationDao.insertLocation(res)
+            Log.e("insertLocation", res.toString())
+        }
 
-    return  1
+        return 1
     }
 }
-
 
 
 /*
