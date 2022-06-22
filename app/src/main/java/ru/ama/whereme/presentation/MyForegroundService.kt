@@ -20,7 +20,8 @@ import javax.inject.Inject
 class MyForegroundService : LifecycleService() {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
-  private val component by lazy {
+    private lateinit var notificationManager:NotificationManager
+    private val component by lazy {
         (application as MyApp).component
     }	
      var lld2 : LiveData<Location?>?=null
@@ -33,7 +34,7 @@ class MyForegroundService : LifecycleService() {
         super.onCreate()
         log("onCreate")
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
+        startForeground(NOTIFICATION_ID, createNotification(" служба","определения местоположения"))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -48,7 +49,7 @@ class MyForegroundService : LifecycleService() {
             lloc=repo.getLastLocation().value
             //Toast.makeText(applicationContext,lloc.toString(), Toast.LENGTH_SHORT).show()
 
-            Log.d("SERVICE_TAG2", "MyForegroundService: ${lloc.toString()}")}
+            Log.e("SERVICE_TAG2", "MyForegroundService: ${lloc.toString()}")}
         coroutineScope.launch {
             sd.await()
             lloc = repo.getLocation2().value
@@ -59,13 +60,16 @@ class MyForegroundService : LifecycleService() {
         repo.isEnathAccuracy.observe(this)
         {
             if(it) {
+                updateMainNotify("1","2")
                 coroutineScope.launch {
                     repo.runWorker(300)
                 }
                 stopSelf()
             }
         }
-
+repo.kolvoPopytok.observe(this){
+    updateMainNotify("число попыток:", it)
+}
 
 		
         return START_STICKY
@@ -87,7 +91,7 @@ class MyForegroundService : LifecycleService() {
     }
 
     private fun createNotificationChannel() {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationChannel = NotificationChannel(
                 CHANNEL_ID,
@@ -98,9 +102,22 @@ class MyForegroundService : LifecycleService() {
         }
     }
 
-    private fun createNotification() = NotificationCompat.Builder(this, CHANNEL_ID)
-        .setContentTitle("служба")
-        .setContentText("опеределения местоположения")
+
+	fun updateMainNotify(tit:String,mes:String)
+    {
+        /*val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationChannel =
+                NotificationChannel("101", "channel", NotificationManager.IMPORTANCE_DEFAULT)
+            notificationManager.createNotificationChannel(notificationChannel)
+        }*/
+        notificationManager.notify(NOTIFICATION_ID, createNotification(tit,mes))
+    }
+
+    private fun createNotification(tit:String,mes:String) = NotificationCompat.Builder(this, CHANNEL_ID)
+        .setContentTitle(tit)
+        .setContentText(mes)
         .setSmallIcon(R.drawable.ic_launcher_background)
         .build()
 

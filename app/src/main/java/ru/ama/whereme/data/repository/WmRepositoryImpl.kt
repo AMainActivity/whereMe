@@ -37,6 +37,7 @@ class WmRepositoryImpl @Inject constructor(
     @ApplicationScope private val externalScope: CoroutineScope
 ) : WmRepository {
 
+    private var mPopytka:Int=0
     private var timeOfWorkinService:Long=0
     val kalmanLatLong = KalmanLatLong(1f)
     private val callback = Callback()
@@ -44,6 +45,10 @@ class WmRepositoryImpl @Inject constructor(
     private val _infoLocation = MutableLiveData<Location?>()
     val infoLocation: LiveData<Location?>
         get() = _infoLocation
+
+    private val _kolvoPopytok = MutableLiveData<String>()
+    val kolvoPopytok: LiveData<String>
+        get() = _kolvoPopytok
 
     private val _isEnathAccuracy = MutableLiveData<Boolean>()
     val isEnathAccuracy: LiveData<Boolean>
@@ -100,9 +105,11 @@ class WmRepositoryImpl @Inject constructor(
         _isEnathAccuracy.value = false
         val request = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            interval = 4000 // 10 seconds
-            fastestInterval = 2000
+            interval = 15000
+            fastestInterval = 15000
         }
+        mPopytka=0
+
         // Note: For this sample it's fine to use the main looper, so our callback will run on the
         // main thread. If your callback will perform any intensive operations (writing to disk,
         // making a network request, etc.), either change to a background thread from the callback,
@@ -178,6 +185,8 @@ class WmRepositoryImpl @Inject constructor(
         override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
             _infoLocation.value = result.lastLocation
+            mPopytka++
+            _kolvoPopytok.value= "$mPopytka"
             //  Log.e("getflpc2",result.lastLocation.toString())
             //  if( result.lastLocation== null)
 
