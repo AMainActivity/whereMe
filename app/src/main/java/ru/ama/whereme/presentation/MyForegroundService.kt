@@ -62,6 +62,7 @@ class MyForegroundService : LifecycleService() {
             if(it) {
                 updateMainNotify("1","2")
                 coroutineScope.launch {
+                    repo.stopLocationUpdates()
                     repo.runWorker(300)
                 }
                 stopSelf()
@@ -77,9 +78,9 @@ repo.kolvoPopytok.observe(this){
 
     override fun onDestroy() {
         super.onDestroy()
-			coroutineScope.launch {
-                repo.stopLocationUpdates()
-		}
+		//	coroutineScope.launch {
+              //  repo.stopLocationUpdates()
+		//}
         coroutineScope.cancel()
         log("onDestroy")
     }

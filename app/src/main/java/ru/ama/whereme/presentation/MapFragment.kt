@@ -7,17 +7,15 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.*
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.fragment.findNavController
 import com.google.gson.Gson
-import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentFirstBinding
 import javax.inject.Inject
 
@@ -57,19 +55,7 @@ class MapFragment : Fragment() {
         }*/
 
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
-           viewModel.lld2?.observe(viewLifecycleOwner) {
-				//	Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
-               Log.e("getLocation22",it.toString())
-			   
-			   val postData= Gson().toJson(it).toString()
-			  /* "[{\"title\": \"место 1\", " +
-                       " \"lat\": \"${it?.latitude.toString()}\", " +
-                       " \"lon\": \"${it?.longitude.toString()}\","+
-               "\"accuracy\": \"${it?.accuracy.toString()}\"}]";*/
-			   binding.frgmntLocations.evaluateJavascript("javascript:fromAndroid(${postData})", null)
 
-               Log.e("getLocation23",postData)
-           }
 		  if (Build.VERSION.SDK_INT >= 11) {
             val settings: WebSettings = binding.frgmntLocations.settings
             settings.setBuiltInZoomControls(false)
@@ -91,6 +77,23 @@ class MapFragment : Fragment() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 view?.loadUrl(url!!)
                 return true
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                viewModel.lld2?.observe(viewLifecycleOwner) {
+                    //	Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
+                    Log.e("getLocation22",it.toString())
+
+                    val postData= Gson().toJson(it).toString()
+                    /* "[{\"title\": \"место 1\", " +
+                             " \"lat\": \"${it?.latitude.toString()}\", " +
+                             " \"lon\": \"${it?.longitude.toString()}\","+
+                     "\"accuracy\": \"${it?.accuracy.toString()}\"}]";*/
+                    binding.frgmntLocations.evaluateJavascript("javascript:fromAndroid(${postData})", null)
+
+                    Log.e("getLocation23",postData)
+                }
             }
         }
         binding.frgmntLocations.settings.javaScriptEnabled = true
