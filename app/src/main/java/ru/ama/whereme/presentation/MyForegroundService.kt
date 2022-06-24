@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.*
 import ru.ama.whereme.R
 import ru.ama.whereme.data.repository.WmRepositoryImpl
@@ -26,9 +27,14 @@ class MyForegroundService : LifecycleService() {
     }	
      var lld2 : LiveData<Location?>?=null
     
-	@Inject
-    lateinit var repo: WmRepositoryImpl
-	
+	//@Inject
+  //  lateinit var repo: WmRepositoryImpl
+
+    private lateinit var viewModel: ServiceViewModel
+    @Inject
+    lateinit var viewModelFactory: ViewModelFactory
+
+
     override fun onCreate() {
 		component.inject(this)
         super.onCreate()
@@ -40,6 +46,8 @@ class MyForegroundService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         log("onStartCommand")
+        viewModel = ViewModelProvider(application, viewModelFactory)[ServiceViewModel::class.java]
+
         repo.updateStartTime(SystemClock.elapsedRealtime())
        /*coroutineScope.launch {
         lld2 = repo.getLocation2()

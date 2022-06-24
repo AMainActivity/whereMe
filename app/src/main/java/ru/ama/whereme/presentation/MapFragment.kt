@@ -55,7 +55,6 @@ class MapFragment : Fragment() {
         }*/
 
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
-
 		  if (Build.VERSION.SDK_INT >= 11) {
             val settings: WebSettings = binding.frgmntLocations.settings
             settings.setBuiltInZoomControls(false)
