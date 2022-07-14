@@ -9,16 +9,15 @@ import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.NonNull
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.*
 import kotlinx.coroutines.*
 import ru.ama.whereme.R
-import ru.ama.whereme.data.repository.WmRepositoryImpl
 import javax.inject.Inject
 
-class MyForegroundService : LifecycleService() {
+
+class MyForegroundService : LifecycleService(), ViewModelStoreOwner {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private lateinit var notificationManager:NotificationManager
@@ -41,12 +40,24 @@ class MyForegroundService : LifecycleService() {
         log("onCreate")
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification(" служба","определения местоположения"))
+        lifecycle.addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(
+                @NonNull source: LifecycleOwner,
+                @NonNull event: Lifecycle.Event
+            ) {
+                if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+                    mViewModelStore.clear()
+                    source.lifecycle.removeObserver(this)
+                }
+            }
+        })
+
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         log("onStartCommand")
-        viewModel = ViewModelProvider(application, viewModelFactory)[ServiceViewModel::class.java]
+        viewModel = ViewModelProvider(mViewModelStore, viewModelFactory)[ServiceViewModel::class.java]
 
         repo.updateStartTime(SystemClock.elapsedRealtime())
        /*coroutineScope.launch {
@@ -135,9 +146,13 @@ repo.kolvoPopytok.observe(this){
         private const val CHANNEL_ID = "channel_id"
         private const val CHANNEL_NAME = "channel_name"
         private const val NOTIFICATION_ID = 1
-
+        var mViewModelStore = ViewModelStore()
         fun newIntent(context: Context): Intent {
             return Intent(context, MyForegroundService::class.java)
         }
+    }
+
+    override fun getViewModelStore(): ViewModelStore {
+        return mViewModelStore;
     }
 }
