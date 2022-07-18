@@ -37,14 +37,18 @@ class WmRepositoryImpl @Inject constructor(
     @ApplicationScope private val externalScope: CoroutineScope
 ) : WmRepository {
 
+
+
+    var onLocationChangedListener: ((LocationResult) -> Unit)? = null
+
     private var mPopytka:Int=0
     private var timeOfWorkinService:Long=0
     val kalmanLatLong = KalmanLatLong(1f)
     private val callback = Callback()
 
-    private val _infoLocation = MutableLiveData<Location?>()
+  /*  private val _infoLocation = MutableLiveData<Location?>()
     val infoLocation: LiveData<Location?>
-        get() = _infoLocation
+        get() = _infoLocation*/
 
     private val _kolvoPopytok = MutableLiveData<String>()
     val kolvoPopytok: LiveData<String>
@@ -122,8 +126,7 @@ class WmRepositoryImpl @Inject constructor(
                     super.onLocationResult(locationResult)
                     Log.e("getLocation0",locationResult.lastLocation.toString())
                 }}*/callback,
-            Looper.getMainLooper()
-        )
+            Looper.myLooper()!!        )
         /* if (ActivityCompat.checkSelfPermission(
                  application,
                  Manifest.permission.ACCESS_FINE_LOCATION
@@ -176,7 +179,7 @@ class WmRepositoryImpl @Inject constructor(
 
 
     fun updateStartTime(mTime: Long) {
-        Log.e("updateStartTimeBefore", "(${timeOfWorkinService}) onLocationChanged ${mTime}: ")
+        Log.e("updateStartTimeBefore", "(${timeOfWorkinService}) getLocation00nged ${mTime}: ")
         timeOfWorkinService = mTime
         Log.e("updateStartTimeAfter", "(${timeOfWorkinService}) onLocationChanged ${mTime}: ")
     }
@@ -184,7 +187,10 @@ class WmRepositoryImpl @Inject constructor(
     private inner class Callback : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
-            _infoLocation.value = result.lastLocation
+			
+			onLocationChangedListener?.invoke(result)
+			
+        //    _infoLocation.value = result.lastLocation
             mPopytka++
             _kolvoPopytok.value= "$mPopytka"
             //  Log.e("getflpc2",result.lastLocation.toString())
@@ -206,7 +212,7 @@ class WmRepositoryImpl @Inject constructor(
                 "(${timeOfWorkinService}) onLocationChanged ${endTime}: " + mMinutes.toString()
             )
             if (mMinutes < 3){
-            val ll = infoLocation.value
+            /*val ll = infoLocation.value
             ll?.let {
                 kalmanLatLong.Process(
                     ll.latitude,
@@ -214,17 +220,17 @@ class WmRepositoryImpl @Inject constructor(
                     ll.accuracy,
                     ll.time
                 )
-            }
+            }*/
 
             //kalmanLatLong.get_lat()
             //	kalmanLatLong.get_lng()
-            Log.e("kalmanLatLong", ll?.latitude.toString() + "#" + ll?.longitude.toString())
+            //Log.e("kalmanLatLong", ll?.latitude.toString() + "#" + ll?.longitude.toString())
             Log.e(
                 "kalmanLatLong2",
                 kalmanLatLong.get_lat().toString() + "#" + kalmanLatLong.get_lng().toString()
             )
 
-            ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {//Log.e("insertLocation2",infoLocation.value.toString())
+            /*ProcessLifecycleOwner.get().lifecycleScope*/externalScope.launch(Dispatchers.IO) {//Log.e("insertLocation2",infoLocation.value.toString())
                 val lastDbValue = getLastValueFromDb()
 
                 result.lastLocation.let {
@@ -279,13 +285,13 @@ class WmRepositoryImpl @Inject constructor(
             }
             /*  */
             }else _isEnathAccuracy.postValue(true)
-            Log.e("getLocation0", infoLocation.value.toString())
+         //   Log.e("getLocation0", infoLocation.value.toString())
         }
     }
 
     fun stopLocationUpdates() {
         Log.e("getLocationStop", fusedLocationProviderClient.toString())
-        _infoLocation.value = null
+  //      _infoLocation.value = null
         fusedLocationProviderClient.removeLocationUpdates(callback)
     }
 
@@ -298,14 +304,15 @@ class WmRepositoryImpl @Inject constructor(
     }
 
     @SuppressLint("MissingPermission")
-    override suspend fun getLastLocation(): LiveData<Location?> {
-
+    override suspend fun getLastLocation(): Location? {
+    var ddsf:Location?=null
         fusedLocationProviderClient.lastLocation.addOnSuccessListener {
             //val d=fusedLocationProviderClient.lastLocation.result
-            _infoLocation.value = it
+        //    _infoLocation.value = it
+            ddsf=it
             it.let { Log.e("getflpc", "$it") }
         }
-        return infoLocation
+        return ddsf
         /*   locRepo.startLocationUpdates()
            Log.e("locrepo",locRepo.toString())
           return locRepo._infoLocation*/
@@ -313,15 +320,13 @@ class WmRepositoryImpl @Inject constructor(
 
 
     //@SuppressLint("MissingPermission")
-    override suspend fun getLocation2(): LiveData<Location?> {
+    /*override suspend fun getLocation2(): LiveData<Location?> {
         Log.e("getLocation2", "getLocation2")
         startLocationUpdates()
         //   inf()
         return infoLocation
-        /*   locRepo.startLocationUpdates()
-           Log.e("locrepo",locRepo.toString())
-          return locRepo._infoLocation*/
-    }
+
+    }*/
 
     override suspend fun stopData(): Int {
         stopLocationUpdates()

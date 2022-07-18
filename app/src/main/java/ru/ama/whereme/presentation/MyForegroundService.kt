@@ -9,15 +9,16 @@ import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
-import androidx.annotation.NonNull
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.*
+import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.*
 import ru.ama.whereme.R
+import ru.ama.whereme.data.repository.WmRepositoryImpl
 import javax.inject.Inject
 
-
-class MyForegroundService : LifecycleService(), ViewModelStoreOwner {
+class MyForegroundService : LifecycleService() {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private lateinit var notificationManager:NotificationManager
@@ -26,12 +27,12 @@ class MyForegroundService : LifecycleService(), ViewModelStoreOwner {
     }	
      var lld2 : LiveData<Location?>?=null
     
-	//@Inject
-  //  lateinit var repo: WmRepositoryImpl
+	@Inject
+    lateinit var repo: WmRepositoryImpl
 
-    private lateinit var viewModel: ServiceViewModel
+   /* private lateinit var viewModel: ServiceViewModel
     @Inject
-    lateinit var viewModelFactory: ViewModelFactory
+    lateinit var viewModelFactory: ViewModelFactory*/
 
 
     override fun onCreate() {
@@ -40,24 +41,16 @@ class MyForegroundService : LifecycleService(), ViewModelStoreOwner {
         log("onCreate")
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification(" служба","определения местоположения"))
-        lifecycle.addObserver(object : LifecycleEventObserver {
-            override fun onStateChanged(
-                @NonNull source: LifecycleOwner,
-                @NonNull event: Lifecycle.Event
-            ) {
-                if (source.lifecycle.currentState == Lifecycle.State.DESTROYED) {
-                    mViewModelStore.clear()
-                    source.lifecycle.removeObserver(this)
-                }
-            }
-        })
-
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         log("onStartCommand")
-        viewModel = ViewModelProvider(mViewModelStore, viewModelFactory)[ServiceViewModel::class.java]
+      //  viewModel = ViewModelProvider(application, viewModelFactory)[ServiceViewModel::class.java]
+
+		repo.onLocationChangedListener = {
+            it //=  result: LocationResult
+        }
 
         repo.updateStartTime(SystemClock.elapsedRealtime())
        /*coroutineScope.launch {
@@ -65,13 +58,14 @@ class MyForegroundService : LifecycleService(), ViewModelStoreOwner {
 }*/   var lloc:Location?=null
 
         val sd=coroutineScope.async {
-            lloc=repo.getLastLocation().value
+          //  lloc=repo.getLastLocation().value
+            repo.startLocationUpdates()
             //Toast.makeText(applicationContext,lloc.toString(), Toast.LENGTH_SHORT).show()
 
             Log.e("SERVICE_TAG2", "MyForegroundService: ${lloc.toString()}")}
         coroutineScope.launch {
             sd.await()
-            lloc = repo.getLocation2().value
+          //  lloc = repo.getLocation2().value
         }
         Toast.makeText(applicationContext,lloc.toString(), Toast.LENGTH_SHORT).show()
         log(lld2?.value.toString())
@@ -146,13 +140,9 @@ repo.kolvoPopytok.observe(this){
         private const val CHANNEL_ID = "channel_id"
         private const val CHANNEL_NAME = "channel_name"
         private const val NOTIFICATION_ID = 1
-        var mViewModelStore = ViewModelStore()
+
         fun newIntent(context: Context): Intent {
             return Intent(context, MyForegroundService::class.java)
         }
-    }
-
-    override fun getViewModelStore(): ViewModelStore {
-        return mViewModelStore;
     }
 }

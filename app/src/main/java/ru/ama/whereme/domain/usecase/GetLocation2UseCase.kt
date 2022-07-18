@@ -7,5 +7,5 @@ class GetLocation2UseCase @Inject constructor(
     private val repository: WmRepository
 ) {
 
-    operator  suspend fun invoke() = repository.getLocation2()
+//    operator  suspend fun invoke() = repository.getLocation2()
 }

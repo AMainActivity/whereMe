@@ -19,6 +19,6 @@ interface WmRepository {
 	fun runWorker(timeInterval:Long)
 
     suspend fun getLocation() : LocationLiveData
-    suspend fun getLocation2() : LiveData<Location?>
-    suspend fun getLastLocation() : LiveData<Location?>
+   // suspend fun getLocation2() : LiveData<Location?>
+    suspend fun getLastLocation() : Location?
 }

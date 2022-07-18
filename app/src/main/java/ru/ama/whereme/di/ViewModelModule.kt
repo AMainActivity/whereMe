@@ -19,8 +19,8 @@ interface ViewModelModule {
     @IntoMap
     @ViewModelKey(MapViewModel::class)
     fun bindMapViewModel(viewModel: MapViewModel): ViewModel
- @Binds
+ /*@Binds
     @IntoMap
     @ViewModelKey(ServiceViewModel::class)
-    fun bindServiceViewModel(viewModel: ServiceViewModel): ViewModel
+    fun bindServiceViewModel(viewModel: ServiceViewModel): ViewModel*/
 }
