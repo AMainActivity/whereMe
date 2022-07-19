@@ -12,6 +12,9 @@ import androidx.lifecycle.*
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
 import com.google.android.gms.location.*
+import com.google.android.gms.tasks.OnFailureListener
+import com.google.android.gms.tasks.OnSuccessListener
+import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -102,7 +105,27 @@ class WmRepositoryImpl @Inject constructor(
 
 
     }
-
+    fun checkLocationService(
+        fragment: Fragment,
+        client: FusedLocationProviderClient?,
+        successListener: OnSuccessListener<LocationSettingsResponse?>,
+        failureListener: OnFailureListener?
+    ) {
+        LogHelper.trace("checkLocationService")
+        val request: LocationRequest = createLocationRequest()
+        val builder = LocationSettingsRequest.Builder()
+            .addLocationRequest(request)
+        val settingsClient = LocationServices.getSettingsClient(fragment.getActivity())
+        val task: Task<LocationSettingsResponse> =
+            settingsClient.checkLocationSettings(builder.build())
+        task.addOnSuccessListener(fragment.getActivity(),
+            OnSuccessListener<LocationSettingsResponse?> { locationSettingsResponse ->
+                LogHelper.trace("onSuccess")
+                startLocationService(client, request, LocationCallback())
+                successListener.onSuccess(locationSettingsResponse)
+            })
+        task.addOnFailureListener(fragment.getActivity(), failureListener)
+    }
     @SuppressLint("MissingPermission") // Only called when holding location permission.
     fun startLocationUpdates() {
         _isEnathAccuracy.value = false
