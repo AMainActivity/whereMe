@@ -38,17 +38,16 @@ class WmRepositoryImpl @Inject constructor(
 ) : WmRepository {
 
 
-
     var onLocationChangedListener: ((LocationResult) -> Unit)? = null
 
-    private var mPopytka:Int=0
-    private var timeOfWorkinService:Long=0
+    private var mPopytka: Int = 0
+    private var timeOfWorkinService: Long = 0
     val kalmanLatLong = KalmanLatLong(1f)
     private val callback = Callback()
 
-  /*  private val _infoLocation = MutableLiveData<Location?>()
-    val infoLocation: LiveData<Location?>
-        get() = _infoLocation*/
+    /*  private val _infoLocation = MutableLiveData<Location?>()
+      val infoLocation: LiveData<Location?>
+          get() = _infoLocation*/
 
     private val _kolvoPopytok = MutableLiveData<String>()
     val kolvoPopytok: LiveData<String>
@@ -112,7 +111,7 @@ class WmRepositoryImpl @Inject constructor(
             interval = 15000
             fastestInterval = 15000
         }
-        mPopytka=0
+        mPopytka = 0
 
         // Note: For this sample it's fine to use the main looper, so our callback will run on the
         // main thread. If your callback will perform any intensive operations (writing to disk,
@@ -126,7 +125,8 @@ class WmRepositoryImpl @Inject constructor(
                     super.onLocationResult(locationResult)
                     Log.e("getLocation0",locationResult.lastLocation.toString())
                 }}*/callback,
-            Looper.myLooper()!!        )
+            Looper.myLooper()!!
+        )
         /* if (ActivityCompat.checkSelfPermission(
                  application,
                  Manifest.permission.ACCESS_FINE_LOCATION
@@ -187,12 +187,12 @@ class WmRepositoryImpl @Inject constructor(
     private inner class Callback : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
-			
-			onLocationChangedListener?.invoke(result)
-			
-        //    _infoLocation.value = result.lastLocation
+
+            onLocationChangedListener?.invoke(result)
+
+            //    _infoLocation.value = result.lastLocation
             mPopytka++
-            _kolvoPopytok.value= "$mPopytka"
+            _kolvoPopytok.value = "$mPopytka"
             //  Log.e("getflpc2",result.lastLocation.toString())
             //  if( result.lastLocation== null)
 
@@ -211,7 +211,7 @@ class WmRepositoryImpl @Inject constructor(
                 "onLocationChanged1",
                 "(${timeOfWorkinService}) onLocationChanged ${endTime}: " + mMinutes.toString()
             )
-            if (mMinutes < 3){
+            ///   if (mMinutes < 3){
             /*val ll = infoLocation.value
             ll?.let {
                 kalmanLatLong.Process(
@@ -225,25 +225,46 @@ class WmRepositoryImpl @Inject constructor(
             //kalmanLatLong.get_lat()
             //	kalmanLatLong.get_lng()
             //Log.e("kalmanLatLong", ll?.latitude.toString() + "#" + ll?.longitude.toString())
-            Log.e(
-                "kalmanLatLong2",
-                kalmanLatLong.get_lat().toString() + "#" + kalmanLatLong.get_lng().toString()
-            )
+            /**   Log.e(
+            "kalmanLatLong2",
+            kalmanLatLong.get_lat().toString() + "#" + kalmanLatLong.get_lng().toString()
+            )*/
 
-            /*ProcessLifecycleOwner.get().lifecycleScope*/externalScope.launch(Dispatchers.IO) {//Log.e("insertLocation2",infoLocation.value.toString())
-                val lastDbValue = getLastValueFromDb()
+            if (result.lastLocation != null && result.lastLocation.accuracy < 200) {
+                /*ProcessLifecycleOwner.get().lifecycleScope*/externalScope.launch(Dispatchers.IO) {//Log.e("insertLocation2",infoLocation.value.toString())
+                    val lastDbValue = getLastValueFromDb()
 
-                result.lastLocation.let {
-                    if (lastDbValue != null) {
-                        val locA = Location("lastValue")
-                        locA.latitude = lastDbValue.latitude
-                        locA.longitude = lastDbValue.longitude
-                        val locB = Location("newValue")
-                        locB.latitude = it.latitude
-                        locB.longitude = it.longitude
-                        val dist = locA.distanceTo(locB)
-                        Log.e("distanceLastNew", dist.toString())
-                        if (dist > 50) {
+                    result.lastLocation.let {
+                        if (lastDbValue != null) {
+                            val locA = Location("lastValue")
+                            locA.latitude = lastDbValue.latitude
+                            locA.longitude = lastDbValue.longitude
+                            val locB = Location("newValue")
+                            locB.latitude = it.latitude
+                            locB.longitude = it.longitude
+                            val dist = locA.distanceTo(locB)
+                            Log.e("distanceLastNew", dist.toString())
+                            if (dist > 50) {
+                                val res = LocationDbModel(
+                                    it.time.toString(),
+                                    getDate(it.time),
+                                    it.latitude,
+                                    it.longitude,
+                                    1,
+                                    it.accuracy,
+                                    it.speed
+                                )
+                                val itemsCount = locationDao.insertLocation(res)
+                                _isEnathAccuracy.postValue(true)
+                                Log.e("insertLocation", res.toString())
+                            } else {
+                                updateValueDb(
+                                    lastDbValue._id.toInt(),
+                                    getDate(lastDbValue.datetime.toLong()) + "#" + getDate(it.time)
+                                )
+                                _isEnathAccuracy.postValue(true)
+                            }
+                        } else {
                             val res = LocationDbModel(
                                 it.time.toString(),
                                 getDate(it.time),
@@ -255,43 +276,24 @@ class WmRepositoryImpl @Inject constructor(
                             )
                             val itemsCount = locationDao.insertLocation(res)
                             _isEnathAccuracy.postValue(true)
-                            Log.e("insertLocation", res.toString())
-                        } else {
-                            updateValueDb(
-                                lastDbValue._id.toInt(),
-                                getDate(lastDbValue.datetime.toLong()) + "#" + getDate(it.time)
-                            )
-                            _isEnathAccuracy.postValue(true)
-                        }
-                    } else {
-                        val res = LocationDbModel(
-                            it.time.toString(),
-                            getDate(it.time),
-                            it.latitude,
-                            it.longitude,
-                            1,
-                            it.accuracy,
-                            it.speed
-                        )
-                        val itemsCount = locationDao.insertLocation(res)
-                        _isEnathAccuracy.postValue(true)
 
-                        Log.e("insertLocationNull", res.toString())
+                            Log.e("insertLocationNull", res.toString())
+                        }
+
+
                     }
 
-
                 }
-
             }
             /*  */
-            }else _isEnathAccuracy.postValue(true)
-         //   Log.e("getLocation0", infoLocation.value.toString())
+            //    }else _isEnathAccuracy.postValue(true)
+            //   Log.e("getLocation0", infoLocation.value.toString())
         }
     }
 
     fun stopLocationUpdates() {
         Log.e("getLocationStop", fusedLocationProviderClient.toString())
-  //      _infoLocation.value = null
+        //      _infoLocation.value = null
         fusedLocationProviderClient.removeLocationUpdates(callback)
     }
 
@@ -305,11 +307,11 @@ class WmRepositoryImpl @Inject constructor(
 
     @SuppressLint("MissingPermission")
     override suspend fun getLastLocation(): Location? {
-    var ddsf:Location?=null
+        var ddsf: Location? = null
         fusedLocationProviderClient.lastLocation.addOnSuccessListener {
             //val d=fusedLocationProviderClient.lastLocation.result
-        //    _infoLocation.value = it
-            ddsf=it
+            //    _infoLocation.value = it
+            ddsf = it
             it.let { Log.e("getflpc", "$it") }
         }
         return ddsf
