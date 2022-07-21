@@ -7,7 +7,6 @@ import dagger.Module
 import dagger.multibindings.IntoMap
 import ru.ama.whereme.presentation.MapViewModel
 import ru.ama.whereme.presentation.MaViewModel
-import ru.ama.whereme.presentation.ServiceViewModel
 
 @Module
 interface ViewModelModule {

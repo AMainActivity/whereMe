@@ -8,16 +8,24 @@ import android.location.Location
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.*
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.*
 import com.google.android.gms.tasks.OnFailureListener
 import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.data.location.KalmanLatLong
@@ -37,24 +45,24 @@ class WmRepositoryImpl @Inject constructor(
     private val locationDao: LocationDao,
     private val application: Application,
     private val fusedLocationProviderClient: FusedLocationProviderClient,
-    @ApplicationScope private val externalScope: CoroutineScope
+    @ApplicationScope private val externalScope: CoroutineScope,
+    private val googleApiAvailability: GoogleApiAvailability,
+    private val dataStore: DataStore<Preferences>
 ) : WmRepository {
 
 
+    var mBestLoc = Location("bestLocationOfBadAccuracy")
     var onLocationChangedListener: ((LocationResult) -> Unit)? = null
 
-    private var mPopytka: Int = 0
-    private var timeOfWorkinService: Long = 0
-    val kalmanLatLong = KalmanLatLong(1f)
     private val callback = Callback()
 
-    /*  private val _infoLocation = MutableLiveData<Location?>()
-      val infoLocation: LiveData<Location?>
-          get() = _infoLocation*/
 
-    private val _kolvoPopytok = MutableLiveData<String>()
-    val kolvoPopytok: LiveData<String>
-        get() = _kolvoPopytok
+ suspend fun isGooglePlayServicesAvailable(): Boolean = withContext(Dispatchers.Default) {
+        when (googleApiAvailability.isGooglePlayServicesAvailable(application)) {
+            ConnectionResult.SUCCESS -> true
+            else -> false
+        }
+    }
 
     private val _isEnathAccuracy = MutableLiveData<Boolean>()
     val isEnathAccuracy: LiveData<Boolean>
@@ -78,16 +86,7 @@ class WmRepositoryImpl @Inject constructor(
         Log.e("runWorker", "" + timeInterval)
     }
 
-/*
-  override fun loadData() {
-        val workManager = WorkManager.getInstance(application)
-        workManager.enqueueUniqueWork(
-            RefreshDataWorker.NAME,
-            ExistingWorkPolicy.REPLACE,
-            RefreshDataWorker.makeRequest()
-        )
-    }
-*/
+
 
 
     override suspend fun GetLocationsFromBd(): LiveData<List<LocationDb>> {
@@ -105,83 +104,32 @@ class WmRepositoryImpl @Inject constructor(
 
 
     }
-    fun checkLocationService(
-        fragment: Fragment,
-        client: FusedLocationProviderClient?,
-        successListener: OnSuccessListener<LocationSettingsResponse?>,
-        failureListener: OnFailureListener?
-    ) {
-        LogHelper.trace("checkLocationService")
-        val request: LocationRequest = createLocationRequest()
-        val builder = LocationSettingsRequest.Builder()
-            .addLocationRequest(request)
-        val settingsClient = LocationServices.getSettingsClient(fragment.getActivity())
-        val task: Task<LocationSettingsResponse> =
-            settingsClient.checkLocationSettings(builder.build())
-        task.addOnSuccessListener(fragment.getActivity(),
-            OnSuccessListener<LocationSettingsResponse?> { locationSettingsResponse ->
-                LogHelper.trace("onSuccess")
-                startLocationService(client, request, LocationCallback())
-                successListener.onSuccess(locationSettingsResponse)
-            })
-        task.addOnFailureListener(fragment.getActivity(), failureListener)
-    }
-    @SuppressLint("MissingPermission") // Only called when holding location permission.
+
+	
+	
+	
+    @SuppressLint("MissingPermission") 
     fun startLocationUpdates() {
+		  mBestLoc.latitude=0.0
+        mBestLoc.longitude=0.0
+        mBestLoc.accuracy=0f
+        mBestLoc.speed=0f
+        mBestLoc.time=0
         _isEnathAccuracy.value = false
         val request = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            interval = 15000
-            fastestInterval = 15000
+            interval = 10000
+            fastestInterval = 10000
         }
-        mPopytka = 0
 
-        // Note: For this sample it's fine to use the main looper, so our callback will run on the
-        // main thread. If your callback will perform any intensive operations (writing to disk,
-        // making a network request, etc.), either change to a background thread from the callback,
-        // or create a HandlerThread and pass its Looper here instead.
-        // See https://developer.android.com/reference/android/os/HandlerThread.
         fusedLocationProviderClient.requestLocationUpdates(
-            request,
-            /*object : LocationCallback() {
-                override fun onLocationResult(locationResult: LocationResult) {
-                    super.onLocationResult(locationResult)
-                    Log.e("getLocation0",locationResult.lastLocation.toString())
-                }}*/callback,
+            request,callback,
             Looper.myLooper()!!
         )
-        /* if (ActivityCompat.checkSelfPermission(
-                 application,
-                 Manifest.permission.ACCESS_FINE_LOCATION
-             ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                 application,
-                 Manifest.permission.ACCESS_COARSE_LOCATION
-             ) != PackageManager.PERMISSION_GRANTED
-         ) {
- */
-//            Log.e("getflpc",fusedLocationProviderClient.lastLocation.result.toString())
-        //   _infoLocation.value =fusedLocationProviderClient.lastLocation.result
-        /*     return
-         }*/
         Log.e("getLocation00", fusedLocationProviderClient.toString())
     }
 
-    /*  suspend fun inf()
-      {
-          Log.e("insertLocation2",infoLocation.value.toString())
-          infoLocation.value?.let {
-              val res= LocationDbModel(
-                  it.time.toString(),
-                  it.latitude,
-                  it.longitude,
-                  1,
-                  it.accuracy,
-                  it.speed
-              )
-              val itemsCount= locationDao.insertLocation(res)
-              Log.e("insertLocation",res.toString())
-          }
-      }*/
+
 
 
     fun updateValueDb(id: Int, newInfo: String): Int {
@@ -200,61 +148,45 @@ class WmRepositoryImpl @Inject constructor(
         return formatter.format(calendar.getTime())
     }
 
-
-    fun updateStartTime(mTime: Long) {
-        Log.e("updateStartTimeBefore", "(${timeOfWorkinService}) getLocation00nged ${mTime}: ")
-        timeOfWorkinService = mTime
-        Log.e("updateStartTimeAfter", "(${timeOfWorkinService}) onLocationChanged ${mTime}: ")
-    }
+   
+   suspend fun saveLocation(location:Location)
+   {
+	    val res = LocationDbModel(
+                                location.time.toString(),
+                                getDate(location.time),
+                                location.latitude,
+                                location.longitude,
+                                1,
+                                location.accuracy,
+                                location.speed
+                            )
+                            val itemsCount = locationDao.insertLocation(res)
+                            _isEnathAccuracy.postValue(true)
+   }
+   
 
     private inner class Callback : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
 
             onLocationChangedListener?.invoke(result)
+  
 
-            //    _infoLocation.value = result.lastLocation
-            mPopytka++
-            _kolvoPopytok.value = "$mPopytka"
-            //  Log.e("getflpc2",result.lastLocation.toString())
-            //  if( result.lastLocation== null)
-
-//externalScope.launch {  }
-/*
- executor=Executors.newSingleThreadExecutor()
- 
-   executor.execute {
-            locationDao.addLocations(myLocationEntities)
-        }
-*/
-
-            val endTime = SystemClock.elapsedRealtime()
-            var mMinutes = ((endTime - timeOfWorkinService) / 1000) / 60
-            Log.e(
-                "onLocationChanged1",
-                "(${timeOfWorkinService}) onLocationChanged ${endTime}: " + mMinutes.toString()
-            )
-            ///   if (mMinutes < 3){
-            /*val ll = infoLocation.value
-            ll?.let {
-                kalmanLatLong.Process(
-                    ll.latitude,
-                    ll.longitude,
-                    ll.accuracy,
-                    ll.time
-                )
-            }*/
-
-            //kalmanLatLong.get_lat()
-            //	kalmanLatLong.get_lng()
-            //Log.e("kalmanLatLong", ll?.latitude.toString() + "#" + ll?.longitude.toString())
-            /**   Log.e(
-            "kalmanLatLong2",
-            kalmanLatLong.get_lat().toString() + "#" + kalmanLatLong.get_lng().toString()
-            )*/
+      
+           
+		   
+		   if (mBestLoc.longitude==0.0||result.lastLocation.accuracy < mBestLoc.accuracy)
+                           {
+                               mBestLoc.latitude=result.lastLocation.latitude
+                               mBestLoc.longitude=result.lastLocation.longitude
+                               mBestLoc.accuracy=result.lastLocation.accuracy
+                               mBestLoc.speed=result.lastLocation.speed
+                               mBestLoc.time=result.lastLocation.time
+                           }
 
             if (result.lastLocation != null && result.lastLocation.accuracy < 200) {
-                /*ProcessLifecycleOwner.get().lifecycleScope*/externalScope.launch(Dispatchers.IO) {//Log.e("insertLocation2",infoLocation.value.toString())
+                /*ProcessLifecycleOwner.get().lifecycleScope*/
+				externalScope.launch(Dispatchers.IO) {
                     val lastDbValue = getLastValueFromDb()
 
                     result.lastLocation.let {
@@ -308,50 +240,31 @@ class WmRepositoryImpl @Inject constructor(
 
                 }
             }
-            /*  */
-            //    }else _isEnathAccuracy.postValue(true)
-            //   Log.e("getLocation0", infoLocation.value.toString())
         }
     }
 
     fun stopLocationUpdates() {
         Log.e("getLocationStop", fusedLocationProviderClient.toString())
-        //      _infoLocation.value = null
         fusedLocationProviderClient.removeLocationUpdates(callback)
     }
 
     override suspend fun getLocation(): LocationLiveData {
         val locationData = LocationLiveData(application)
         return locationData
-        /*   locRepo.startLocationUpdates()
-           Log.e("locrepo",locRepo.toString())
-          return locRepo._infoLocation*/
     }
 
     @SuppressLint("MissingPermission")
     override suspend fun getLastLocation(): Location? {
         var ddsf: Location? = null
         fusedLocationProviderClient.lastLocation.addOnSuccessListener {
-            //val d=fusedLocationProviderClient.lastLocation.result
-            //    _infoLocation.value = it
             ddsf = it
             it.let { Log.e("getflpc", "$it") }
         }
         return ddsf
-        /*   locRepo.startLocationUpdates()
-           Log.e("locrepo",locRepo.toString())
-          return locRepo._infoLocation*/
     }
 
 
-    //@SuppressLint("MissingPermission")
-    /*override suspend fun getLocation2(): LiveData<Location?> {
-        Log.e("getLocation2", "getLocation2")
-        startLocationUpdates()
-        //   inf()
-        return infoLocation
-
-    }*/
+ 
 
     override suspend fun stopData(): Int {
         stopLocationUpdates()
@@ -359,8 +272,6 @@ class WmRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveLocationOnBD(lld: LocationLiveData): Int {
-        //locRepo.startLocationUpdates()
-        //	val mLocation = locRepo.lastLocation
         Log.e("insertLocation2", lld.toString())
         lld.value?.let {
             val res = LocationDbModel(
@@ -378,65 +289,22 @@ class WmRepositoryImpl @Inject constructor(
 
         return 1
     }
-}
-
-
-/*
-
-public class KalmanLatLong {
-    private final float MinAccuracy = 1;
-
-    private float Q_metres_per_second;    
-    private long TimeStamp_milliseconds;
-    private double lat;
-    private double lng;
-    private float variance; // P matrix.  Negative means object uninitialised.  NB: units irrelevant, as long as same units used throughout
-
-    public KalmanLatLong(float Q_metres_per_second) { this.Q_metres_per_second = Q_metres_per_second; variance = -1; }
-
-    public long get_TimeStamp() { return TimeStamp_milliseconds; }
-    public double get_lat() { return lat; }
-    public double get_lng() { return lng; }
-    public float get_accuracy() { return (float)Math.sqrt(variance); }
-
-    public void SetState(double lat, double lng, float accuracy, long TimeStamp_milliseconds) {
-        this.lat=lat; this.lng=lng; variance = accuracy * accuracy; this.TimeStamp_milliseconds=TimeStamp_milliseconds;
+	
+	
+	
+	 val isLocationTurnedOn = dataStore.data.map {
+        it[locationOnKey] ?: false
     }
 
-    /// <summary>
-    /// Kalman filter processing for lattitude and longitude
-    /// </summary>
-    /// <param name="lat_measurement_degrees">new measurement of lattidude</param>
-    /// <param name="lng_measurement">new measurement of longitude</param>
-    /// <param name="accuracy">measurement of 1 standard deviation error in metres</param>
-    /// <param name="TimeStamp_milliseconds">time of measurement</param>
-    /// <returns>new state</returns>
-    public void Process(double lat_measurement, double lng_measurement, float accuracy, long TimeStamp_milliseconds) {
-        if (accuracy < MinAccuracy) accuracy = MinAccuracy;
-        if (variance < 0) {
-            // if variance < 0, object is unitialised, so initialise with current values
-            this.TimeStamp_milliseconds = TimeStamp_milliseconds;
-            lat=lat_measurement; lng = lng_measurement; variance = accuracy*accuracy; 
-        } else {
-            // else apply Kalman filter methodology
-
-            long TimeInc_milliseconds = TimeStamp_milliseconds - this.TimeStamp_milliseconds;
-            if (TimeInc_milliseconds > 0) {
-                // time has moved on, so the uncertainty in the current position increases
-                variance += TimeInc_milliseconds * Q_metres_per_second * Q_metres_per_second / 1000;
-                this.TimeStamp_milliseconds = TimeStamp_milliseconds;
-                // TO DO: USE VELOCITY INFORMATION HERE TO GET A BETTER ESTIMATE OF CURRENT POSITION
-            }
-
-            // Kalman gain matrix K = Covarariance * Inverse(Covariance + MeasurementVariance)
-            // NB: because K is dimensionless, it doesn't matter that variance has different units to lat and lng
-            float K = variance / (variance + accuracy * accuracy);
-            // apply K
-            lat += K * (lat_measurement - lat);
-            lng += K * (lng_measurement - lng);
-            // new Covarariance  matrix is (IdentityMatrix - K) * Covarariance 
-            variance = (1 - K) * variance;
+    suspend fun setLocationTurnedOn(isStarted: Boolean) = withContext(Dispatchers.IO) {
+        dataStore.edit {
+            it[locationOnKey] = isStarted
         }
     }
+	
+	
+	private companion object {
+        val locationOnKey = booleanPreferencesKey("is_location_on")
+    }
+	
 }
-*/

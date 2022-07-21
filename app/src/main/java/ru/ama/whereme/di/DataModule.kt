@@ -35,13 +35,7 @@ interface DataModule {
         ): LocationDao {
             return AppDatabase.getInstance(application).locationDao()
         }
-       /* @Provides
-        @ApplicationScope
-        fun provideLocationLiveData(
-            application: Application
-        ) : LocationLiveData {
-            return LocationServices.getFusedLocationProviderClient(application)
-        }*/
+ 
 
         @Provides
         @ApplicationScope
@@ -71,23 +65,5 @@ interface DataModule {
 
     }
 	
-	/*
-	  @Provides
-    @Singleton
-    fun provideGoogleApiAvailability() = GoogleApiAvailability.getInstance()
 
-    @Provides
-    @Singleton
-    fun provideFusedLocationProviderClient(
-        application: Application
-    ) = LocationServices.getFusedLocationProviderClient(application)
-
-    @Provides
-    @Singleton
-    fun provideDataStore(application: Application): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create {
-            application.preferencesDataStoreFile("prefs")
-        }
-    }
-	*/
 }
