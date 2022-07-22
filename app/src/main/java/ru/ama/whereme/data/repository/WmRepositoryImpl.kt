@@ -9,9 +9,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.*
 import androidx.lifecycle.*
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
@@ -23,6 +21,7 @@ import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,12 +54,21 @@ class WmRepositoryImpl @Inject constructor(
     var onLocationChangedListener: ((LocationResult) -> Unit)? = null
 
     private val callback = Callback()
-
+    private var settingsMinDist:Float=100f
+    private var settingsWorkerReplayTime:Int =15
 
  suspend fun isGooglePlayServicesAvailable(): Boolean = withContext(Dispatchers.Default) {
         when (googleApiAvailability.isGooglePlayServicesAvailable(application)) {
             ConnectionResult.SUCCESS -> true
             else -> false
+        }
+    }
+
+    private fun initSettinsData()
+    {
+        externalScope.launch(Dispatchers.IO){
+            settingsMinDist=dsMinDist.first()
+            settingsWorkerReplayTime=dsWorkerReplayTime.first()
         }
     }
 
@@ -110,6 +118,7 @@ class WmRepositoryImpl @Inject constructor(
 	
     @SuppressLint("MissingPermission") 
     fun startLocationUpdates() {
+        initSettinsData()
 		  mBestLoc.latitude=0.0
         mBestLoc.longitude=0.0
         mBestLoc.accuracy=0f
@@ -184,7 +193,7 @@ class WmRepositoryImpl @Inject constructor(
                                mBestLoc.time=result.lastLocation.time
                            }
 
-            if (result.lastLocation != null && result.lastLocation.accuracy < 200) {
+            if (result.lastLocation != null && result.lastLocation.accuracy < settingsMinDist) {
                 /*ProcessLifecycleOwner.get().lifecycleScope*/
 				externalScope.launch(Dispatchers.IO) {
                     val lastDbValue = getLastValueFromDb()
@@ -289,8 +298,13 @@ class WmRepositoryImpl @Inject constructor(
 
         return 1
     }
-	
-	
+
+    val dsMinDist = dataStore.data.map {
+        it[minDist] ?: 200f
+    }
+    val dsWorkerReplayTime = dataStore.data.map {
+        it[workerReplayTime] ?: 180
+    }
 	
 	 val isLocationTurnedOn = dataStore.data.map {
         it[locationOnKey] ?: false
@@ -305,6 +319,8 @@ class WmRepositoryImpl @Inject constructor(
 	
 	private companion object {
         val locationOnKey = booleanPreferencesKey("is_location_on")
+        val minDist = floatPreferencesKey("min_dist")
+        val workerReplayTime = intPreferencesKey("worker_replay_time")
     }
 	
 }

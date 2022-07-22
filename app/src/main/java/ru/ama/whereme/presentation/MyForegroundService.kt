@@ -11,10 +11,9 @@ import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import ru.ama.whereme.R
 import ru.ama.whereme.data.repository.WmRepositoryImpl
 import javax.inject.Inject
@@ -23,6 +22,7 @@ class MyForegroundService : LifecycleService() {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private var timer: CountDownTimer? = null
+    private var settingsWorkerReplayTime =50
     private val component by lazy {
         (application as MyApp).component
     }
@@ -54,7 +54,7 @@ class MyForegroundService : LifecycleService() {
 
     private fun startTimer() {
         timer = object : CountDownTimer(
-            180 * 1000,
+            settingsWorkerReplayTime.toLong() * 1000,
             1000
         ) {
             override fun onTick(millisUntilFinished: Long) {
@@ -66,7 +66,7 @@ class MyForegroundService : LifecycleService() {
                             )
                         }"
                     )
-                    .setProgress(180, (millisUntilFinished / MILLIS_IN_SECONDS).toInt(), false)
+                    .setProgress(settingsWorkerReplayTime, (millisUntilFinished / MILLIS_IN_SECONDS).toInt(), false)
                     .build()
                 notificationManager.notify(NOTIFICATION_ID, notification)
             }
@@ -79,7 +79,7 @@ class MyForegroundService : LifecycleService() {
                 else {
                     coroutineScope.launch {
                         repo.stopLocationUpdates()
-                        repo.runWorker(180)
+                        repo.runWorker(settingsWorkerReplayTime.toLong())
                     }
                     stopSelf()
                 }
@@ -99,7 +99,7 @@ class MyForegroundService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         log("onStartCommand")
-        startTimer()
+      //  startTimer()
 
         repo.onLocationChangedListener = {
             it
@@ -119,7 +119,11 @@ lifecycleScope.launch {
         val isGooglePlayServicesAvailab = coroutineScope.async {
             repo.isGooglePlayServicesAvailable()
         }
+
+        val dsdfdf=   coroutineScope.async {  repo.dsWorkerReplayTime.first()}
         coroutineScope.launch {
+            settingsWorkerReplayTime=dsdfdf.await()
+            startTimer()
             if (isGooglePlayServicesAvailab.await()) {
                 val sd = coroutineScope.async {
                     repo.startLocationUpdates()
@@ -140,7 +144,7 @@ lifecycleScope.launch {
             if (it) {
                 coroutineScope.launch {
                     repo.stopLocationUpdates()
-                    repo.runWorker(180)
+                    repo.runWorker(settingsWorkerReplayTime.toLong())
                 }
                 stopSelf()
             }
