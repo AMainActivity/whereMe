@@ -32,10 +32,7 @@ viewModelScope.launch {
    //     lld2 = getLocation2UseCase()
 
 }
-		viewModelScope.launch {
-	//		delay(1000*120)
-	//	stopLocationsUpdateUseCase()
-		}
+
        /* val d=viewModelScope.async(Dispatchers.IO)
         {
             val r=getTestInfoUseCase()
@@ -49,7 +46,14 @@ viewModelScope.launch {
         */
     }
 
-
+fun startLocationService()
+{
+    viewModelScope.launch {
+        runWorkerUpdateUseCase(10)
+        //		delay(1000*120)
+        //	stopLocationsUpdateUseCase()
+    }
+}
 
     private val _testInfo = MutableLiveData<Location>()
     val testInfo: LiveData<Location>

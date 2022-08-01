@@ -1,6 +1,8 @@
 package ru.ama.whereme.diO
 
 import android.app.Application
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
@@ -19,6 +21,7 @@ import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.repository.WmRepositoryImpl
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.repository.WmRepository
+
 
 @Module
 interface DataModule {
@@ -55,6 +58,13 @@ interface DataModule {
             application.preferencesDataStoreFile("prefs")
         }
     }
+
+        @Provides
+        @ApplicationScope
+        fun provideSharedPreferences(application: Application): SharedPreferences {
+            return application.getSharedPreferences("mysettings", Context.MODE_PRIVATE)
+        }
+
         @ApplicationScope
         @Provides
         fun providesCoroutineScope() = CoroutineScope(SupervisorJob() +  Dispatchers.IO)

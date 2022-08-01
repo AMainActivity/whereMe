@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
+import android.content.SharedPreferences
 import android.location.Location
 import android.os.Looper
 import android.os.SystemClock
@@ -46,7 +47,8 @@ class WmRepositoryImpl @Inject constructor(
     private val fusedLocationProviderClient: FusedLocationProviderClient,
     @ApplicationScope private val externalScope: CoroutineScope,
     private val googleApiAvailability: GoogleApiAvailability,
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
+    private val mSettings: SharedPreferences
 ) : WmRepository {
 
 
@@ -179,8 +181,11 @@ class WmRepositoryImpl @Inject constructor(
             super.onLocationResult(result)
 
             onLocationChangedListener?.invoke(result)
-  
 
+          /*  for (location in result.locations) {
+                latTextView.text = location.latitude.toString()
+                lngTextView.text = location.longitude.toString()
+            }*/
       
            
 		   
@@ -299,6 +304,27 @@ class WmRepositoryImpl @Inject constructor(
         return 1
     }
 
+    //##############################################################################
+    var accuracy: Long
+        get() {
+            val k: Long
+            if (mSettings.contains(APP_PREFERENCES_accuracy)) {
+                k = mSettings.getLong(APP_PREFERENCES_accuracy, 200)!!
+            } else
+                k = 200
+            return k
+        }
+        @SuppressLint("NewApi")
+        set(k) {
+            val editor = mSettings.edit()
+            editor.putLong(APP_PREFERENCES_accuracy, k)
+            if (android.os.Build.VERSION.SDK_INT > 9) {
+                editor.apply()
+            } else
+                editor.commit()
+        }
+
+
     val dsMinDist = dataStore.data.map {
         it[minDist] ?: 200f
     }
@@ -318,6 +344,7 @@ class WmRepositoryImpl @Inject constructor(
 	
 	
 	private companion object {
+        val APP_PREFERENCES_accuracy = "accuracy"
         val locationOnKey = booleanPreferencesKey("is_location_on")
         val minDist = floatPreferencesKey("min_dist")
         val workerReplayTime = intPreferencesKey("worker_replay_time")

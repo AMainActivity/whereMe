@@ -17,8 +17,8 @@ class MapViewModel @Inject constructor(
     init {
       
 viewModelScope.launch {
-    runWorkerUpdateUseCase(10)
-    Log.e("runWorker1","15")
+  //  runWorkerUpdateUseCase(10)
+   // Log.e("runWorker1","15")
     //delay(3*1000)
         lld2 = getLocationsFromBdUseCase()
 }
