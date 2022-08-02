@@ -120,9 +120,8 @@ lifecycleScope.launch {
             repo.isGooglePlayServicesAvailable()
         }
 
-        val dsdfdf=   coroutineScope.async {  repo.dsWorkerReplayTime.first()}
         coroutineScope.launch {
-            settingsWorkerReplayTime=dsdfdf.await()
+            settingsWorkerReplayTime=repo.dsWorkerReplayTime
             startTimer()
             if (isGooglePlayServicesAvailab.await()) {
                 val sd = coroutineScope.async {

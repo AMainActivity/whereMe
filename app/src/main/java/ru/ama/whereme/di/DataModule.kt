@@ -51,13 +51,13 @@ interface DataModule {
         @ApplicationScope
         fun provideGoogleApiAvailability() = GoogleApiAvailability.getInstance()
 
-    @Provides
+    /*@Provides
     @ApplicationScope
     fun provideDataStore(application: Application): DataStore<Preferences> {
         return PreferenceDataStoreFactory.create {
             application.preferencesDataStoreFile("prefs")
         }
-    }
+    }*/
 
         @Provides
         @ApplicationScope

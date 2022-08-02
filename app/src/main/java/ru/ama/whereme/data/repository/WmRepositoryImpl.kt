@@ -47,7 +47,6 @@ class WmRepositoryImpl @Inject constructor(
     private val fusedLocationProviderClient: FusedLocationProviderClient,
     @ApplicationScope private val externalScope: CoroutineScope,
     private val googleApiAvailability: GoogleApiAvailability,
-    private val dataStore: DataStore<Preferences>,
     private val mSettings: SharedPreferences
 ) : WmRepository {
 
@@ -68,10 +67,9 @@ class WmRepositoryImpl @Inject constructor(
 
     private fun initSettinsData()
     {
-        externalScope.launch(Dispatchers.IO){
-            settingsMinDist=dsMinDist.first()
-            settingsWorkerReplayTime=dsWorkerReplayTime.first()
-        }
+            settingsMinDist=dsMinDist
+            settingsWorkerReplayTime=dsWorkerReplayTime
+
     }
 
     private val _isEnathAccuracy = MutableLiveData<Boolean>()
@@ -121,7 +119,7 @@ class WmRepositoryImpl @Inject constructor(
     @SuppressLint("MissingPermission") 
     fun startLocationUpdates() {
         initSettinsData()
-		  mBestLoc.latitude=0.0
+        mBestLoc.latitude=0.0
         mBestLoc.longitude=0.0
         mBestLoc.accuracy=0f
         mBestLoc.speed=0f
@@ -143,16 +141,16 @@ class WmRepositoryImpl @Inject constructor(
 
 
 
-    fun updateValueDb(id: Int, newInfo: String): Int {
+    private fun updateValueDb(id: Int, newInfo: String): Int {
         return locationDao.updateLocationById(id, newInfo)
     }
 
-    fun getLastValueFromDb(): LocationDbModel {
+    private fun getLastValueFromDb(): LocationDbModel {
         val d = locationDao.getLastValue()
         return locationDao.getLastValue()
     }
 
-    fun getDate(milliSeconds: Long): String? {
+    private fun getDate(milliSeconds: Long): String? {
         val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
         val calendar: Calendar = Calendar.getInstance()
         calendar.setTimeInMillis(milliSeconds)
@@ -182,11 +180,6 @@ class WmRepositoryImpl @Inject constructor(
 
             onLocationChangedListener?.invoke(result)
 
-          /*  for (location in result.locations) {
-                latTextView.text = location.latitude.toString()
-                lngTextView.text = location.longitude.toString()
-            }*/
-      
            
 		   
 		   if (mBestLoc.longitude==0.0||result.lastLocation.accuracy < mBestLoc.accuracy)
@@ -305,49 +298,50 @@ class WmRepositoryImpl @Inject constructor(
     }
 
     //##############################################################################
-    var accuracy: Long
+    var dsMinDist: Float
         get() {
-            val k: Long
-            if (mSettings.contains(APP_PREFERENCES_accuracy)) {
-                k = mSettings.getLong(APP_PREFERENCES_accuracy, 200)!!
+            val k: Float
+            if (mSettings.contains(APP_PREFERENCES_MIN_DIST)) {
+                k = mSettings.getFloat(APP_PREFERENCES_MIN_DIST, 200f)
             } else
-                k = 200
+                k = 200f
             return k
         }
         @SuppressLint("NewApi")
         set(k) {
             val editor = mSettings.edit()
-            editor.putLong(APP_PREFERENCES_accuracy, k)
+            editor.putFloat(APP_PREFERENCES_MIN_DIST, k)
+            if (android.os.Build.VERSION.SDK_INT > 9) {
+                editor.apply()
+            } else
+                editor.commit()
+        }
+    //##############################################################################
+    var dsWorkerReplayTime: Int
+        get() {
+            val k: Int
+            if (mSettings.contains(APP_PREFERENCES_WORKER_REPLAY_TIME)) {
+                k = mSettings.getInt(APP_PREFERENCES_WORKER_REPLAY_TIME, 180)
+            } else
+                k = 180
+            return k
+        }
+        @SuppressLint("NewApi")
+        set(k) {
+            val editor = mSettings.edit()
+            editor.putInt(APP_PREFERENCES_WORKER_REPLAY_TIME, k)
             if (android.os.Build.VERSION.SDK_INT > 9) {
                 editor.apply()
             } else
                 editor.commit()
         }
 
-
-    val dsMinDist = dataStore.data.map {
-        it[minDist] ?: 200f
-    }
-    val dsWorkerReplayTime = dataStore.data.map {
-        it[workerReplayTime] ?: 180
-    }
-	
-	 val isLocationTurnedOn = dataStore.data.map {
-        it[locationOnKey] ?: false
-    }
-
-    suspend fun setLocationTurnedOn(isStarted: Boolean) = withContext(Dispatchers.IO) {
-        dataStore.edit {
-            it[locationOnKey] = isStarted
-        }
-    }
+   
 	
 	
 	private companion object {
-        val APP_PREFERENCES_accuracy = "accuracy"
-        val locationOnKey = booleanPreferencesKey("is_location_on")
-        val minDist = floatPreferencesKey("min_dist")
-        val workerReplayTime = intPreferencesKey("worker_replay_time")
+        val APP_PREFERENCES_MIN_DIST = "min_dist"
+        val APP_PREFERENCES_WORKER_REPLAY_TIME = "worker_replay_time"
     }
 	
 }
