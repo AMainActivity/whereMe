@@ -3,10 +3,13 @@ package ru.ama.whereme.data.database
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import ru.ama.whereme.data.database.LocationDbModel.Companion.tabTestInfo
+import java.time.OffsetDateTime
 
 @Entity(tableName = tabTestInfo)
 data class LocationDbModel(
   val datetime: String,
+  val datestart: Long,
+  val dateend: Long?=null,
   val info: String?=null,
   val latitude : Double,
   val longitude: Double,

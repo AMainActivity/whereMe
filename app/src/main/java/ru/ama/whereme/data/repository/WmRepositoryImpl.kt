@@ -36,6 +36,7 @@ import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.repository.WmRepository
 import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.inject.Inject
 
@@ -160,8 +161,11 @@ class WmRepositoryImpl @Inject constructor(
    
    suspend fun saveLocation(location:Location)
    {
+        //val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
 	    val res = LocationDbModel(
                                 location.time.toString(),
+                                location.time,
+                                location.time,
                                 getDate(location.time),
                                 location.latitude,
                                 location.longitude,
@@ -209,6 +213,8 @@ class WmRepositoryImpl @Inject constructor(
                             if (dist > 50) {
                                 val res = LocationDbModel(
                                     it.time.toString(),
+                                    it.time,
+                                    it.time,
                                     getDate(it.time),
                                     it.latitude,
                                     it.longitude,
@@ -229,6 +235,8 @@ class WmRepositoryImpl @Inject constructor(
                         } else {
                             val res = LocationDbModel(
                                 it.time.toString(),
+                                it.time,
+                                it.time,
                                 getDate(it.time),
                                 it.latitude,
                                 it.longitude,
@@ -283,6 +291,8 @@ class WmRepositoryImpl @Inject constructor(
         lld.value?.let {
             val res = LocationDbModel(
                 it.time.toString(),
+                it.time,
+                it.time,
                 it.time.toString(),
                 it.latitude,
                 it.longitude,

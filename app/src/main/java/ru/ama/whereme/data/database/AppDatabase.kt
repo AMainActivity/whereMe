@@ -5,9 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import java.time.OffsetDateTime
 
-@Database(entities = [LocationDbModel::class], version = 1, exportSchema = false)
-//@TypeConverters(AnswersConverter::class,CorrectConverter::class)
+@Database(entities = [LocationDbModel::class], version = 2, exportSchema = false)
+//@TypeConverters(OffsetDateTimeConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     companion object {
 

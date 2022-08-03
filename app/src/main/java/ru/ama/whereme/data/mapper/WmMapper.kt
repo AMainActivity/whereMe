@@ -10,6 +10,8 @@ class WmMapper @Inject constructor() {
 
     fun mapDbModelToEntity(dbModel: LocationDbModel) = LocationDb(
            datetime=dbModel.datetime,
+           datestart = dbModel.datestart,
+		dateend=dbModel.dateend,
            info=dbModel.info,
 			latitude=dbModel.latitude,
 		longitude=dbModel.longitude,
@@ -20,6 +22,8 @@ class WmMapper @Inject constructor() {
 
     fun mapEntityToDbModel(db: LocationDb) = LocationDbModel(
         datetime=db.datetime,
+        datestart =db.datestart,
+        dateend =db.dateend,
 		info=db.info,
 			latitude=db.latitude,
 		longitude=db.longitude,
