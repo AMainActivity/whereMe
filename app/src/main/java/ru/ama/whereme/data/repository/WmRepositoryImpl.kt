@@ -141,6 +141,9 @@ class WmRepositoryImpl @Inject constructor(
 
 
 
+    private fun updateTimeEndDb(id: Int, time: Long): Int {
+        return locationDao.updateTime2ById(id, time)
+    }
 
     private fun updateValueDb(id: Int, newInfo: String): Int {
         return locationDao.updateLocationById(id, newInfo)
@@ -214,7 +217,7 @@ class WmRepositoryImpl @Inject constructor(
                                 val res = LocationDbModel(
                                     it.time.toString(),
                                     it.time,
-                                    it.time,
+                                    null,
                                     getDate(it.time),
                                     it.latitude,
                                     it.longitude,
@@ -226,6 +229,7 @@ class WmRepositoryImpl @Inject constructor(
                                 _isEnathAccuracy.postValue(true)
                                 Log.e("insertLocation", res.toString())
                             } else {
+                                updateTimeEndDb(lastDbValue._id.toInt(),it.time)
                                 updateValueDb(
                                     lastDbValue._id.toInt(),
                                     getDate(lastDbValue.datetime.toLong()) + "#" + getDate(it.time)
@@ -236,7 +240,7 @@ class WmRepositoryImpl @Inject constructor(
                             val res = LocationDbModel(
                                 it.time.toString(),
                                 it.time,
-                                it.time,
+                                null,
                                 getDate(it.time),
                                 it.latitude,
                                 it.longitude,

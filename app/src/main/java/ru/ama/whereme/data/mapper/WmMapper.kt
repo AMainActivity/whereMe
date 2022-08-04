@@ -2,6 +2,8 @@ package ru.ama.whereme.data.mapper
 
 import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.domain.entity.LocationDb
+import java.text.SimpleDateFormat
+import java.util.*
 import javax.inject.Inject
 
 class WmMapper @Inject constructor() {
@@ -10,8 +12,8 @@ class WmMapper @Inject constructor() {
 
     fun mapDbModelToEntity(dbModel: LocationDbModel) = LocationDb(
            datetime=dbModel.datetime,
-           datestart = dbModel.datestart,
-		dateend=dbModel.dateend,
+           datestart = convertLongToTime(dbModel.datestart),
+		dateend=convertLongToTime(dbModel.dateend!!),
            info=dbModel.info,
 			latitude=dbModel.latitude,
 		longitude=dbModel.longitude,
@@ -22,8 +24,8 @@ class WmMapper @Inject constructor() {
 
     fun mapEntityToDbModel(db: LocationDb) = LocationDbModel(
         datetime=db.datetime,
-        datestart =db.datestart,
-        dateend =db.dateend,
+        datestart =convertDateToLong(db.datestart),
+        dateend =convertDateToLong(db.dateend!!),
 		info=db.info,
 			latitude=db.latitude,
 		longitude=db.longitude,
@@ -31,6 +33,15 @@ class WmMapper @Inject constructor() {
 		accuracy=db.accuracy,
 		velocity=db.velocity
     )
+private fun convertDateToLong(date: String): Long {
+    val df = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
+    return df.parse(date).time
+}
+    private fun convertLongToTime(time: Long): String {
+        val date = Date(time)
+        val format = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
+        return format.format(date)
+    }
 
     companion object {
         const val BASE_IMAGE_URL = "https://kol.hhos.ru/test/tests/img/"

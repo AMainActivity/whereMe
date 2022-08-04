@@ -7,8 +7,8 @@ import java.time.OffsetDateTime
 @Parcelize
 data class LocationDb(
     val datetime: String,
-    val datestart: Long,
-    val dateend: Long?=null,
+    val datestart: String,
+    val dateend: String?=null,
     val info: String?=null,
     val latitude : Double,
     val longitude: Double,

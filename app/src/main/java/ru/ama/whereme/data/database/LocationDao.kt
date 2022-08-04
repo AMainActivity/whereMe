@@ -21,6 +21,9 @@ interface LocationDao {
     @Query("update tab_locations  set info =  :newInfo  where _id=:id")
     fun updateLocationById(id:Int, newInfo:String):Int
 
+    @Query("update tab_locations  set dateend =  :newTime  where _id=:id")
+    fun updateTime2ById(id:Int, newTime:Long):Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLocation(mLoc: LocationDbModel)
 	
