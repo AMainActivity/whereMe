@@ -14,6 +14,9 @@ interface LocationDao {
 
 @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
     fun getLocations(): LiveData<List<LocationDbModel>>
+//CAST(strftime('%Y', datetime(date/1000, 'unixepoch')) AS int) AS year
+    @Query("SELECT _id,datestart,dateend FROM tab_locations GROUP BY strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') ORDER BY _id asc ")
+    fun getLocationsByDays(): LiveData<List<LocationDbModelByDays>>
 
     @Query("SELECT * FROM tab_locations  ORDER BY _id desc limit 1 ")
     fun getLastValue(): LocationDbModel

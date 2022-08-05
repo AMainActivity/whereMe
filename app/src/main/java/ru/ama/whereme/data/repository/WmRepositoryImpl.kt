@@ -31,9 +31,11 @@ import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.data.location.KalmanLatLong
 import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.mapper.WmMapper
+import ru.ama.whereme.data.mapper.WmMapperByDays
 import ru.ama.whereme.data.workers.GetLocationDataWorker
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.LocationDb
+import ru.ama.whereme.domain.entity.LocationDbByDays
 import ru.ama.whereme.domain.repository.WmRepository
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
@@ -43,6 +45,7 @@ import javax.inject.Inject
 
 class WmRepositoryImpl @Inject constructor(
     private val mapper: WmMapper,
+    private val mapperByDays: WmMapperByDays,
     private val locationDao: LocationDao,
     private val application: Application,
     private val fusedLocationProviderClient: FusedLocationProviderClient,
@@ -96,7 +99,13 @@ class WmRepositoryImpl @Inject constructor(
     }
 
 
-
+    override suspend fun getGropingDays(): LiveData<List<LocationDbByDays>> {
+        return Transformations.map(locationDao.getLocationsByDays()) {
+            it.map {
+                mapperByDays.mapDbModelToEntity(it)
+            }
+        }
+    }
 
     override suspend fun GetLocationsFromBd(): LiveData<List<LocationDb>> {
         return Transformations.map(locationDao.getLocations()) {

@@ -9,10 +9,12 @@ import javax.inject.Inject
 
 class MapViewModel @Inject constructor(
     private val getLocationsFromBdUseCase: GetLocationsFromBdUseCase,
+    private val getGropingDaysUseCase: GetGropingDaysUseCase,
     private val runWorkerUpdateUseCase: RunWorkerUpdateUseCase
 ) : ViewModel() {
 
      var lld2 : LiveData<List<LocationDb>>?=null
+     var ld_days : LiveData<List<LocationDbByDays>>?=null
 
     init {
       
@@ -21,6 +23,7 @@ viewModelScope.launch {
    // Log.e("runWorker1","15")
     //delay(3*1000)
         lld2 = getLocationsFromBdUseCase()
+    ld_days = getGropingDaysUseCase()
 }
 		
     }
