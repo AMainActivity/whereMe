@@ -24,12 +24,12 @@ class WmMapperByDays @Inject constructor() {
         dateend =db.dateend?.let{convertDateToLong(it)}
     )
 private fun convertDateToLong(date: String): Long {
-    val df = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
+    val df = SimpleDateFormat("dd.MM.yyyy")
     return df.parse(date).time
 }
     private fun convertLongToTime(time: Long): String {
         val date = Date(time)
-        val format = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
+        val format = SimpleDateFormat("dd.MM.yyyy")
         return format.format(date)
     }
 

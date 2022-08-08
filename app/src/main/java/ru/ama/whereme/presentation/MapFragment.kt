@@ -81,7 +81,12 @@ class MapFragment : Fragment() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 viewModel.ld_days?.observe(viewLifecycleOwner) {
-                    Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
+                    var sdf=""
+                    for(asd in it)
+                    {
+                        sdf+="\n"+asd.datestart
+                    }
+                    Toast.makeText(requireContext(),sdf.trim(),Toast.LENGTH_SHORT).show()
                 }
 
                 viewModel.lld2?.observe(viewLifecycleOwner) {
