@@ -6,9 +6,11 @@
     android:layout_height="wrap_content"
     android:layout_margin="4dp">
 
-    <ListView
+    <ru.ama.whereme.presentation.MyListView
         android:id="@+id/lv_date"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#fba"
+        tools:listitem="@layout/simple_item_date_list" />
 
 </androidx.cardview.widget.CardView>

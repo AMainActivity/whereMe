@@ -16,7 +16,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentFirstBinding
 import ru.ama.whereme.databinding.ItemDateListBinding
@@ -68,14 +71,14 @@ class MapFragment : Fragment() {
         ///popupWindow.animationStyle = R.style.dialog_animation
         // val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_list_item_1,
+            requireContext(), R.layout.simple_item_date_list,
             listOfDays
         )
 
         val binding2 = ItemDateListBinding.inflate(layoutInflater)
 		 viewModel.ld_days?.observe(viewLifecycleOwner) {
                     var sdf=""
-       
+             listOfDays.clear()
                     for(asd in it)
                     {
                         sdf+="\n"+asd.datestart
@@ -101,11 +104,11 @@ class MapFragment : Fragment() {
 
                          Log.e("getLocationlldByDay",postData)
                      }
-
+                popupWindow.dismiss()
                  }
         popupWindow.isFocusable = true
-        popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
-        popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
+             popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
+             popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
         popupWindow.contentView = binding2.root
             /* if (popupWindow.contentView.getParent() != null) {
                  (popupWindow.contentView.getParent() as ViewGroup).removeView(popupWindow.contentView)
