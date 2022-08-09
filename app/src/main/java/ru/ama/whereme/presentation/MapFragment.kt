@@ -7,16 +7,19 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.webkit.*
+import android.widget.ArrayAdapter
+import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.gson.Gson
+import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentFirstBinding
+import ru.ama.whereme.databinding.ItemDateListBinding
 import javax.inject.Inject
 
 
@@ -36,6 +39,80 @@ class MapFragment : Fragment() {
 
         super.onAttach(context)
     }
+	
+	 override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+	
+	
+	 override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.menu_map_fragment, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+
+        return when (item.itemId) {
+            R.id.menu_day_list -> {
+                showPopupText(requireActivity().findViewById(R.id.menu_day_list))
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showPopupText(anchor: View) {
+		 val listOfDays: MutableList<String> = mutableListOf<String>()
+		 val listOfIds: MutableList<Int> = mutableListOf<Int>()
+        val popupWindow = PopupWindow(requireContext())
+        ///popupWindow.animationStyle = R.style.dialog_animation
+        // val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+        val adapter = ArrayAdapter(
+            requireContext(), android.R.layout.simple_list_item_1,
+            listOfDays
+        )
+
+        val binding2 = ItemDateListBinding.inflate(layoutInflater)
+		 viewModel.ld_days?.observe(viewLifecycleOwner) {
+                    var sdf=""
+       
+                    for(asd in it)
+                    {
+                        sdf+="\n"+asd.datestart
+                listOfDays.add(asd.datestart)
+                listOfIds.add((asd._id).toInt())
+                    }
+
+        popupWindow.setBackgroundDrawable(
+            ResourcesCompat.getDrawable(
+                getResources(),
+                R.drawable.nulldr,
+                null
+            )
+        )
+                binding2.lvDate.adapter = adapter
+				 binding2.lvDate.setOnItemClickListener { parent, view, position, id ->
+            viewModel.getDataByDate(listOfDays[position])
+                     Toast.makeText(requireContext(),listOfIds[position].toString(),Toast.LENGTH_SHORT).show()
+        }
+        popupWindow.isFocusable = true
+        popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
+        popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
+        popupWindow.contentView = binding2.root
+            /* if (popupWindow.contentView.getParent() != null) {
+                 (popupWindow.contentView.getParent() as ViewGroup).removeView(popupWindow.contentView)
+             }*/
+        popupWindow.showAsDropDown(anchor)
+					
+                    Toast.makeText(requireContext(),sdf.trim(),Toast.LENGTH_SHORT).show()
+                }
+		
+		
+      
+
+    }
+	
+	
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -80,27 +157,28 @@ class MapFragment : Fragment() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                viewModel.ld_days?.observe(viewLifecycleOwner) {
-                    var sdf=""
-                    for(asd in it)
-                    {
-                        sdf+="\n"+asd.datestart
-                    }
-                    Toast.makeText(requireContext(),sdf.trim(),Toast.LENGTH_SHORT).show()
+               
+
+   viewModel.lldByDay?.observe(viewLifecycleOwner) {
+
+                    val postData= Gson().toJson(it).toString()
+                    binding.frgmntLocations.evaluateJavascript("javascript:fromAndroid(${postData})", null)
+
+                    Log.e("getLocationlldByDay",postData)
                 }
 
                 viewModel.lld2?.observe(viewLifecycleOwner) {
                     //	Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
-                    Log.e("getLocation22",it.toString())
+                 ///   Log.e("getLocation22",it.toString())
 
-                    val postData= Gson().toJson(it).toString()
+                  ///  val postData= Gson().toJson(it).toString()
                     /* "[{\"title\": \"место 1\", " +
                              " \"lat\": \"${it?.latitude.toString()}\", " +
                              " \"lon\": \"${it?.longitude.toString()}\","+
                      "\"accuracy\": \"${it?.accuracy.toString()}\"}]";*/
-                    binding.frgmntLocations.evaluateJavascript("javascript:fromAndroid(${postData})", null)
+                 ///   binding.frgmntLocations.evaluateJavascript("javascript:fromAndroid(${postData})", null)
 
-                    Log.e("getLocation23",postData)
+                ////    Log.e("getLocation23",postData)
                 }
             }
         }

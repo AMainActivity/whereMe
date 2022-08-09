@@ -107,6 +107,14 @@ class WmRepositoryImpl @Inject constructor(
         }
     }
 
+ override suspend fun getLocationById(mDate:String): LiveData<List<LocationDb>> {
+        return Transformations.map(locationDao.getLocationsById(mDate)) {
+            it.map {
+                mapper.mapDbModelToEntity(it)
+            }
+        }
+    }
+
     override suspend fun GetLocationsFromBd(): LiveData<List<LocationDb>> {
         return Transformations.map(locationDao.getLocations()) {
             it.map {
