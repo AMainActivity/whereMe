@@ -108,6 +108,7 @@ class WmRepositoryImpl @Inject constructor(
     }
 
  override suspend fun getLocationById(mDate:String): LiveData<List<LocationDb>> {
+     Log.e("getLocationById",mDate)
         return Transformations.map(locationDao.getLocationsById(mDate)) {
             it.map {
                 mapper.mapDbModelToEntity(it)

@@ -15,7 +15,7 @@ interface LocationDao {
 @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
     fun getLocations(): LiveData<List<LocationDbModel>>
 	
-	@Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') BETWEEN strftime('%d.%m.%Y', :mDate,'-2 day') AND strftime('%d.%m.%Y', :mDate,'+1 day')  ORDER BY _id asc ")
+	@Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') =:mDate  ORDER BY _id asc ")
     fun getLocationsById(mDate:String): LiveData<List<LocationDbModel>>
 
 

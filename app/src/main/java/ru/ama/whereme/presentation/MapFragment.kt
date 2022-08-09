@@ -94,7 +94,15 @@ class MapFragment : Fragment() {
 				 binding2.lvDate.setOnItemClickListener { parent, view, position, id ->
             viewModel.getDataByDate(listOfDays[position])
                      Toast.makeText(requireContext(),listOfIds[position].toString(),Toast.LENGTH_SHORT).show()
-        }
+                     viewModel.lldByDay?.observe(viewLifecycleOwner) {
+
+                         val postData= Gson().toJson(it).toString()
+                         binding.frgmntLocations.evaluateJavascript("javascript:fromAndroid(${postData})", null)
+
+                         Log.e("getLocationlldByDay",postData)
+                     }
+
+                 }
         popupWindow.isFocusable = true
         popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
         popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
@@ -159,13 +167,6 @@ class MapFragment : Fragment() {
                 super.onPageFinished(view, url)
                
 
-   viewModel.lldByDay?.observe(viewLifecycleOwner) {
-
-                    val postData= Gson().toJson(it).toString()
-                    binding.frgmntLocations.evaluateJavascript("javascript:fromAndroid(${postData})", null)
-
-                    Log.e("getLocationlldByDay",postData)
-                }
 
                 viewModel.lld2?.observe(viewLifecycleOwner) {
                     //	Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
