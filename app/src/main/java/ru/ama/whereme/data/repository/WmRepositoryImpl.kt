@@ -250,7 +250,7 @@ class WmRepositoryImpl @Inject constructor(
                                 updateTimeEndDb(lastDbValue._id.toInt(),it.time)
                                 updateValueDb(
                                     lastDbValue._id.toInt(),
-                                    getDate(lastDbValue.datetime.toLong()) + "#" + getDate(it.time)
+                                    getDate(lastDbValue.datetime.toLong()) + " - " + getDate(it.time)
                                 )
                                 _isEnathAccuracy.postValue(true)
                             }

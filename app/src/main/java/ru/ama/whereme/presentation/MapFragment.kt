@@ -71,7 +71,7 @@ class MapFragment : Fragment() {
         ///popupWindow.animationStyle = R.style.dialog_animation
         // val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val adapter = ArrayAdapter(
-            requireContext(), R.layout.simple_item_date_list,
+            requireContext(), android.R.layout.simple_list_item_1,
             listOfDays
         )
 
@@ -162,7 +162,9 @@ class MapFragment : Fragment() {
         //wv.loadDataWithBaseURL(null,getString(R.string.frgmnt_instructions),"text/html","UTF-8","")
         binding.frgmntLocations.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                view?.loadUrl(url!!)
+                view?.getContext()?.startActivity(
+                     Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                //view?.loadUrl(url!!)
                 return true
             }
 
