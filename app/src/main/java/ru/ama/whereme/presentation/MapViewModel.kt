@@ -11,31 +11,34 @@ class MapViewModel @Inject constructor(
     private val getLocationsFromBdUseCase: GetLocationsFromBdUseCase,
     private val getGropingDaysUseCase: GetGropingDaysUseCase,
     private val getLocationsFromBdByIdUseCase: GetLocationsFromBdByIdUseCase,
+    private val checkInternetConnectionUseCase: CheckInternetConnectionUseCase,
     private val runWorkerUpdateUseCase: RunWorkerUpdateUseCase
 ) : ViewModel() {
 
-     var lld2 : LiveData<List<LocationDb>>?=null
-     var lldByDay : LiveData<List<LocationDb>>?=null
-     var ld_days : LiveData<List<LocationDbByDays>>?=null
+    var lld2: LiveData<List<LocationDb>>? = null
+    var lldByDay: LiveData<List<LocationDb>>? = null
+    var ld_days: LiveData<List<LocationDbByDays>>? = null
 
     init {
-      
-viewModelScope.launch {
-  //  runWorkerUpdateUseCase(10)
-   // Log.e("runWorker1","15")
-    //delay(3*1000)
-        lld2 = getLocationsFromBdUseCase()
-    ld_days = getGropingDaysUseCase()
-}
-		
+
+        viewModelScope.launch {
+            //  runWorkerUpdateUseCase(10)
+            // Log.e("runWorker1","15")
+            //delay(3*1000)
+            lld2 = getLocationsFromBdUseCase()
+            ld_days = getGropingDaysUseCase()
+        }
+
     }
 
-fun getDataByDate(mDate:String)
-{
-	viewModelScope.launch {
-        lldByDay = getLocationsFromBdByIdUseCase(mDate)
-}
-}
+    fun isInternetConnected() = checkInternetConnectionUseCase()
+
+
+    fun getDataByDate(mDate: String) {
+        viewModelScope.launch {
+            lldByDay = getLocationsFromBdByIdUseCase(mDate)
+        }
+    }
 
     companion object {}
 }

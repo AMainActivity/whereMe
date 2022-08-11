@@ -10,17 +10,18 @@ import ru.ama.whereme.domain.entity.*
 interface WmRepository {
 
 
-    suspend fun loadData():List<Int>
-    suspend fun GetLocationsFromBd():LiveData<List<LocationDb>>
-	suspend fun getLocationById(mDate:String)    :LiveData<List<LocationDb>>
-    suspend fun getGropingDays():    LiveData<List<LocationDbByDays>>
+    suspend fun loadData(): List<Int>
+    suspend fun GetLocationsFromBd(): LiveData<List<LocationDb>>
+    suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>>
+    suspend fun getGropingDays(): LiveData<List<LocationDbByDays>>
+    fun isInternetConnected(): Boolean
+    suspend fun saveLocationOnBD(lld: LocationLiveData): Int
 
-	suspend fun saveLocationOnBD(lld:LocationLiveData): Int
-	
-	suspend fun stopData(): Int
-	fun runWorker(timeInterval:Long)
+    suspend fun stopData(): Int
+    fun runWorker(timeInterval: Long)
 
-    suspend fun getLocation() : LocationLiveData
-   // suspend fun getLocation2() : LiveData<Location?>
-    suspend fun getLastLocation() : Location?
+    suspend fun getLocation(): LocationLiveData
+
+    // suspend fun getLocation2() : LiveData<Location?>
+    suspend fun getLastLocation(): Location?
 }
