@@ -14,6 +14,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import ru.ama.whereme.R
 import ru.ama.whereme.data.repository.WmRepositoryImpl
+import java.util.*
 import javax.inject.Inject
 
 class MyForegroundService : LifecycleService() {
@@ -21,6 +22,7 @@ class MyForegroundService : LifecycleService() {
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private var timer: CountDownTimer? = null
     private var settingsWorkerReplayTime =50
+    private var isEnath=false
     private val component by lazy {
         (application as MyApp).component
     }
@@ -33,6 +35,7 @@ class MyForegroundService : LifecycleService() {
     lateinit var repo: WmRepositoryImpl
 
     override fun onBind(intent: Intent): IBinder? {
+        super.onBind(intent)
         log("onBind")
         return LocalBinder()
     }
@@ -46,7 +49,7 @@ class MyForegroundService : LifecycleService() {
 
     fun startGetLocations()
     {
-
+        isEnath=false
         val isGooglePlayServicesAvailab = coroutineScope.async {
             repo.isGooglePlayServicesAvailable()
         }
@@ -69,16 +72,10 @@ class MyForegroundService : LifecycleService() {
             } else
                 Log.e("SERVICE_TAG3", "isGooglePlayServicesAvailable false")
         }
+
         repo.isEnathAccuracy.observe(this)
         {
-            if (it) {
-                coroutineScope.launch {
-                    repo.stopLocationUpdates()
-                    repo.runWorker(settingsWorkerReplayTime.toLong())
-                }
-                timer?.cancel()
-             //   stopSelf()
-            }
+
         }
 
     }
@@ -103,6 +100,7 @@ class MyForegroundService : LifecycleService() {
         ) {
             override fun onTick(millisUntilFinished: Long) {
                 val notification = notificationBuilder
+                    .setContentText("")
                     .setContentTitle(
                         "служба: ${
                             if (millisUntilFinished < 1000L) "скоро повтор" else getFormattedLeftTime(
@@ -125,12 +123,23 @@ class MyForegroundService : LifecycleService() {
                         repo.stopLocationUpdates()
                         repo.runWorker(settingsWorkerReplayTime.toLong())
                     }
-                    timer?.cancel()
+                    cancelTimer(getString(R.string.app_name),repo.getDate(Calendar.getInstance().getTime().time))//timer?.cancel()
                   //  stopSelf()
                 }
             }
         }
         timer?.start()
+    }
+
+    private fun cancelTimer(title:String, txtBody:String)
+    {
+        timer?.cancel()
+        val notification = notificationBuilder
+            .setContentTitle(title)
+            .setContentText(txtBody)
+            .setProgress(0,0,false)
+            .build()
+        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     override fun onCreate() {
@@ -147,7 +156,14 @@ class MyForegroundService : LifecycleService() {
       //  startTimer()
 
         repo.onLocationChangedListener = {
-            it
+            Log.e("onLocationListener", "$it / $isEnath")
+            if (it) {
+                repo.stopLocationUpdates()
+                repo.runWorker(settingsWorkerReplayTime.toLong())
+                cancelTimer(getString(R.string.app_name),repo.getDate(Calendar.getInstance().getTime().time))//timer?.cancel()
+                isEnath=true
+                //   stopSelf()
+            }
         }
         startGetLocations()
 

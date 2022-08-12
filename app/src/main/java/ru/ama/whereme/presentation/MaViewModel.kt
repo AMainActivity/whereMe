@@ -23,7 +23,7 @@ class MaViewModel @Inject constructor(
     init {
         val sd=viewModelScope.async {
            // runWorkerUpdateUseCase(15)
-            Log.e("runWorker1","15")
+         //   Log.e("runWorker1","15")
        //   lld2=getLastLocationUseCase()
         }
 viewModelScope.launch {

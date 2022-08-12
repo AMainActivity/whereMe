@@ -26,7 +26,7 @@ class GetLocationDataWorker(
     override fun onStopped() {
         super.onStopped()
 
-        Log.e("serviceConnection","unbindService")
+        Log.e("WorkeronStopped","unbindService")
         applicationContext.unbindService(serviceConnection)
     }
     /*
@@ -61,6 +61,7 @@ private  val serviceConnection = object : ServiceConnection {
 
     override fun doWork(): Result {
         val ctx: Context = applicationContext
+        Log.e("WorkerdoWork","doWork")
         /*while (true) {
             try {
                 val topCoins = apiService.getTopCoinsInfo(limit = 50)

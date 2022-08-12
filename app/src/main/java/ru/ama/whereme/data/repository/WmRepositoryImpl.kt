@@ -55,7 +55,7 @@ class WmRepositoryImpl @Inject constructor(
 
 
     var mBestLoc = Location("bestLocationOfBadAccuracy")
-    var onLocationChangedListener: ((LocationResult) -> Unit)? = null
+    var onLocationChangedListener: ((Boolean) -> Unit)? = null
 
     private val callback = Callback()
     private var settingsMinDist: Float = 100f
@@ -156,6 +156,7 @@ class WmRepositoryImpl @Inject constructor(
         mBestLoc.speed = 0f
         mBestLoc.time = 0
         _isEnathAccuracy.value = false
+        onLocationChangedListener?.invoke(false)
         val request = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
             interval = 10000
@@ -183,7 +184,7 @@ class WmRepositoryImpl @Inject constructor(
         return locationDao.getLastValue()
     }
 
-    private fun getDate(milliSeconds: Long): String? {
+     fun getDate(milliSeconds: Long): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
         val calendar: Calendar = Calendar.getInstance()
         calendar.setTimeInMillis(milliSeconds)
@@ -206,6 +207,7 @@ class WmRepositoryImpl @Inject constructor(
         )
         val itemsCount = locationDao.insertLocation(res)
         _isEnathAccuracy.postValue(true)
+        onLocationChangedListener?.invoke(true)
     }
 
 
@@ -213,7 +215,6 @@ class WmRepositoryImpl @Inject constructor(
         override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
 
-            onLocationChangedListener?.invoke(result)
 
 
 
@@ -254,6 +255,7 @@ class WmRepositoryImpl @Inject constructor(
                                 )
                                 val itemsCount = locationDao.insertLocation(res)
                                 _isEnathAccuracy.postValue(true)
+                                onLocationChangedListener?.invoke(true)
                                 Log.e("insertLocation", res.toString())
                             } else {
                                 updateTimeEndDb(lastDbValue._id.toInt(), it.time)
@@ -262,6 +264,7 @@ class WmRepositoryImpl @Inject constructor(
                                     getDate(lastDbValue.datetime.toLong()) + " - " + getDate(it.time)
                                 )
                                 _isEnathAccuracy.postValue(true)
+                                onLocationChangedListener?.invoke(true)
                             }
                         } else {
                             val res = LocationDbModel(
@@ -277,6 +280,7 @@ class WmRepositoryImpl @Inject constructor(
                             )
                             val itemsCount = locationDao.insertLocation(res)
                             _isEnathAccuracy.postValue(true)
+                            onLocationChangedListener?.invoke(true)
 
                             Log.e("insertLocationNull", res.toString())
                         }
