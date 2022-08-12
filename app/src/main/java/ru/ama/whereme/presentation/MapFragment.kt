@@ -127,7 +127,7 @@ class MapFragment : Fragment() {
             popupWindow.dismiss()
             popupWindow.showAsDropDown(anchor)
 
-            // Toast.makeText(requireContext(),sdf.trim(),Toast.LENGTH_SHORT).show()
+            if (binding2.lvDate.adapter.count==0) Toast.makeText(requireContext(),"пока нет данных,\n Попробуйте позднее...",Toast.LENGTH_SHORT).show()
         }
 
 

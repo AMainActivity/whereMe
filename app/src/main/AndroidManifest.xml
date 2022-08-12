@@ -32,7 +32,14 @@
             </intent-filter>
         </activity>
         <service android:name=".presentation.MyForegroundService" />
-		
+
+        <receiver android:name=".data.workers.StartServiceReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
         <provider
             android:authorities="androidx.work.WorkManagerInitializer"
             android:name="androidx.startup.InitializationProvider"

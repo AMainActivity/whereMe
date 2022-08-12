@@ -5,9 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.location.Location
-import android.os.Build
-import android.os.CountDownTimer
-import android.os.SystemClock
+import android.os.*
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -34,9 +32,54 @@ class MyForegroundService : LifecycleService() {
     @Inject
     lateinit var repo: WmRepositoryImpl
 
+    override fun onBind(intent: Intent): IBinder? {
+        log("onBind")
+        return LocalBinder()
+    }
+    inner class LocalBinder : Binder() {
 
+        fun getService() = this@MyForegroundService
+    }
     private val notificationBuilder by lazy {
         createNotificationBuilder()
+    }
+
+    fun startGetLocations()
+    {
+
+        val isGooglePlayServicesAvailab = coroutineScope.async {
+            repo.isGooglePlayServicesAvailable()
+        }
+
+        coroutineScope.launch {
+            settingsWorkerReplayTime=repo.dsWorkerReplayTime
+            startTimer()
+            if (isGooglePlayServicesAvailab.await()) {
+                val sd = coroutineScope.async {
+                    repo.startLocationUpdates()
+                    //   Log.e("SERVICE_TAG2", "MyForegroundService: ${lloc.toString()}")
+                }
+                coroutineScope.launch {
+                    sd.await()
+                }
+                //  Toast.makeText(applicationContext,lloc.toString(), Toast.LENGTH_SHORT).show()
+                log(repo.isEnathAccuracy.value.toString() + "")
+
+
+            } else
+                Log.e("SERVICE_TAG3", "isGooglePlayServicesAvailable false")
+        }
+        repo.isEnathAccuracy.observe(this)
+        {
+            if (it) {
+                coroutineScope.launch {
+                    repo.stopLocationUpdates()
+                    repo.runWorker(settingsWorkerReplayTime.toLong())
+                }
+             //   stopSelf()
+            }
+        }
+
     }
 
     private fun createNotificationBuilder() = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -81,7 +124,7 @@ class MyForegroundService : LifecycleService() {
                         repo.stopLocationUpdates()
                         repo.runWorker(settingsWorkerReplayTime.toLong())
                     }
-                    stopSelf()
+                  //  stopSelf()
                 }
             }
         }
@@ -104,7 +147,7 @@ class MyForegroundService : LifecycleService() {
         repo.onLocationChangedListener = {
             it
         }
-
+        startGetLocations()
 
 /*
 
@@ -115,39 +158,6 @@ lifecycleScope.launch {
 			   if (repo.isLocationTurnedOn.first()) {}
 			
 */
-
-        val isGooglePlayServicesAvailab = coroutineScope.async {
-            repo.isGooglePlayServicesAvailable()
-        }
-
-        coroutineScope.launch {
-            settingsWorkerReplayTime=repo.dsWorkerReplayTime
-            startTimer()
-            if (isGooglePlayServicesAvailab.await()) {
-                val sd = coroutineScope.async {
-                    repo.startLocationUpdates()
-                    //   Log.e("SERVICE_TAG2", "MyForegroundService: ${lloc.toString()}")
-                }
-                coroutineScope.launch {
-                    sd.await()
-                }
-                //  Toast.makeText(applicationContext,lloc.toString(), Toast.LENGTH_SHORT).show()
-                log(repo.isEnathAccuracy.value.toString() + "")
-
-
-            } else
-                Log.e("SERVICE_TAG3", "isGooglePlayServicesAvailable false")
-        }
-        repo.isEnathAccuracy.observe(this)
-        {
-            if (it) {
-                coroutineScope.launch {
-                    repo.stopLocationUpdates()
-                    repo.runWorker(settingsWorkerReplayTime.toLong())
-                }
-                stopSelf()
-            }
-        }
 
 
 

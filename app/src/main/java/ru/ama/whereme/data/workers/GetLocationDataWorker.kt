@@ -1,7 +1,10 @@
 package ru.ama.whereme.data.workers
 
 import android.app.ActivityManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.ServiceConnection
+import android.os.IBinder
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.work.*
@@ -18,7 +21,13 @@ class GetLocationDataWorker(
     private val locationDao: LocationDao,
     // private val apiService: ApiService,
     private val mapper: WmMapper
-) : CoroutineWorker(context, workerParameters) {
+) : Worker(context, workerParameters) {
+
+    override fun onStopped() {
+        super.onStopped()
+
+        applicationContext.unbindService(serviceConnection)
+    }
     /*
 
     fun Context.isMyServiceRunning(serviceClass: Class<*>): Boolean {
@@ -37,9 +46,18 @@ class GetLocationDataWorker(
         }
         return false
     }
+private  val serviceConnection = object : ServiceConnection {
+    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+        val binder = (service as? MyForegroundService.LocalBinder) ?: return
+        val foregroundService = binder.getService()
+        foregroundService.startGetLocations()
+    }
 
+    override fun onServiceDisconnected(name: ComponentName?) {
+    }
+}
 
-    override suspend fun doWork(): Result {
+    override fun doWork(): Result {
         val ctx: Context = applicationContext
         /*while (true) {
             try {
@@ -81,6 +99,11 @@ class GetLocationDataWorker(
                 else
                 {
                     Log.e("onStartCommand2", "isMyServiceRunning")
+                    ctx.bindService(
+                        MyForegroundService.newIntent(ctx),
+                        serviceConnection,
+                        0
+                    )
 
                 }
                 /*
