@@ -76,6 +76,7 @@ class MyForegroundService : LifecycleService() {
                     repo.stopLocationUpdates()
                     repo.runWorker(settingsWorkerReplayTime.toLong())
                 }
+                timer?.cancel()
              //   stopSelf()
             }
         }
@@ -124,6 +125,7 @@ class MyForegroundService : LifecycleService() {
                         repo.stopLocationUpdates()
                         repo.runWorker(settingsWorkerReplayTime.toLong())
                     }
+                    timer?.cancel()
                   //  stopSelf()
                 }
             }

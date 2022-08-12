@@ -26,6 +26,7 @@ class GetLocationDataWorker(
     override fun onStopped() {
         super.onStopped()
 
+        Log.e("serviceConnection","unbindService")
         applicationContext.unbindService(serviceConnection)
     }
     /*
@@ -51,6 +52,7 @@ private  val serviceConnection = object : ServiceConnection {
         val binder = (service as? MyForegroundService.LocalBinder) ?: return
         val foregroundService = binder.getService()
         foregroundService.startGetLocations()
+        Log.e("serviceConnection","onServiceConnected")
     }
 
     override fun onServiceDisconnected(name: ComponentName?) {
