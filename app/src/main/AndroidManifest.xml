@@ -31,10 +31,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".presentation.MyForegroundService" />
+        <service android:name=".presentation.MyForegroundService"
+            android:exported="false"/>
 
         <receiver android:name=".data.workers.StartServiceReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />

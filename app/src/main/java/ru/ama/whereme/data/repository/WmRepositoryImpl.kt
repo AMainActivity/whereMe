@@ -38,6 +38,7 @@ import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.entity.LocationDbByDays
 import ru.ama.whereme.domain.repository.WmRepository
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 
@@ -93,7 +94,9 @@ class WmRepositoryImpl @Inject constructor(
             val n = cm.activeNetwork
             if (n != null) {
                 val nc = cm.getNetworkCapabilities(n)
-                return nc!!.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                return nc!!.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || nc.hasTransport(
+                    NetworkCapabilities.TRANSPORT_WIFI
+                )
             }
             return false
         } else {
@@ -180,17 +183,20 @@ class WmRepositoryImpl @Inject constructor(
     }
 
     private fun getLastValueFromDb(): LocationDbModel {
-        val d = locationDao.getLastValue()
-        return locationDao.getLastValue()
+        return locationDao.getLastValue(getCurrentDate())
     }
 
-     fun getDate(milliSeconds: Long): String {
+    fun getDate(milliSeconds: Long): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
         val calendar: Calendar = Calendar.getInstance()
         calendar.setTimeInMillis(milliSeconds)
         return formatter.format(calendar.getTime())
     }
 
+    private fun getCurrentDate(): String {
+        val formatter = SimpleDateFormat("dd.MM.yyyy")
+        return formatter.format(Date())
+    }
 
     suspend fun saveLocation(location: Location) {
         //val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME

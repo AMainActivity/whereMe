@@ -23,8 +23,8 @@ interface LocationDao {
     @Query("SELECT _id,datestart,dateend FROM tab_locations GROUP BY strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') ORDER BY _id asc ")
     fun getLocationsByDays(): LiveData<List<LocationDbModelByDays>>
 
-    @Query("SELECT * FROM tab_locations  ORDER BY _id desc limit 1 ")
-    fun getLastValue(): LocationDbModel
+    @Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') =:mDate ORDER BY _id desc limit 1 ")
+    fun getLastValue(mDate:String): LocationDbModel
 
     @Query("update tab_locations  set info =  :newInfo  where _id=:id")
     fun updateLocationById(id:Int, newInfo:String):Int
