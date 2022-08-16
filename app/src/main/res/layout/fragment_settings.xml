@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".presentation.MainActivity">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="2"
+        android:background="@android:color/transparent"
+        android:scrollbars="none">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/frgmnt_set_cl"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:layout_editor_absoluteY="12dp">
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/frgmnt_set_cv"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="15dp"
+                android:layout_marginLeft="15dp"
+                android:layout_marginTop="15dp"
+                android:layout_marginEnd="15dp"
+                android:layout_marginRight="15dp"
+                android:padding="1dp"
+                app:cardBackgroundColor="#fdf"
+                app:cardCornerRadius="4dp"
+                app:cardElevation="2dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.275"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:orientation="vertical">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/frgmnt_set_ll_sotr"
+                    android:background="@android:color/transparent"
+                    android:orientation="vertical">
+                <Switch
+                    android:id="@+id/frgmnt_set_switch_start"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginLeft="15dp"
+                    android:layout_marginTop="28dp"
+                    android:layout_marginEnd="15dp"
+                    android:layout_marginRight="15dp"
+                    android:paddingLeft="15dp"
+                    android:text="Начать слежение" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:text="Рабочие дни"
+                    android:id="@+id/frgmnt_set_but_wdays"
+                    android:theme="@style/ButtonStyle"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    ></androidx.appcompat.widget.AppCompatButton>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:text="Время старта"
+                    android:id="@+id/frgmnt_set_but_start"
+                    android:theme="@style/ButtonStyle"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    ></androidx.appcompat.widget.AppCompatButton>
+
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:text="Время окончания"
+                    android:id="@+id/frgmnt_set_but_end"
+                    android:theme="@style/ButtonStyle"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    ></androidx.appcompat.widget.AppCompatButton>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:text="Минимальное расстояние"
+                    android:id="@+id/frgmnt_set_but_min_dist"
+                    android:theme="@style/ButtonStyle"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    ></androidx.appcompat.widget.AppCompatButton>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:text="Точность"
+                    android:id="@+id/frgmnt_set_but_accuracy"
+                    android:theme="@style/ButtonStyle"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    ></androidx.appcompat.widget.AppCompatButton>
+                <androidx.appcompat.widget.AppCompatButton
+                    android:text="Время ожидания точности"
+                    android:id="@+id/frgmnt_set_but_timeOfWaitGps"
+                    android:theme="@style/ButtonStyle"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    ></androidx.appcompat.widget.AppCompatButton>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:text="Периодичность контроля"
+                    android:id="@+id/frgmnt_set_but_timeOfWm"
+                    android:theme="@style/ButtonStyle"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    ></androidx.appcompat.widget.AppCompatButton>
+            </LinearLayout>
+                <androidx.appcompat.widget.AppCompatButton
+                    android:text="Удалить все данные"
+                    android:id="@+id/frgmnt_set_but_del"
+                    android:theme="@style/ButtonStyleDel"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    ></androidx.appcompat.widget.AppCompatButton>
+
+
+            </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
