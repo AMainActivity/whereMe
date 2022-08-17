@@ -19,6 +19,8 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.findNavController
 import com.google.gson.Gson
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -63,6 +65,10 @@ class MapFragment : Fragment() {
                 showPopupText(requireActivity().findViewById(R.id.menu_day_list))
                 true
             }
+             R.id.menu_set_frgmnt->{
+
+                 findNavController().navigate(R.id.action_FirstFragment_to_SettingsFragment)
+             true}
             else -> super.onOptionsItemSelected(item)
         }
     }

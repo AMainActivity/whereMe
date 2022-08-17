@@ -32,8 +32,5 @@ private fun convertDateToLong(date: String): Long {
         val format = SimpleDateFormat("dd.MM.yyyy")
         return format.format(date)
     }
-
-    companion object {
-        const val BASE_IMAGE_URL = "https://kol.hhos.ru/test/tests/img/"
-    }
+  
 }

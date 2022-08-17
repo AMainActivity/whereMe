@@ -9,5 +9,10 @@
         android:icon="@android:drawable/ic_menu_info_details"
         android:title="список дат"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/menu_set_frgmnt"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:title="настройки"
+        app:showAsAction="always" />
     
 </menu>

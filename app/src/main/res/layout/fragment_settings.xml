@@ -124,15 +124,6 @@
                     android:layout_height="wrap_content"
                     ></androidx.appcompat.widget.AppCompatButton>
             </LinearLayout>
-                <androidx.appcompat.widget.AppCompatButton
-                    android:text="Удалить все данные"
-                    android:id="@+id/frgmnt_set_but_del"
-                    android:theme="@style/ButtonStyleDel"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton>
-
 
             </LinearLayout>
             </androidx.cardview.widget.CardView>

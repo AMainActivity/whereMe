@@ -6,10 +6,7 @@ import dagger.BindsInstance
 import dagger.Component
 import ru.ama.whereme.data.workers.StartServiceReceiver
 import ru.ama.whereme.diO.DataModule
-import ru.ama.whereme.presentation.MapFragment
-import ru.ama.whereme.presentation.MainActivity
-import ru.ama.whereme.presentation.MyApp
-import ru.ama.whereme.presentation.MyForegroundService
+import ru.ama.whereme.presentation.*
 
 @ApplicationScope
 @Component(
@@ -23,6 +20,7 @@ interface ApplicationComponent {
 
     fun inject(activity: MainActivity)
     fun inject(startServiceReceiver: StartServiceReceiver)
+    fun inject(fragment: SettingsFragment)
     fun inject(fragment: MapFragment)
     fun inject(myForegroundService: MyForegroundService)
     fun inject(application: MyApp)

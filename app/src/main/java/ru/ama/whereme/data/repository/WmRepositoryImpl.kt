@@ -23,15 +23,19 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
+import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.database.LocationDbModel
+import ru.ama.whereme.data.database.SettingsDataModel
+import ru.ama.whereme.data.database.SettingsDomainModel
 import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
+import ru.ama.whereme.data.mapper.WmMapperSetTime
 import ru.ama.whereme.data.workers.GetLocationDataWorker
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.LocationDb
@@ -46,6 +50,7 @@ import javax.inject.Inject
 class WmRepositoryImpl @Inject constructor(
     private val mapper: WmMapper,
     private val mapperByDays: WmMapperByDays,
+    private val mapperSetTime: WmMapperSetTime,
     private val locationDao: LocationDao,
     private val application: Application,
     private val fusedLocationProviderClient: FusedLocationProviderClient,
@@ -123,6 +128,22 @@ class WmRepositoryImpl @Inject constructor(
             }
         }
     }
+
+
+    override fun getWorkingTime(): SettingsDomainModel {
+        return mapperSetTime.mapDataModelToDomain(
+            Gson().fromJson(
+                worktime,
+                SettingsDataModel::class.java
+            )
+        )
+    }
+
+
+    override fun setWorkingTime(dm: SettingsDomainModel) {
+        worktime = Gson().toJson(mapperSetTime.mapDomainToDataModelByDays(dm))
+    }
+
 
     override suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>> {
         Log.e("getLocationById", mDate)
@@ -386,10 +407,40 @@ class WmRepositoryImpl @Inject constructor(
                 editor.commit()
         }
 
+    //##############################################################################
+    val defaultTime = Gson().toJson(
+        SettingsDataModel(
+            listOf("1", "1", "1", "1", "1", "1", "1"),
+            "09:00",
+            "17:00"
+        )
+    )
+    var worktime: String?
+        get() {
+            val k: String?
+            if (mSettings.contains(APP_PREFERENCES_worktime)) {
+                k = mSettings.getString(
+                    APP_PREFERENCES_worktime,
+                    defaultTime/*"{\"days\":\"1;1;1;1;1;1;1\",\"start\":\"09:00\",\"end\":\"17:00\"}"*/
+                )
+            } else
+                k = defaultTime
+            return k
+        }
+        @SuppressLint("NewApi")
+        set(k) {
+            val editor = mSettings.edit()
+            editor.putString(APP_PREFERENCES_worktime, k)
+            if (android.os.Build.VERSION.SDK_INT > 9) {
+                editor.apply()
+            } else
+                editor.commit()
+        }
 
     private companion object {
         val APP_PREFERENCES_MIN_DIST = "min_dist"
         val APP_PREFERENCES_WORKER_REPLAY_TIME = "worker_replay_time"
+        val APP_PREFERENCES_worktime = "worktime"
     }
 
 }

@@ -20,6 +20,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.ActivityMainBinding
 import javax.inject.Inject
@@ -103,7 +104,8 @@ Toast.makeText(this,it.toString(),Toast.LENGTH_SHORT).show()
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
-            R.id.action_settings -> true
+            R.id.action_settings -> {
+                true}
             else -> super.onOptionsItemSelected(item)
         }
     }
