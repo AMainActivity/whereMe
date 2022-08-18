@@ -6,7 +6,7 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class SettingsDomainModel(
-  val days: List<String>,
-  val start: String,
-  val end: String
+  var days: List<String>,
+  var start: String,
+  var end: String
 ) : Parcelable

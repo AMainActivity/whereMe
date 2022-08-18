@@ -2,87 +2,153 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:layout_gravity="center">
+    android:layout_gravity="center"
+    android:orientation="vertical">
+
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="2"
         android:scrollbars="none">
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@android:color/white"
-        android:layout_gravity="center"
-        android:layout_margin="5dp"
-        android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:background="@android:color/white"
+            android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="пн" />
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/frgmnt_set_cb_d1"
                 android:layout_width="wrap_content"
-                android:text="пн"
-                android:textSize="17dp"
                 android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
 
                 />
 
-
-            <androidx.appcompat.widget.AppCompatCheckBox
-                android:id="@+id/frgmnt_set_cb_d2"
-                android:text="вт"
-                android:textSize="17dp"
+        </LinearLayout>
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-                />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="вт" />
 
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/frgmnt_set_cb_d2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp" />
+            </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="ср" />
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/frgmnt_set_cb_d3"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="17dp"
-                android:text="ср"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
 
                 />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="чт" />
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/frgmnt_set_cb_d4"
                 android:layout_width="wrap_content"
-                android:text="чт"
-                android:textSize="17dp"
                 android:layout_height="wrap_content"
-
+                android:minWidth="0dp"
+                android:minHeight="0dp"
                 />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="пт" />
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/frgmnt_set_cb_d5"
                 android:layout_width="wrap_content"
-                android:text="пт"
-                android:textSize="17dp"
                 android:layout_height="wrap_content"
-
+                android:minWidth="0dp"
+                android:minHeight="0dp"
                 />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-            <androidx.appcompat.widget.AppCompatCheckBox
+            <TextView
                 android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="сб" />
+            <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/frgmnt_set_cb_d6"
-                android:text="сб"
-                android:textSize="17dp"
-                android:layout_height="wrap_content"
-
-                />
-
-            <androidx.appcompat.widget.AppCompatCheckBox
                 android:layout_width="wrap_content"
-                android:id="@+id/frgmnt_set_cb_d7"
-                android:text="вс"
-                android:textSize="17dp"
                 android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="вс" />
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/frgmnt_set_cb_d7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
                 />
 
+        </LinearLayout>
 
-    </LinearLayout>
+        </LinearLayout>
 
 
     </HorizontalScrollView>
