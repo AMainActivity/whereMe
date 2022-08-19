@@ -14,7 +14,7 @@ interface WmRepository {
     suspend fun loadData(): List<Int>
     suspend fun GetLocationsFromBd(): LiveData<List<LocationDb>>
     suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>>
-    suspend fun getGropingDays(): LiveData<List<LocationDbByDays>>
+    suspend fun getGropingDays(): List<LocationDbByDays>
     fun isInternetConnected(): Boolean
     suspend fun saveLocationOnBD(lld: LocationLiveData): Int
 

@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -12,6 +14,7 @@ import android.util.Log
 import android.view.*
 import android.webkit.*
 import android.widget.ArrayAdapter
+import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -28,6 +31,8 @@ import ru.ama.whereme.data.database.SettingsDomainModel
 import ru.ama.whereme.databinding.DialWorktimeBinding
 import ru.ama.whereme.databinding.FragmentSettingsBinding
 import ru.ama.whereme.databinding.ItemDateListBinding
+import ru.ama.whereme.databinding.PopupsetBinding
+import java.text.SimpleDateFormat
 import javax.inject.Inject
 
 
@@ -108,11 +113,11 @@ class SettingsFragment : Fragment() {
 
 
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
-        workingTimeModel=viewModel.getWorkingTime()
         binding.frgmntSetButWdays.setOnClickListener {
             showPopupDays(binding.frgmntSetButWdays)
         }
         binding.frgmntSetButStart.setOnClickListener {
+            workingTimeModel=viewModel.getWorkingTime()
             val timePickerDialog =
                 TimePickerDialog(requireContext(), { view, hourOfDay, minute ->
 
@@ -121,6 +126,9 @@ class SettingsFragment : Fragment() {
                     val m =
                         if (minute.toString().length == 1) "0" + minute.toString() else minute.toString()
                     Log.e("Time", "$h:$m")
+                    if (!compare2Times("$h:$m", workingTimeModel.end))
+                    Toast.makeText(requireContext(),"время должо быть раньше времени конца: ${workingTimeModel.end}",Toast.LENGTH_SHORT).show()
+                else
                     viewModel.setWorkingTime(workingTimeModel.copy(start="$h:$m"))
                 }, getHourFromSet(1).toInt(),getHourFromSet(2).toInt(), true)
            // timePickerDialog.window!!.attributes.windowAnimations =
@@ -134,15 +142,16 @@ class SettingsFragment : Fragment() {
             }
         }
         binding.frgmntSetButEnd.setOnClickListener {
+            workingTimeModel=viewModel.getWorkingTime()
                 val timePickerDialog =
                     TimePickerDialog(requireContext(), TimePickerDialog.OnTimeSetListener { view, hourOfDay, minute ->
                         val h=if (hourOfDay.toString().length==1) "0"+(hourOfDay).toString() else (hourOfDay).toString()
                         val m=if (minute.toString().length==1) "0"+minute.toString() else minute.toString()
                         Log.e("endTime","$h:$m")
 
-                      //  if (!utils.getInstance(requireContext()).compare2Times(jWorkTime.start,"$h:$m"))
-                     //       utils.getInstance(requireContext()).custToast("время окончания должно быть больше времени старта",true)
-                      //  else
+                       if (!compare2Times(workingTimeModel.start,"$h:$m"))
+                           Toast.makeText(requireContext(),"время должо быть позже времени старта: ${workingTimeModel.start}",Toast.LENGTH_SHORT).show()
+                        else
                        //     settings.getInstance(requireContext()).worktime= Gson().toJson(adrrResponse.workTimeSetting(jWorkTime.days,  jWorkTime.start,"$h:$m")).toString()
 
                         viewModel.setWorkingTime(workingTimeModel.copy(end="$h:$m"))
@@ -157,10 +166,88 @@ class SettingsFragment : Fragment() {
 
                 }
             }
+        binding.frgmntSetButMinDist.setOnClickListener {showAlertDialogSet(binding.frgmntSetButMinDist.id)}
+
     }
 
+private   fun showAlertDialogSet(viewId: Int) {
+    val builder = AlertDialog.Builder(requireContext())
+   // val inflater = requireContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
 
+    val binding3 = PopupsetBinding.inflate(layoutInflater)
+    val customLayout: View = binding3.root//inflater.inflate(R.layout.popupset, null)
+    builder.setView(customLayout)
+    builder.setCancelable(true)
+    val et= binding3.frgmntSetEt
+    when(viewId)
+    {
+        R.id.frgmnt_set_but_min_dist -> {
+            (binding3.frgmntSetL).hint =
+                "Минимальное расстояние"
+            et.setText("1")
+        }/*
+        R.id.frgmnt_set_but_accuracy -> {
+            (customLayout.findViewById<View>(R.id.frgmnt_set_l) as TextInputLayout).hint =
+                "Точность"
+            et.setText(set.accuracy.toString())
+        }
+        R.id.frgmnt_set_but_timeOfWaitGps -> {
+            (customLayout.findViewById<View>(R.id.frgmnt_set_l) as TextInputLayout).hint =
+                "Время ожидания точности"
+            et.setText(set.timeOfWaitGps.toString())
+        }
+        R.id.frgmnt_set_but_timeOfWm -> {
+            (customLayout.findViewById<View>(R.id.frgmnt_set_l) as TextInputLayout).hint =
+                "Периодичность контроля"
+            et.setText(set.intervalOfWorker.toString())
+        }*/
+    }
+    val dialog = builder.create()
+    dialog.show()
+   // dialog.window!!.attributes.windowAnimations = R.style.dialog_animation_pd
+    dialog!!.getWindow()!!.decorView.setBackgroundColor(Color.TRANSPARENT)
+    dialog!!.getWindow()!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+    dialog!!.getWindow()!!.setGravity(Gravity.CENTER)
+    dialog!!.getWindow()!!.setLayout(
+        LinearLayout.LayoutParams.WRAP_CONTENT,
+        LinearLayout.LayoutParams.WRAP_CONTENT
+    )
+    binding3.frgmntSetIbOk.setOnClickListener {
+        if (et.text.toString().length>0)
+            when(viewId)
+            {
+                R.id.frgmnt_set_but_min_dist -> {
+                   // set.minDistance = et.text.toString().toLong()
+                }/*
+                R.id.frgmnt_set_but_accuracy -> {
+                    set.accuracy = et.text.toString().toLong()
+                }
+                R.id.frgmnt_set_but_timeOfWaitGps -> {
+                    set.timeOfWaitGps = et.text.toString().toLong()
+                }
+                R.id.frgmnt_set_but_timeOfWm -> {
+                    set.intervalOfWorker = et.text.toString().toLong()
+                }*/
+            }
+        else
+            et.error = "заполните"
+        dialog.dismiss()
+    }
+}
+
+    private fun compare2Times(start: String, end: String):Boolean
+    {   var res=false
+        val sdf = SimpleDateFormat("HH:mm")
+        val strDate = sdf.parse(start)
+        val endDate = sdf.parse(end)
+        if (endDate.time > strDate.time) {
+            res=true
+        }
+        Log.e("compare2Times","$strDate ### $endDate %%% $res" )
+        return  res
+    }
     private fun showPopupDays(anchor: View) {
+        workingTimeModel=viewModel.getWorkingTime()
         val popupWindow = PopupWindow(requireContext())
         ///popupWindow.animationStyle = R.style.dialog_animation
         // val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater

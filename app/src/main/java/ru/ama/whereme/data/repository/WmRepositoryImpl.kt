@@ -121,11 +121,9 @@ class WmRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun getGropingDays(): LiveData<List<LocationDbByDays>> {
-        return Transformations.map(locationDao.getLocationsByDays()) {
-            it.map {
-                mapperByDays.mapDbModelToEntity(it)
-            }
+    override suspend fun getGropingDays(): List<LocationDbByDays> {
+        return locationDao.getLocationsByDays().map {
+            mapperByDays.mapDbModelToEntity(it)
         }
     }
 

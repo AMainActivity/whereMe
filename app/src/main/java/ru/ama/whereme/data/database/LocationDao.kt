@@ -21,7 +21,7 @@ interface LocationDao {
 
 //CAST(strftime('%Y', datetime(date/1000, 'unixepoch')) AS int) AS year
     @Query("SELECT _id,datestart,dateend FROM tab_locations GROUP BY strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') ORDER BY _id asc ")
-    fun getLocationsByDays(): LiveData<List<LocationDbModelByDays>>
+    suspend fun getLocationsByDays(): List<LocationDbModelByDays>
 
     @Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') =:mDate ORDER BY _id desc limit 1 ")
     fun getLastValue(mDate:String): LocationDbModel

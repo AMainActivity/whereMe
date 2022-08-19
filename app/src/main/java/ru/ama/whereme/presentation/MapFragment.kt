@@ -98,10 +98,10 @@ class MapFragment : Fragment() {
         popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
         popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
         val binding2 = ItemDateListBinding.inflate(layoutInflater)
-        viewModel.ld_days?.observe(viewLifecycleOwner) {
+      //  viewModel.ld_days?.observe(viewLifecycleOwner) {
             var sdf = ""
             listOfDays.clear()
-            for (asd in it) {
+            for (asd in viewModel.ld_days!!) {
                 sdf += "\n" + asd.datestart
                 listOfDays.add(asd.datestart)
                 listOfIds.add((asd._id).toInt())
@@ -133,8 +133,8 @@ class MapFragment : Fragment() {
             popupWindow.dismiss()
             popupWindow.showAsDropDown(anchor)
 
-            if (binding2.lvDate.adapter.count==0) Toast.makeText(requireContext(),"пока нет данных,\n Попробуйте позднее...",Toast.LENGTH_SHORT).show()
-        }
+            if (binding2.lvDate.adapter.count==0) Toast.makeText(requireContext(),"пока нет данных,\nПопробуйте позднее...",Toast.LENGTH_SHORT).show()
+     //   }
 
 
     }

@@ -7,5 +7,5 @@ class GetGropingDaysUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
 
-    operator  suspend fun invoke() = repository.getGropingDays()
+    suspend operator fun invoke() = repository.getGropingDays()
 }
