@@ -28,10 +28,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import ru.ama.whereme.data.database.LocationDao
-import ru.ama.whereme.data.database.LocationDbModel
-import ru.ama.whereme.data.database.SettingsDataModel
-import ru.ama.whereme.data.database.SettingsDomainModel
+import ru.ama.whereme.data.database.*
 import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
@@ -75,7 +72,7 @@ class WmRepositoryImpl @Inject constructor(
     }
 
     private fun initSettinsData() {
-        settingsMinDist = dsMinDist
+       // settingsMinDist = dsMinDist
         settingsWorkerReplayTime = dsWorkerReplayTime
 
     }
@@ -128,18 +125,32 @@ class WmRepositoryImpl @Inject constructor(
     }
 
 
-    override fun getWorkingTime(): SettingsDomainModel {
+    override fun getWorkingTime(): SettingsDomModelWorkTime {
         return mapperSetTime.mapDataModelToDomain(
             Gson().fromJson(
                 worktime,
-                SettingsDataModel::class.java
+                SettingsDataModelWorkTime::class.java
             )
         )
     }
 
 
-    override fun setWorkingTime(dm: SettingsDomainModel) {
-        worktime = Gson().toJson(mapperSetTime.mapDomainToDataModelByDays(dm))
+    override fun setWorkingTime(dm: SettingsDomModelWorkTime) {
+        worktime = Gson().toJson(mapperSetTime.mapDomainToDataModel(dm))
+    }
+
+    override fun getOherSettings(): SettingsDomnModelOther {
+        return mapperSetTime.mapDataModelOtherToDom(
+            Gson().fromJson(
+                otherSettings,
+                SettingsDataModelOther::class.java
+            )
+        )
+    }
+
+
+    override fun setOherSettings(dm: SettingsDomnModelOther) {
+        worktime = Gson().toJson(mapperSetTime.mapDomOtherToDataModel(dm))
     }
 
 
@@ -174,7 +185,7 @@ class WmRepositoryImpl @Inject constructor(
         initSettinsData()
         mBestLoc.latitude = 0.0
         mBestLoc.longitude = 0.0
-        mBestLoc.accuracy = 0f
+        mBestLoc.accuracy = 1500f
         mBestLoc.speed = 0f
         mBestLoc.time = 0
         _isEnathAccuracy.value = false
@@ -251,7 +262,7 @@ class WmRepositoryImpl @Inject constructor(
                 mBestLoc.time = result.lastLocation.time
             }
 
-            if (result.lastLocation != null && result.lastLocation.accuracy < settingsMinDist) {
+            if (result.lastLocation != null && result.lastLocation.accuracy < dsMinAccuracy) {
                 /*ProcessLifecycleOwner.get().lifecycleScope*/
                 externalScope.launch(Dispatchers.IO) {
                     val lastDbValue = getLastValueFromDb()
@@ -366,7 +377,7 @@ class WmRepositoryImpl @Inject constructor(
     }
 
     //##############################################################################
-    var dsMinDist: Float
+    var dsMinAccuracy: Float
         get() {
             val k: Float
             if (mSettings.contains(APP_PREFERENCES_MIN_DIST)) {
@@ -407,10 +418,18 @@ class WmRepositoryImpl @Inject constructor(
 
     //##############################################################################
     val defaultTime = Gson().toJson(
-        SettingsDataModel(
+        SettingsDataModelWorkTime(
             listOf("1", "1", "1", "1", "1", "1", "1"),
             "09:00",
             "17:00"
+        )
+    )
+    val defaultOtherSettings = Gson().toJson(
+        SettingsDataModelOther(
+            200f,
+            50f,
+            180,
+            180
         )
     )
     var worktime: String?
@@ -435,10 +454,33 @@ class WmRepositoryImpl @Inject constructor(
                 editor.commit()
         }
 
+    var otherSettings: String?
+        get() {
+            val k: String?
+            if (mSettings.contains(APP_PREFERENCES_worktime)) {
+                k = mSettings.getString(
+                    APP_PREFERENCES_worktime,
+                    defaultOtherSettings/*"{\"days\":\"1;1;1;1;1;1;1\",\"start\":\"09:00\",\"end\":\"17:00\"}"*/
+                )
+            } else
+                k = defaultOtherSettings
+            return k
+        }
+        @SuppressLint("NewApi")
+        set(k) {
+            val editor = mSettings.edit()
+            editor.putString(APP_PREFERENCES_worktime, k)
+            if (android.os.Build.VERSION.SDK_INT > 9) {
+                editor.apply()
+            } else
+                editor.commit()
+        }
+
     private companion object {
         val APP_PREFERENCES_MIN_DIST = "min_dist"
         val APP_PREFERENCES_WORKER_REPLAY_TIME = "worker_replay_time"
         val APP_PREFERENCES_worktime = "worktime"
+        val APP_PREFERENCES_othersettings = "othersettings"
     }
 
 }

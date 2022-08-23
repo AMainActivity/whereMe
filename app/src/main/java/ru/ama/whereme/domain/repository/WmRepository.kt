@@ -4,7 +4,8 @@ import android.location.Location
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.flow.StateFlow
-import ru.ama.whereme.data.database.SettingsDomainModel
+import ru.ama.whereme.data.database.SettingsDomModelWorkTime
+import ru.ama.whereme.data.database.SettingsDomnModelOther
 import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.domain.entity.*
 
@@ -22,8 +23,10 @@ interface WmRepository {
     fun runWorker(timeInterval: Long)
 
     suspend fun getLocation(): LocationLiveData
-    fun getWorkingTime(): SettingsDomainModel
-    fun setWorkingTime(dm:SettingsDomainModel)
+    fun getWorkingTime(): SettingsDomModelWorkTime
+    fun setWorkingTime(dm:SettingsDomModelWorkTime)
+    fun getOherSettings(): SettingsDomnModelOther
+    fun setOherSettings(dm:SettingsDomnModelOther)
 
     // suspend fun getLocation2() : LiveData<Location?>
     suspend fun getLastLocation(): Location?
