@@ -4,5 +4,9 @@ package ru.ama.whereme.data.database
 data class SettingsDataModelWorkTime(
   val days: List<String>,
   val start: String,
-  val end: String
+  val end: String,
+  var minDist: Float,
+  var accuracy: Float,
+  var timeOfWaitAccuracy: Int,
+  var timeOfWorkingWM: Int
 )

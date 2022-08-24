@@ -19,6 +19,7 @@ import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -42,6 +43,7 @@ class SettingsFragment : Fragment() {
     private val binding
         get() = _binding ?: throw RuntimeException("FragmentSettingsBinding == null")
     private lateinit var viewModel: SettingsViewModel
+    private var listOfCheckBox = listOf<AppCompatCheckBox>()
     private val component by lazy {
         (requireActivity().application as MyApp).component
     }
@@ -59,24 +61,24 @@ class SettingsFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // setHasOptionsMenu(true)
+         setHasOptionsMenu(true)
     }
 
 
-    /* override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
-         menuInflater.inflate(R.menu.menu_map_fragment, menu)
+    override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
+         menuInflater.inflate(R.menu.menu_set_fragment, menu)
      }
 
      override fun onOptionsItemSelected(item: MenuItem): Boolean {
 
          return when (item.itemId) {
-             R.id.menu_day_list -> {
-                 showPopupText(requireActivity().findViewById(R.id.menu_day_list))
+             R.id.menu_set_frgmnt -> {
+                 saveSettings()
                  true
              }
              else -> super.onOptionsItemSelected(item)
          }
-     }*/
+     }
 
     private fun setActionBarSubTitle(txt: String) {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = txt
@@ -113,9 +115,10 @@ class SettingsFragment : Fragment() {
 
 
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
-        binding.frgmntSetButWdays.setOnClickListener {
+        setDays()
+        /*binding.frgmntSetButWdays.setOnClickListener {
             showPopupDays(binding.frgmntSetButWdays)
-        }
+        }*/
         binding.frgmntSetButStart.setOnClickListener {
             workingTimeModel = viewModel.getWorkingTime()
             val timePickerDialog =
@@ -182,15 +185,15 @@ class SettingsFragment : Fragment() {
 
             }
         }
-        binding.frgmntSetButMinDist.setOnClickListener { showPopupOtherSettings(binding.frgmntSetButMinDist) }
+        setOtherSettings()
+       /* binding.frgmntSetButMinDist.setOnClickListener { showPopupOtherSettings(binding.frgmntSetButMinDist) }
         binding.frgmntSetButAccuracy.setOnClickListener { showPopupOtherSettings(binding.frgmntSetButAccuracy) }
         binding.frgmntSetButTimeOfWaitGps.setOnClickListener { showPopupOtherSettings(binding.frgmntSetButTimeOfWaitGps) }
-        binding.frgmntSetButTimeOfWm.setOnClickListener { showPopupOtherSettings(binding.frgmntSetButTimeOfWm) }
+        binding.frgmntSetButTimeOfWm.setOnClickListener { showPopupOtherSettings(binding.frgmntSetButTimeOfWm) }*/
 
     }
 
-
-    private fun showPopupOtherSettings(anchor: View) {
+    /*private fun showPopupOtherSettings(anchor: View) {
         val popupWindow = PopupWindow(requireContext())
         ///popupWindow.animationStyle = R.style.dialog_animation
 
@@ -244,10 +247,16 @@ class SettingsFragment : Fragment() {
         }
         popupWindow.contentView = binding3.root
         popupWindow.showAsDropDown(anchor)
+    }*/
+    private fun setOtherSettings() {
+        binding.frgmntSetAccurEt.setText(workingTimeModel.accuracy.toString())
+        (binding.frgmntSetMdEt).setText(workingTimeModel.minDist.toString())
+        (binding.frgmntSetTimeAcEt).setText(workingTimeModel.timeOfWaitAccuracy.toString())
+        (binding.frgmntSetTimePovtorEt).setText(workingTimeModel.timeOfWorkingWM.toString())
     }
 
 
-    private fun showAlertDialogSet(viewId: Int) {
+   /* private fun showAlertDialogSet(viewId: Int) {
         val builder = AlertDialog.Builder(requireContext())
         // val inflater = requireContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
 
@@ -308,7 +317,7 @@ class SettingsFragment : Fragment() {
                 et.error = "заполните"
             dialog.dismiss()
         }
-    }
+    }*/
 
     private fun compare2Times(start: String, end: String): Boolean {
         var res = false
@@ -322,7 +331,7 @@ class SettingsFragment : Fragment() {
         return res
     }
 
-    private fun showPopupDays(anchor: View) {
+   /* private fun showPopupDays(anchor: View) {
         workingTimeModel = viewModel.getWorkingTime()
         val popupWindow = PopupWindow(requireContext())
         ///popupWindow.animationStyle = R.style.dialog_animation
@@ -371,6 +380,44 @@ class SettingsFragment : Fragment() {
         //popupWindow.dismiss()
         popupWindow.showAsDropDown(anchor)
 
+    }*/
+    private fun setDays() {
+        workingTimeModel = viewModel.getWorkingTime()
+        val listOfDays = workingTimeModel.days
+        listOfCheckBox = listOf(
+            binding.frgmntSetCbD1,
+            binding.frgmntSetCbD2,
+            binding.frgmntSetCbD3,
+            binding.frgmntSetCbD4,
+            binding.frgmntSetCbD5,
+            binding.frgmntSetCbD6,
+            binding.frgmntSetCbD7
+        )
+        if (listOfDays.size == listOfCheckBox.size) {
+            for (i in listOfDays.indices) {
+                listOfCheckBox[i].isChecked = listOfDays[i].equals("1")
+            }
+        }
+
+    }
+
+    private fun saveSettings()
+    {
+        var listOfDays1: MutableList<String> = mutableListOf<String>()
+        for (cb in listOfCheckBox) {
+            listOfDays1.add((cb.isChecked).toIntTxt())
+        }
+        viewModel.setWorkingTime(
+            SettingsDomModelWorkTime(
+                listOfDays1,
+                workingTimeModel.start,
+                workingTimeModel.end,
+                binding.frgmntSetAccurEt.text.toString().toFloat(),
+                binding.frgmntSetMdEt.text.toString().toFloat(),
+                binding.frgmntSetTimeAcEt.text.toString().toInt(),
+                binding.frgmntSetTimePovtorEt.text.toString().toInt()
+            )
+        )
     }
 
     private fun Boolean.toIntTxt() = if (this) "1" else "0"

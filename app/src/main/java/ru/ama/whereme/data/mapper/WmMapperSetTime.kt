@@ -14,15 +14,23 @@ class WmMapperSetTime @Inject constructor() {
     fun mapDataModelToDomain(dataModel: SettingsDataModelWorkTime) = SettingsDomModelWorkTime(
            days=dataModel.days,
            start =dataModel.start,
-		end=dataModel.end
+		end=dataModel.end,
+        minDist =dataModel.minDist,
+        accuracy =dataModel.accuracy,
+        timeOfWaitAccuracy = dataModel.timeOfWaitAccuracy,
+        timeOfWorkingWM = dataModel.timeOfWorkingWM
     )
 
     fun mapDomainToDataModel(domainModel: SettingsDomModelWorkTime) = SettingsDataModelWorkTime(
         days=domainModel.days,
         start =domainModel.start,
-        end =domainModel.end
+        end =domainModel.end,
+        minDist =domainModel.minDist,
+        accuracy =domainModel.accuracy,
+        timeOfWaitAccuracy = domainModel.timeOfWaitAccuracy,
+        timeOfWorkingWM = domainModel.timeOfWorkingWM
     )
-
+/*
     fun mapDataModelOtherToDom(dataModel: SettingsDataModelOther) = SettingsDomnModelOther(
            minDist =dataModel.minDist,
            accuracy =dataModel.accuracy,
@@ -35,6 +43,6 @@ class WmMapperSetTime @Inject constructor() {
         accuracy =domainModel.accuracy,
         timeOfWaitAccuracy = domainModel.timeOfWaitAccuracy,
         timeOfWorkingWM = domainModel.timeOfWorkingWM
-    )
+    )*/
   
 }

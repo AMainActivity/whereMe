@@ -25,8 +25,8 @@ interface WmRepository {
     suspend fun getLocation(): LocationLiveData
     fun getWorkingTime(): SettingsDomModelWorkTime
     fun setWorkingTime(dm:SettingsDomModelWorkTime)
-    fun getOherSettings(): SettingsDomnModelOther
-    fun setOherSettings(dm:SettingsDomnModelOther)
+   // fun getOherSettings(): SettingsDomnModelOther
+  //  fun setOherSettings(dm:SettingsDomnModelOther)
 
     // suspend fun getLocation2() : LiveData<Location?>
     suspend fun getLastLocation(): Location?

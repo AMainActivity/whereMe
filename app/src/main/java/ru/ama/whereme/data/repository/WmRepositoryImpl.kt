@@ -139,7 +139,7 @@ class WmRepositoryImpl @Inject constructor(
         worktime = Gson().toJson(mapperSetTime.mapDomainToDataModel(dm))
     }
 
-    override fun getOherSettings(): SettingsDomnModelOther {
+    /* fun getOherSettings(): SettingsDomnModelOther {
         return mapperSetTime.mapDataModelOtherToDom(
             Gson().fromJson(
                 otherSettings,
@@ -151,7 +151,7 @@ class WmRepositoryImpl @Inject constructor(
 
     override fun setOherSettings(dm: SettingsDomnModelOther) {
         worktime = Gson().toJson(mapperSetTime.mapDomOtherToDataModel(dm))
-    }
+    }*/
 
 
     override suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>> {
@@ -421,7 +421,11 @@ class WmRepositoryImpl @Inject constructor(
         SettingsDataModelWorkTime(
             listOf("1", "1", "1", "1", "1", "1", "1"),
             "09:00",
-            "17:00"
+            "17:00",
+            200f,
+            50f,
+            180,
+            180
         )
     )
     val defaultOtherSettings = Gson().toJson(

@@ -49,6 +49,9 @@
                     android:id="@+id/frgmnt_set_ll_sotr"
                     android:background="@android:color/transparent"
                     android:orientation="vertical">
+
+
+
                 <Switch
                     android:id="@+id/frgmnt_set_switch_start"
                     android:layout_width="match_parent"
@@ -61,15 +64,165 @@
                     android:paddingLeft="15dp"
                     android:text="Начать слежение" />
 
-                <androidx.appcompat.widget.AppCompatButton
+                <!--androidx.appcompat.widget.AppCompatButton
                     android:text="Рабочие дни"
                     android:id="@+id/frgmnt_set_but_wdays"
                     android:theme="@style/ButtonStyle"
                     android:foreground="?android:attr/selectableItemBackground"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton>
+                    ></androidx.appcompat.widget.AppCompatButton-->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Рабочие дни"/>
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_weight="2"
+                        android:scrollbars="none">
 
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="5dp"
+                            android:background="@android:color/white"
+                            android:orientation="horizontal">
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center"
+                                    android:text="пн" />
+                                <androidx.appcompat.widget.AppCompatCheckBox
+                                    android:id="@+id/frgmnt_set_cb_d1"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="0dp"
+                                    android:minHeight="0dp"
+
+                                    />
+
+                            </LinearLayout>
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center"
+                                    android:text="вт" />
+
+                                <androidx.appcompat.widget.AppCompatCheckBox
+                                    android:id="@+id/frgmnt_set_cb_d2"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="0dp"
+                                    android:minHeight="0dp" />
+                            </LinearLayout>
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center"
+                                    android:text="ср" />
+                                <androidx.appcompat.widget.AppCompatCheckBox
+                                    android:id="@+id/frgmnt_set_cb_d3"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="0dp"
+                                    android:minHeight="0dp"
+
+                                    />
+                            </LinearLayout>
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center"
+                                    android:text="чт" />
+                                <androidx.appcompat.widget.AppCompatCheckBox
+                                    android:id="@+id/frgmnt_set_cb_d4"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="0dp"
+                                    android:minHeight="0dp"
+                                    />
+                            </LinearLayout>
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center"
+                                    android:text="пт" />
+                                <androidx.appcompat.widget.AppCompatCheckBox
+                                    android:id="@+id/frgmnt_set_cb_d5"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="0dp"
+                                    android:minHeight="0dp"
+                                    />
+                            </LinearLayout>
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center"
+                                    android:text="сб" />
+                                <androidx.appcompat.widget.AppCompatCheckBox
+                                    android:id="@+id/frgmnt_set_cb_d6"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="0dp"
+                                    android:minHeight="0dp"
+                                    />
+                            </LinearLayout>
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center"
+                                    android:text="вс" />
+                                <androidx.appcompat.widget.AppCompatCheckBox
+                                    android:id="@+id/frgmnt_set_cb_d7"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:minWidth="0dp"
+                                    android:minHeight="0dp"
+                                    />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+
+                    </HorizontalScrollView>
                 <androidx.appcompat.widget.AppCompatButton
                     android:text="Время старта"
                     android:id="@+id/frgmnt_set_but_start"
@@ -89,40 +242,122 @@
                     android:layout_height="wrap_content"
                     ></androidx.appcompat.widget.AppCompatButton>
 
-                <androidx.appcompat.widget.AppCompatButton
+                <!--androidx.appcompat.widget.AppCompatButton
                     android:text="Минимальное расстояние"
                     android:id="@+id/frgmnt_set_but_min_dist"
                     android:theme="@style/ButtonStyle"
                     android:foreground="?android:attr/selectableItemBackground"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton>
+                    ></androidx.appcompat.widget.AppCompatButton-->
+                    <com.google.android.material.textfield.TextInputLayout
 
-                <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/frgmnt_set_md_l"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:minWidth="200dp"
+                        android:layout_weight="1"
+                        android:textColorHint="#aaa">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/frgmnt_set_md_et"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="5dp"
+                            android:layout_gravity="center_vertical"
+                            android:hint="Минимальное расстояние"
+                            android:maxLines="1"
+                            android:inputType="number"
+                            android:singleLine="true"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                <!--androidx.appcompat.widget.AppCompatButton
                     android:text="Точность"
                     android:id="@+id/frgmnt_set_but_accuracy"
                     android:theme="@style/ButtonStyle"
                     android:foreground="?android:attr/selectableItemBackground"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton>
-                <androidx.appcompat.widget.AppCompatButton
+                    ></androidx.appcompat.widget.AppCompatButton-->
+                    <com.google.android.material.textfield.TextInputLayout
+
+                        android:id="@+id/frgmnt_set_accur_l"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:minWidth="200dp"
+                        android:layout_weight="1"
+                        android:textColorHint="#aaa">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/frgmnt_set_accur_et"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="5dp"
+                            android:layout_gravity="center_vertical"
+                            android:hint="Точность"
+                            android:maxLines="1"
+                            android:inputType="number"
+                            android:singleLine="true"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                <!--androidx.appcompat.widget.AppCompatButton
                     android:text="Время ожидания точности"
                     android:id="@+id/frgmnt_set_but_timeOfWaitGps"
                     android:theme="@style/ButtonStyle"
                     android:foreground="?android:attr/selectableItemBackground"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton>
+                    ></androidx.appcompat.widget.AppCompatButton-->
+                    <com.google.android.material.textfield.TextInputLayout
 
-                <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/frgmnt_set_time_ac_l"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:minWidth="200dp"
+                        android:layout_weight="1"
+                        android:textColorHint="#aaa">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/frgmnt_set_time_ac_et"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="5dp"
+                            android:layout_gravity="center_vertical"
+                            android:hint="Время ожидания точности"
+                            android:maxLines="1"
+                            android:inputType="number"
+                            android:singleLine="true"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+                <!--androidx.appcompat.widget.AppCompatButton
                     android:text="Периодичность контроля"
                     android:id="@+id/frgmnt_set_but_timeOfWm"
                     android:theme="@style/ButtonStyle"
                     android:foreground="?android:attr/selectableItemBackground"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton>
+                    ></androidx.appcompat.widget.AppCompatButton-->
+                    <com.google.android.material.textfield.TextInputLayout
+
+                        android:id="@+id/frgmnt_set_time_povtor_l"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:minWidth="200dp"
+                        android:layout_weight="1"
+                        android:textColorHint="#aaa">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/frgmnt_set_time_povtor_et"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="5dp"
+                            android:layout_gravity="center_vertical"
+                            android:hint="Периодичность контроля"
+                            android:maxLines="1"
+                            android:inputType="number"
+                            android:singleLine="true"/>
+                    </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
             </LinearLayout>
