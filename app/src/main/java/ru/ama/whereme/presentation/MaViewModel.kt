@@ -8,10 +8,7 @@ import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
 class MaViewModel @Inject constructor(
-    private val getLocationUseCase: GetLocationUseCase,
-    private val getLocation2UseCase: GetLocation2UseCase,
     private val getLastLocationUseCase: GetLastLocationUseCase,
-    private val saveLocationOnBDUseCase: SaveLocationOnBDUseCase,
     private val stopLocationsUpdateUseCase: StopLocationsUpdateUseCase,
     private val runWorkerUpdateUseCase: RunWorkerUpdateUseCase
 ) : ViewModel() {

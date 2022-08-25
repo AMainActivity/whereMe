@@ -2,11 +2,7 @@ package ru.ama.whereme.domain.repository
 
 import android.location.Location
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import kotlinx.coroutines.flow.StateFlow
-import ru.ama.whereme.data.database.SettingsDomModelWorkTime
-import ru.ama.whereme.data.database.SettingsDomnModelOther
-import ru.ama.whereme.data.location.LocationLiveData
+import ru.ama.whereme.data.database.SettingsDomModel
 import ru.ama.whereme.domain.entity.*
 
 interface WmRepository {
@@ -17,17 +13,12 @@ interface WmRepository {
     suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>>
     suspend fun getGropingDays(): List<LocationDbByDays>
     fun isInternetConnected(): Boolean
-    suspend fun saveLocationOnBD(lld: LocationLiveData): Int
 
     suspend fun stopData(): Int
     fun runWorker(timeInterval: Long)
 
-    suspend fun getLocation(): LocationLiveData
-    fun getWorkingTime(): SettingsDomModelWorkTime
-    fun setWorkingTime(dm:SettingsDomModelWorkTime)
-   // fun getOherSettings(): SettingsDomnModelOther
-  //  fun setOherSettings(dm:SettingsDomnModelOther)
+    fun getWorkingTime(): SettingsDomModel
+    fun setWorkingTime(dm:SettingsDomModel)
 
-    // suspend fun getLocation2() : LiveData<Location?>
     suspend fun getLastLocation(): Location?
 }

@@ -11,7 +11,6 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Looper
 import android.util.Log
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
@@ -29,17 +28,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.ama.whereme.data.database.*
-import ru.ama.whereme.data.location.LocationLiveData
 import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
-import ru.ama.whereme.data.mapper.WmMapperSetTime
+import ru.ama.whereme.data.mapper.WmMapperSettings
 import ru.ama.whereme.data.workers.GetLocationDataWorker
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.entity.LocationDbByDays
 import ru.ama.whereme.domain.repository.WmRepository
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
 import java.util.*
 import javax.inject.Inject
 
@@ -47,7 +44,7 @@ import javax.inject.Inject
 class WmRepositoryImpl @Inject constructor(
     private val mapper: WmMapper,
     private val mapperByDays: WmMapperByDays,
-    private val mapperSetTime: WmMapperSetTime,
+    private val mapperSetTime: WmMapperSettings,
     private val locationDao: LocationDao,
     private val application: Application,
     private val fusedLocationProviderClient: FusedLocationProviderClient,
@@ -125,33 +122,21 @@ class WmRepositoryImpl @Inject constructor(
     }
 
 
-    override fun getWorkingTime(): SettingsDomModelWorkTime {
+    override fun getWorkingTime(): SettingsDomModel {
         return mapperSetTime.mapDataModelToDomain(
             Gson().fromJson(
                 worktime,
-                SettingsDataModelWorkTime::class.java
+                SettingsDataModel::class.java
             )
         )
     }
 
 
-    override fun setWorkingTime(dm: SettingsDomModelWorkTime) {
+    override fun setWorkingTime(dm: SettingsDomModel) {
         worktime = Gson().toJson(mapperSetTime.mapDomainToDataModel(dm))
     }
 
-    /* fun getOherSettings(): SettingsDomnModelOther {
-        return mapperSetTime.mapDataModelOtherToDom(
-            Gson().fromJson(
-                otherSettings,
-                SettingsDataModelOther::class.java
-            )
-        )
-    }
 
-
-    override fun setOherSettings(dm: SettingsDomnModelOther) {
-        worktime = Gson().toJson(mapperSetTime.mapDomOtherToDataModel(dm))
-    }*/
 
 
     override suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>> {
@@ -334,10 +319,7 @@ class WmRepositoryImpl @Inject constructor(
         fusedLocationProviderClient.removeLocationUpdates(callback)
     }
 
-    override suspend fun getLocation(): LocationLiveData {
-        val locationData = LocationLiveData(application)
-        return locationData
-    }
+
 
     @SuppressLint("MissingPermission")
     override suspend fun getLastLocation(): Location? {
@@ -355,26 +337,7 @@ class WmRepositoryImpl @Inject constructor(
         return 1
     }
 
-    override suspend fun saveLocationOnBD(lld: LocationLiveData): Int {
-        Log.e("insertLocation2", lld.toString())
-        lld.value?.let {
-            val res = LocationDbModel(
-                it.time.toString(),
-                it.time,
-                it.time,
-                it.time.toString(),
-                it.latitude,
-                it.longitude,
-                1,
-                it.accuracy,
-                it.speed
-            )
-            val itemsCount = locationDao.insertLocation(res)
-            Log.e("insertLocation", res.toString())
-        }
 
-        return 1
-    }
 
     //##############################################################################
     var dsMinAccuracy: Float
@@ -418,24 +381,17 @@ class WmRepositoryImpl @Inject constructor(
 
     //##############################################################################
     val defaultTime = Gson().toJson(
-        SettingsDataModelWorkTime(
+        SettingsDataModel(
             listOf("1", "1", "1", "1", "1", "1", "1"),
             "09:00",
             "17:00",
-            200f,
-            50f,
+            200,
+            50,
             180,
             180
         )
     )
-    val defaultOtherSettings = Gson().toJson(
-        SettingsDataModelOther(
-            200f,
-            50f,
-            180,
-            180
-        )
-    )
+
     var worktime: String?
         get() {
             val k: String?
@@ -458,27 +414,7 @@ class WmRepositoryImpl @Inject constructor(
                 editor.commit()
         }
 
-    var otherSettings: String?
-        get() {
-            val k: String?
-            if (mSettings.contains(APP_PREFERENCES_worktime)) {
-                k = mSettings.getString(
-                    APP_PREFERENCES_worktime,
-                    defaultOtherSettings/*"{\"days\":\"1;1;1;1;1;1;1\",\"start\":\"09:00\",\"end\":\"17:00\"}"*/
-                )
-            } else
-                k = defaultOtherSettings
-            return k
-        }
-        @SuppressLint("NewApi")
-        set(k) {
-            val editor = mSettings.edit()
-            editor.putString(APP_PREFERENCES_worktime, k)
-            if (android.os.Build.VERSION.SDK_INT > 9) {
-                editor.apply()
-            } else
-                editor.commit()
-        }
+
 
     private companion object {
         val APP_PREFERENCES_MIN_DIST = "min_dist"

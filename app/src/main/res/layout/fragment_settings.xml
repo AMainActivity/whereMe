@@ -223,6 +223,11 @@
 
 
                     </HorizontalScrollView>
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
                 <androidx.appcompat.widget.AppCompatButton
                     android:text="Время старта"
                     android:id="@+id/frgmnt_set_but_start"
@@ -230,6 +235,7 @@
                     android:foreground="?android:attr/selectableItemBackground"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     ></androidx.appcompat.widget.AppCompatButton>
 
 
@@ -239,17 +245,11 @@
                     android:theme="@style/ButtonStyle"
                     android:foreground="?android:attr/selectableItemBackground"
                     android:layout_width="match_parent"
+                    android:layout_weight="1"
                     android:layout_height="wrap_content"
                     ></androidx.appcompat.widget.AppCompatButton>
 
-                <!--androidx.appcompat.widget.AppCompatButton
-                    android:text="Минимальное расстояние"
-                    android:id="@+id/frgmnt_set_but_min_dist"
-                    android:theme="@style/ButtonStyle"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton-->
+                    </LinearLayout>
                     <com.google.android.material.textfield.TextInputLayout
 
                         android:id="@+id/frgmnt_set_md_l"
@@ -268,17 +268,11 @@
                             android:layout_gravity="center_vertical"
                             android:hint="Минимальное расстояние"
                             android:maxLines="1"
+                            android:background="@color/white"
                             android:inputType="number"
                             android:singleLine="true"/>
                     </com.google.android.material.textfield.TextInputLayout>
-                <!--androidx.appcompat.widget.AppCompatButton
-                    android:text="Точность"
-                    android:id="@+id/frgmnt_set_but_accuracy"
-                    android:theme="@style/ButtonStyle"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton-->
+
                     <com.google.android.material.textfield.TextInputLayout
 
                         android:id="@+id/frgmnt_set_accur_l"
@@ -300,14 +294,7 @@
                             android:inputType="number"
                             android:singleLine="true"/>
                     </com.google.android.material.textfield.TextInputLayout>
-                <!--androidx.appcompat.widget.AppCompatButton
-                    android:text="Время ожидания точности"
-                    android:id="@+id/frgmnt_set_but_timeOfWaitGps"
-                    android:theme="@style/ButtonStyle"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton-->
+
                     <com.google.android.material.textfield.TextInputLayout
 
                         android:id="@+id/frgmnt_set_time_ac_l"
@@ -329,14 +316,7 @@
                             android:inputType="number"
                             android:singleLine="true"/>
                     </com.google.android.material.textfield.TextInputLayout>
-                <!--androidx.appcompat.widget.AppCompatButton
-                    android:text="Периодичность контроля"
-                    android:id="@+id/frgmnt_set_but_timeOfWm"
-                    android:theme="@style/ButtonStyle"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton-->
+
                     <com.google.android.material.textfield.TextInputLayout
 
                         android:id="@+id/frgmnt_set_time_povtor_l"

@@ -5,9 +5,12 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-data class SettingsDomnModelOther(
-  var minDist: Float,
-  var accuracy: Float,
+data class SettingsDomModel(
+  var days: List<String>,
+  var start: String,
+  var end: String,
+  var minDist: Int,
+  var accuracy: Int,
   var timeOfWaitAccuracy: Int,
   var timeOfWorkingWM: Int
 ) : Parcelable

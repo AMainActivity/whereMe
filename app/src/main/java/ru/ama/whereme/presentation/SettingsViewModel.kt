@@ -1,10 +1,8 @@
 package ru.ama.whereme.presentation
 
-import android.location.Location
 import android.util.Log
 import androidx.lifecycle.*
-import kotlinx.coroutines.*
-import ru.ama.whereme.data.database.SettingsDomModelWorkTime
+import ru.ama.whereme.data.database.SettingsDomModel
 import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
@@ -18,12 +16,12 @@ class SettingsViewModel @Inject constructor(
         Log.e("SettingsViewModel",getWorkingTimeUseCase().toString())
     }
 
-fun getWorkingTime(): SettingsDomModelWorkTime
+fun getWorkingTime(): SettingsDomModel
 {
 	return getWorkingTimeUseCase()
 }
 
-fun setWorkingTime(dm: SettingsDomModelWorkTime)
+fun setWorkingTime(dm: SettingsDomModel)
 {
 	setWorkingTimeUseCase(dm)
 }
