@@ -16,6 +16,8 @@ interface WmRepository {
 
     suspend fun stopData(): Int
     fun runWorker(timeInterval: Long)
+    fun runAlarm(timeInterval: Long)
+    fun cancelAlarm()
 
     fun getWorkingTime(): SettingsDomModel
     fun setWorkingTime(dm:SettingsDomModel)

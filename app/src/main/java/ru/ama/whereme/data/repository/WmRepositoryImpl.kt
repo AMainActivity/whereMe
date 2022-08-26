@@ -2,8 +2,11 @@ package ru.ama.whereme.data.repository
 
 import android.annotation.SuppressLint
 import android.app.ActivityManager
+import android.app.AlarmManager
 import android.app.Application
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.location.Location
 import android.net.ConnectivityManager
@@ -31,6 +34,7 @@ import ru.ama.whereme.data.database.*
 import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
 import ru.ama.whereme.data.mapper.WmMapperSettings
+import ru.ama.whereme.data.workers.Alarm
 import ru.ama.whereme.data.workers.GetLocationDataWorker
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.LocationDb
@@ -69,7 +73,7 @@ class WmRepositoryImpl @Inject constructor(
     }
 
     private fun initSettinsData() {
-       // settingsMinDist = dsMinDist
+        // settingsMinDist = dsMinDist
         settingsWorkerReplayTime = dsWorkerReplayTime
 
     }
@@ -104,6 +108,51 @@ class WmRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun runAlarm(timeInterval: Long) {
+
+        Log.e("runAlarm", "" + timeInterval)
+        val am = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val i = Intent(application, Alarm::class.java)
+        val pi = PendingIntent.getBroadcast(application, 0, i, 0)
+        val alarmTimeAtUTC = System.currentTimeMillis() + timeInterval * 1_000L
+        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, alarmTimeAtUTC, pi)
+        /*
+         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,
+                    calendar.getTimeInMillis(), sender);
+        }
+        //LOLLIPOP 21 OR ABOVE
+        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(calendar.getTimeInMillis(), sender);
+            alarmManager.setAlarmClock(alarmClockInfo, sender);
+        }
+        //KITKAT 19 OR ABOVE
+        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP,
+                    calendar.getTimeInMillis(), sender);
+        }
+        //FOR BELOW KITKAT ALL DEVICES
+        else {
+            alarmManager.set(AlarmManager.RTC_WAKEUP,
+                    calendar.getTimeInMillis(), sender);
+        }
+        am.setRepeating(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                24 * 60 * 60 * 1000,
+                pi
+            )*/
+    }
+
+    override fun cancelAlarm() {
+        Log.e("runAlarm", "cancelAlarm")
+        val intent = Intent(application, Alarm::class.java)
+        val sender = PendingIntent.getBroadcast(application, 0, intent, 0)
+        val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmManager.cancel(sender)
+    }
+
+
     override fun runWorker(timeInterval: Long) {
         val workManager = WorkManager.getInstance(application)
         workManager.enqueueUniqueWork(
@@ -135,8 +184,6 @@ class WmRepositoryImpl @Inject constructor(
     override fun setWorkingTime(dm: SettingsDomModel) {
         worktime = Gson().toJson(mapperSetTime.mapDomainToDataModel(dm))
     }
-
-
 
 
     override suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>> {
@@ -320,7 +367,6 @@ class WmRepositoryImpl @Inject constructor(
     }
 
 
-
     @SuppressLint("MissingPermission")
     override suspend fun getLastLocation(): Location? {
         var ddsf: Location? = null
@@ -336,7 +382,6 @@ class WmRepositoryImpl @Inject constructor(
         stopLocationUpdates()
         return 1
     }
-
 
 
     //##############################################################################
@@ -413,7 +458,6 @@ class WmRepositoryImpl @Inject constructor(
             } else
                 editor.commit()
         }
-
 
 
     private companion object {

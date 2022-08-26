@@ -121,7 +121,7 @@ class MyForegroundService : LifecycleService() {
                 else {
                     coroutineScope.launch {
                         repo.stopLocationUpdates()
-                        repo.runWorker(settingsWorkerReplayTime.toLong())
+                        repo.runAlarm(settingsWorkerReplayTime.toLong())
                     }
                     cancelTimer(getString(R.string.app_name),repo.getDate(Calendar.getInstance().getTime().time))//timer?.cancel()
                   //  stopSelf()
@@ -159,7 +159,7 @@ class MyForegroundService : LifecycleService() {
             Log.e("onLocationListener", "$it / $isEnath")
             if (it) {
                 repo.stopLocationUpdates()
-                repo.runWorker(settingsWorkerReplayTime.toLong())
+                repo.runAlarm(settingsWorkerReplayTime.toLong())
                 cancelTimer(getString(R.string.app_name),repo.getDate(Calendar.getInstance().getTime().time))//timer?.cancel()
                 isEnath=true
                 //   stopSelf()

@@ -10,21 +10,20 @@ import javax.inject.Inject
 class MaViewModel @Inject constructor(
     private val getLastLocationUseCase: GetLastLocationUseCase,
     private val stopLocationsUpdateUseCase: StopLocationsUpdateUseCase,
-    private val runWorkerUpdateUseCase: RunWorkerUpdateUseCase
+    private val runAlarmUseCase: RunAlarmUseCase
 ) : ViewModel() {
 
 
 
     init {
-     
+
     }
 
-fun startLocationService()
-{
-    viewModelScope.launch {
-        runWorkerUpdateUseCase(10)
+    fun startLocationService() {
+        viewModelScope.launch {
+            runAlarmUseCase(10)
+        }
     }
-}
 
 
     companion object {}
