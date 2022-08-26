@@ -12,8 +12,7 @@ import ru.ama.whereme.presentation.*
 @Component(
     modules = [
         DataModule::class,
-        ViewModelModule::class,
-        WorkerModule::class
+        ViewModelModule::class
     ]
 )
 interface ApplicationComponent {

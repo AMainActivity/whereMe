@@ -20,6 +20,6 @@ class StartServiceReceiver : BroadcastReceiver() {
              (context!!.applicationContext as MyApp).component
         component.inject(this)
         Log.e("StartServiceReceiver","onReceive сработал")
-        repo.runWorker(15)
+        repo.runAlarm(15)
     }
 }

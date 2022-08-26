@@ -35,7 +35,6 @@ import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
 import ru.ama.whereme.data.mapper.WmMapperSettings
 import ru.ama.whereme.data.workers.Alarm
-import ru.ama.whereme.data.workers.GetLocationDataWorker
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.entity.LocationDbByDays
@@ -153,15 +152,6 @@ class WmRepositoryImpl @Inject constructor(
     }
 
 
-    override fun runWorker(timeInterval: Long) {
-        val workManager = WorkManager.getInstance(application)
-        workManager.enqueueUniqueWork(
-            GetLocationDataWorker.NAME,
-            ExistingWorkPolicy.REPLACE,
-            GetLocationDataWorker.makeRequest(timeInterval)
-        )
-        Log.e("runWorker", "" + timeInterval)
-    }
 
 
     override suspend fun getGropingDays(): List<LocationDbByDays> {

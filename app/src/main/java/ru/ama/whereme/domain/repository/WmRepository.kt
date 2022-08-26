@@ -15,7 +15,6 @@ interface WmRepository {
     fun isInternetConnected(): Boolean
 
     suspend fun stopData(): Int
-    fun runWorker(timeInterval: Long)
     fun runAlarm(timeInterval: Long)
     fun cancelAlarm()
 

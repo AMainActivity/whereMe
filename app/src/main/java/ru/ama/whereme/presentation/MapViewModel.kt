@@ -11,8 +11,7 @@ class MapViewModel @Inject constructor(
     private val getLocationsFromBdUseCase: GetLocationsFromBdUseCase,
     private val getGropingDaysUseCase: GetGropingDaysUseCase,
     private val getLocationsFromBdByIdUseCase: GetLocationsFromBdByIdUseCase,
-    private val checkInternetConnectionUseCase: CheckInternetConnectionUseCase,
-    private val runWorkerUpdateUseCase: RunWorkerUpdateUseCase
+    private val checkInternetConnectionUseCase: CheckInternetConnectionUseCase
 ) : ViewModel() {
 
     var lld2: LiveData<List<LocationDb>>? = null
