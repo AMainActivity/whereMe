@@ -65,10 +65,11 @@ class MapFragment : Fragment() {
                 showPopupText(requireActivity().findViewById(R.id.menu_day_list))
                 true
             }
-             R.id.menu_set_frgmnt->{
+            R.id.menu_set_frgmnt -> {
 
-                 findNavController().navigate(R.id.action_FirstFragment_to_SettingsFragment)
-             true}
+                findNavController().navigate(R.id.action_FirstFragment_to_SettingsFragment)
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -78,30 +79,32 @@ class MapFragment : Fragment() {
     }
 
     private fun showPopupText(anchor: View) {
-        val listOfDays: MutableList<String> = mutableListOf<String>()
-        val listOfIds: MutableList<Int> = mutableListOf<Int>()
-        val popupWindow = PopupWindow(requireContext())
-        ///popupWindow.animationStyle = R.style.dialog_animation
-        // val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        val adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_list_item_1,
-            listOfDays
-        )
-        popupWindow.setBackgroundDrawable(
-            ResourcesCompat.getDrawable(
-                getResources(),
-                R.drawable.nulldr,
-                null
+        val listDays = viewModel.getListOfDays()
+        if (listDays != null) {
+            val listOfDays: MutableList<String> = mutableListOf<String>()
+            val listOfIds: MutableList<Int> = mutableListOf<Int>()
+            val popupWindow = PopupWindow(requireContext())
+            ///popupWindow.animationStyle = R.style.dialog_animation
+            // val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+            val adapter = ArrayAdapter(
+                requireContext(), android.R.layout.simple_list_item_1,
+                listOfDays
             )
-        )
-        popupWindow.isFocusable = true
-        popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
-        popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
-        val binding2 = ItemDateListBinding.inflate(layoutInflater)
-      //  viewModel.ld_days?.observe(viewLifecycleOwner) {
+            popupWindow.setBackgroundDrawable(
+                ResourcesCompat.getDrawable(
+                    getResources(),
+                    R.drawable.nulldr,
+                    null
+                )
+            )
+            popupWindow.isFocusable = true
+            popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
+            popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
+            val binding2 = ItemDateListBinding.inflate(layoutInflater)
+            //  viewModel.ld_days?.observe(viewLifecycleOwner) {
             var sdf = ""
             listOfDays.clear()
-            for (asd in viewModel.ld_days!!) {
+            for (asd in listDays) {
                 sdf += "\n" + asd.datestart
                 listOfDays.add(asd.datestart)
                 listOfIds.add((asd._id).toInt())
@@ -126,16 +129,23 @@ class MapFragment : Fragment() {
                 setActionBarSubTitle(listOfDays[position])
             }
 
-            /* if (popupWindow.contentView.getParent() != null) {
-                 (popupWindow.contentView.getParent() as ViewGroup).removeView(popupWindow.contentView)
-             }*/
+
             popupWindow.contentView = binding2.root
             popupWindow.dismiss()
             popupWindow.showAsDropDown(anchor)
 
-            if (binding2.lvDate.adapter.count==0) Toast.makeText(requireContext(),"пока нет данных,\nПопробуйте позднее...",Toast.LENGTH_SHORT).show()
-     //   }
-
+            if (binding2.lvDate.adapter.count == 0) Toast.makeText(
+                requireContext(),
+                "пока нет данных,\nПопробуйте позднее...",
+                Toast.LENGTH_SHORT
+            ).show()
+            //   }
+        } else
+            Toast.makeText(
+                requireContext(),
+                "пока нет данных,\nПопробуйте позднее...",
+                Toast.LENGTH_SHORT
+            ).show()
 
     }
 
@@ -150,12 +160,10 @@ class MapFragment : Fragment() {
 
     }
 
-    private fun setUrl(url:String)
-    {
+    private fun setUrl(url: String) {
         if (viewModel.isInternetConnected())
             binding.frgmntLocations.loadUrl(url)
-        else
-        {
+        else {
             val builder = AlertDialog.Builder(requireContext())
             builder.setMessage("Нет подключения к сети...")
                 .setCancelable(false)
@@ -174,10 +182,7 @@ class MapFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-/*
-        binding.buttonFirst.setOnClickListener {
-            findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
-        }*/
+
 
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
         if (Build.VERSION.SDK_INT >= 11) {
@@ -210,90 +215,18 @@ class MapFragment : Fragment() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-
-
-
                 viewModel.lld2?.observe(viewLifecycleOwner) {
-                    //	Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
-                    ///   Log.e("getLocation22",it.toString())
 
-                    ///  val postData= Gson().toJson(it).toString()
-                    /* "[{\"title\": \"место 1\", " +
-                             " \"lat\": \"${it?.latitude.toString()}\", " +
-                             " \"lon\": \"${it?.longitude.toString()}\","+
-                     "\"accuracy\": \"${it?.accuracy.toString()}\"}]";*/
-                    ///   binding.frgmntLocations.evaluateJavascript("javascript:fromAndroid(${postData})", null)
-
-                    ////    Log.e("getLocation23",postData)
                 }
             }
         }
         binding.frgmntLocations.settings.javaScriptEnabled = true
 
         val url = "https://kol.hhos.ru/map/i.php"
-        /* val postData = "{\"tokenJWT\":\"" + URLEncoder.encode(
-                 settings.getInstance(requireContext()).tokenAutor,
-                 "UTF-8"
-         )+"\",\"mdate\":\"${mdate}\",\"sotrid\":\"${idSotr}\"}"
-         wv.postUrl(url, postData.toByteArray())*/
+
         setUrl(url)
-            //Toast.makeText(requireContext(),"нет тырнета",Toast.LENGTH_SHORT).show()
         binding.frgmntLocations.addJavascriptInterface(WebAppInterface(requireContext()), "Android")
 
-        //вызов js из android
-        //	 binding.wv.loadUrl("javascript:fromAndroid(postData)")
-        // использовать это  binding.wv.evaluateJavascript("javascript:fromAndroid(postData)", nil)
-
-        /*
-        mWebView.evaluateJavascript("javascript:callJS()", new ValueCallback<String>() {
-        @Override
-        public void onReceiveValue(String value) {
-            //Here is the result returned by js
-        }
-    });
-}
-        // Android version variable
-final int version = Build.VERSION.SDK_INT;
-// Because this method can only be used in Android version 4.4, version judgment is needed when using it.
-if (version < 18) {
-    mWebView.loadUrl("javascript:callJS()");
-} else {
-    mWebView.evaluateJavascript("javascript:callJS()", new ValueCallback<String>() {
-        @Override
-        public void onReceiveValue(String value) {
-            //Here is the result returned by js
-        }
-    });
-}
-        mWebView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onJsAlert(WebView view, String url, String message, final JsResult result) {
-                AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
-                b.setTitle("Alert");
-                b.setMessage(message);
-                b.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        result.confirm();
-                    }
-                });
-                b.setCancelable(false);
-                b.create().show();
-                return true;
-            }
-
-        });
-        postData='[{  "title": "место 1",  "lat": "53.642318",  "lon": "55.941752",  "accuracy": "20"},'+
-                            '{  "title": "место 2",  "lat": "53.638187",  "lon": "55.938648",  "accuracy": "202"}, '+
-                            '{  "title": "место 3",  "lat": "53.630603",  "lon": "55.93168",  "accuracy": "100"}, '+
-                            '{  "title": "место 4",  "lat": "53.629663",  "lon": "55.9087",  "accuracy": "1500"}, '+
-                            '{  "title": "место 5",  "lat": "53.622943",  "lon": "55.907565",  "accuracy": "50"}, '+
-                            '{  "title": "место 6",  "lat": "53.615685",  "lon": "55.907185",  "accuracy": "30"}, '+
-                            '{  "title": "место 7",  "lat": "53.614053",  "lon": "55.912308",  "accuracy": "800"}, '+
-                            '{  "title": "место 8",  "lat": "53.623168",  "lon": "55.925588",  "accuracy": "222"}, '+
-                            '{  "title": "место 9",  "lat": "53.627388",  "lon": "55.939248",  "accuracy": "700"}, '+
-                            '{ "title": "место 10",  "lat": "53.611296",  "lon": "55.945699",  "accuracy": "333"}]';
-        */
     }
 
     override fun onDestroyView() {
@@ -304,10 +237,8 @@ if (version < 18) {
 
     class WebAppInterface(private val mContext: Context) {
 
-        /** Show a toast from the web page  */
         @JavascriptInterface
         fun showToast(toast: String) {
-            //  Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show()
 
             val ar = toast.split('#')
             if (ar.size == 4) {
@@ -324,13 +255,12 @@ if (version < 18) {
                         "dgis://2gis.ru/routeSearch/rsType/car/from/${ar[1]},${ar[0]}/to/${ar[3]},${ar[2]}"
                     val uri = Uri.parse(mar)//"dgis://")
                     var intent = Intent(Intent.ACTION_VIEW, uri)
-// Проверяет, установлено ли хотя бы одно приложение, способное выполнить это действие.
                     val packageManager = (mContext).packageManager!!
                     val activities = packageManager.queryIntentActivities(intent, 0)
                     val isIntentSafe = activities.size > 0
-                    if (isIntentSafe) { //Если приложение установлено — запускаем его
+                    if (isIntentSafe) {
                         (mContext).startActivity(intent)
-                    } else { // Если не установлено — переходим в Google Play.
+                    } else {
                         intent = Intent(Intent.ACTION_VIEW)
                         intent.data = Uri.parse("market://details?id=ru.dublgis.dgismobile")
                         mContext.startActivity(intent)

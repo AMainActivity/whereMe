@@ -9,32 +9,32 @@ import androidx.room.Query
 @Dao
 interface LocationDao {
 
-@Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
+    @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
     fun getLocations2(): List<LocationDbModel>
 
-@Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
+    @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
     fun getLocations(): LiveData<List<LocationDbModel>>
-	
-	@Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') =:mDate  ORDER BY _id asc ")
-    fun getLocationsById(mDate:String): LiveData<List<LocationDbModel>>
+
+    @Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') =:mDate  ORDER BY _id asc ")
+    fun getLocationsById(mDate: String): LiveData<List<LocationDbModel>>
 
 
-//CAST(strftime('%Y', datetime(date/1000, 'unixepoch')) AS int) AS year
+    //CAST(strftime('%Y', datetime(date/1000, 'unixepoch')) AS int) AS year
     @Query("SELECT _id,datestart,dateend FROM tab_locations GROUP BY strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') ORDER BY _id asc ")
     suspend fun getLocationsByDays(): List<LocationDbModelByDays>
 
     @Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') =:mDate ORDER BY _id desc limit 1 ")
-    fun getLastValue(mDate:String): LocationDbModel
+    fun getLastValue(mDate: String): LocationDbModel
 
     @Query("update tab_locations  set info =  :newInfo  where _id=:id")
-    fun updateLocationById(id:Int, newInfo:String):Int
+    fun updateLocationById(id: Int, newInfo: String): Int
 
     @Query("update tab_locations  set dateend =  :newTime  where _id=:id")
-    fun updateTime2ById(id:Int, newTime:Long):Int
+    fun updateTime2ById(id: Int, newTime: Long): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLocation(mLoc: LocationDbModel)
-	
-	@Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertLocationList(locList: List<LocationDbModel>):List<Long>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLocationList(locList: List<LocationDbModel>): List<Long>
 }

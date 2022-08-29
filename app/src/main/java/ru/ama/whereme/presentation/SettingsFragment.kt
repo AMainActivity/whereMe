@@ -44,24 +44,24 @@ class SettingsFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-         setHasOptionsMenu(true)
+        setHasOptionsMenu(true)
     }
 
 
     override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
-         menuInflater.inflate(R.menu.menu_set_fragment, menu)
-     }
+        menuInflater.inflate(R.menu.menu_set_fragment, menu)
+    }
 
-     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
 
-         return when (item.itemId) {
-             R.id.menu_set_frgmnt -> {
-                 saveSettings()
-                 true
-             }
-             else -> super.onOptionsItemSelected(item)
-         }
-     }
+        return when (item.itemId) {
+            R.id.menu_set_frgmnt -> {
+                saveSettings()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
 
     private fun setActionBarSubTitle(txt: String) {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = txt
@@ -101,22 +101,42 @@ class SettingsFragment : Fragment() {
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
         setDays()
 
+        binding.frgmntSetSwitchStart.isChecked = viewModel.сheckService()
+        binding.frgmntSetSwitchStart.setOnClickListener { view ->
+            /* if (!isMyServiceRunning(p0!!.applicationContext, MyForegroundService::class.java)) {
+                       ContextCompat.startForegroundService(
+                           p0!!.applicationContext,
+                           MyForegroundService.newIntent(p0!!.applicationContext)
+                       )
+                       Log.e("onStartCommand", "isMyServiceRunning")
+                   } else {
+                       Log.e("onStartCommand2", "isMyServiceRunning")
+                       p0!!.applicationContext.bindService(
+                           MyForegroundService.newIntent(p0!!.applicationContext),
+                           serviceConnection,
+                           0
+                       )
+
+                   }*/
+        }
+
+
         binding.frgmntSetButStart.setText(
-            "${getHourFromSet(1)}:${getHourFromSet(2)}",null
+            "${getHourFromSet(1)}:${getHourFromSet(2)}", null
         )
         binding.frgmntSetButEnd.setText(
-                " ${getHourFromSet(3)}:${getHourFromSet(4)}",null
+            "${getHourFromSet(3)}:${getHourFromSet(4)}", null
         )
         binding.frgmntSetButStart.setOnClickListener {
             workingTimeModel = viewModel.getWorkingTime()
-            var h=""
-            var m=""
+            var h = ""
+            var m = ""
             val timePickerDialog =
                 TimePickerDialog(requireContext(), { view, hourOfDay, minute ->
 
-                     h =
+                    h =
                         if (hourOfDay.toString().length == 1) "0" + (hourOfDay).toString() else (hourOfDay).toString()
-                     m =
+                    m =
                         if (minute.toString().length == 1) "0" + minute.toString() else minute.toString()
                     Log.e("Time", "$h:$m")
                     if (!compare2Times("$h:$m", workingTimeModel.end))
@@ -125,31 +145,36 @@ class SettingsFragment : Fragment() {
                             "время должо быть раньше времени конца: ${workingTimeModel.end}",
                             Toast.LENGTH_SHORT
                         ).show()
-                //    else
-                   //     viewModel.setWorkingTime(workingTimeModel.copy(start = "$h:$m"))
+                        else
+                    {
+                        binding.frgmntSetButStart.setText(
+                            "$h:$m",null
+                        )
+                    }
+                    //     viewModel.setWorkingTime(workingTimeModel.copy(start = "$h:$m"))
                 }, getHourFromSet(1).toInt(), getHourFromSet(2).toInt(), true)
             // timePickerDialog.window!!.attributes.windowAnimations =
             //    R.style.dialog_animation_addslovoFU
             timePickerDialog.show()
             timePickerDialog.setOnDismissListener {
 
-                binding.frgmntSetButStart.setText(
-                    "$h:$m",null
-                )
+                /*  binding.frgmntSetButStart.setText(
+                      "$h:$m",null
+                  )*/
 
             }
         }
         binding.frgmntSetButEnd.setOnClickListener {
             workingTimeModel = viewModel.getWorkingTime()
-            var h=""
-            var m=""
+            var h = ""
+            var m = ""
             val timePickerDialog =
                 TimePickerDialog(
                     requireContext(),
-                    TimePickerDialog.OnTimeSetListener { view, hourOfDay, minute ->
-                         h =
+                    { view, hourOfDay, minute ->
+                        h =
                             if (hourOfDay.toString().length == 1) "0" + (hourOfDay).toString() else (hourOfDay).toString()
-                         m =
+                        m =
                             if (minute.toString().length == 1) "0" + minute.toString() else minute.toString()
                         Log.e("endTime", "$h:$m")
 
@@ -159,9 +184,11 @@ class SettingsFragment : Fragment() {
                                 "время должо быть позже времени старта: ${workingTimeModel.start}",
                                 Toast.LENGTH_SHORT
                             ).show()
-                      //  else
-
-                           // viewModel.setWorkingTime(workingTimeModel.copy(end = "$h:$m"))
+                         else
+                            binding.frgmntSetButEnd.setText(
+                                "$h:$m",null
+                            )
+                        // viewModel.setWorkingTime(workingTimeModel.copy(end = "$h:$m"))
                     },
                     getHourFromSet(3).toInt(),
                     getHourFromSet(4).toInt(),
@@ -170,13 +197,13 @@ class SettingsFragment : Fragment() {
             // timePickerDialog.window!!.attributes.windowAnimations =
             //   R.style.dialog_animation_addslovoFU
             timePickerDialog.show()
-            timePickerDialog.setOnDismissListener {
+            /* timePickerDialog.setOnDismissListener {
 
-                binding.frgmntSetButEnd.setText(
-                    "$h:$m",null
-                )
+                 binding.frgmntSetButEnd.setText(
+                     "$h:$m",null
+                 )
 
-            }
+             }*/
         }
         setOtherSettings()
 
@@ -222,8 +249,7 @@ class SettingsFragment : Fragment() {
 
     }
 
-    private fun saveSettings()
-    {
+    private fun saveSettings() {
         var listOfDays1: MutableList<String> = mutableListOf<String>()
         for (cb in listOfCheckBox) {
             listOfDays1.add((cb.isChecked).toIntTxt())

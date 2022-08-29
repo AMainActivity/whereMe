@@ -57,12 +57,11 @@ class WmRepositoryImpl @Inject constructor(
 ) : WmRepository {
 
 
+    private lateinit var workingTimeModel: SettingsDomModel
     var mBestLoc = Location("bestLocationOfBadAccuracy")
     var onLocationChangedListener: ((Boolean) -> Unit)? = null
 
     private val callback = Callback()
-    private var settingsMinDist: Float = 100f
-    private var settingsWorkerReplayTime: Int = 15
 
     suspend fun isGooglePlayServicesAvailable(): Boolean = withContext(Dispatchers.Default) {
         when (googleApiAvailability.isGooglePlayServicesAvailable(application)) {
@@ -71,18 +70,13 @@ class WmRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun initSettinsData() {
-        // settingsMinDist = dsMinDist
-        settingsWorkerReplayTime = dsWorkerReplayTime
-
-    }
 
     private val _isEnathAccuracy = MutableLiveData<Boolean>()
     val isEnathAccuracy: LiveData<Boolean>
         get() = _isEnathAccuracy
 
 
-    fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
+    override fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
         val manager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         return manager.getRunningServices(Integer.MAX_VALUE)
             .any { it.service.className == serviceClass.name }
@@ -114,33 +108,27 @@ class WmRepositoryImpl @Inject constructor(
         val i = Intent(application, Alarm::class.java)
         val pi = PendingIntent.getBroadcast(application, 0, i, 0)
         val alarmTimeAtUTC = System.currentTimeMillis() + timeInterval * 1_000L
-        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, alarmTimeAtUTC, pi)
-        /*
-         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,
-                    calendar.getTimeInMillis(), sender);
-        }
-        //LOLLIPOP 21 OR ABOVE
-        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(calendar.getTimeInMillis(), sender);
-            alarmManager.setAlarmClock(alarmClockInfo, sender);
-        }
-        //KITKAT 19 OR ABOVE
+        am.cancel(pi)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, alarmTimeAtUTC, pi)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val alarmClockInfo: AlarmManager.AlarmClockInfo =
+                AlarmManager.AlarmClockInfo(alarmTimeAtUTC, pi)
+            am.setAlarmClock(alarmClockInfo, pi)
+        }//KITKAT 19 OR ABOVE
         else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP,
-                    calendar.getTimeInMillis(), sender);
+            am.setExact(
+                AlarmManager.RTC_WAKEUP,
+                alarmTimeAtUTC, pi
+            )
         }
         //FOR BELOW KITKAT ALL DEVICES
         else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP,
-                    calendar.getTimeInMillis(), sender);
-        }
-        am.setRepeating(
+            am.set(
                 AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                24 * 60 * 60 * 1000,
-                pi
-            )*/
+                alarmTimeAtUTC, pi
+            )
+        }
     }
 
     override fun cancelAlarm() {
@@ -150,8 +138,6 @@ class WmRepositoryImpl @Inject constructor(
         val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(sender)
     }
-
-
 
 
     override suspend fun getGropingDays(): List<LocationDbByDays> {
@@ -204,7 +190,7 @@ class WmRepositoryImpl @Inject constructor(
 
     @SuppressLint("MissingPermission")
     fun startLocationUpdates() {
-        initSettinsData()
+        workingTimeModel = getWorkingTime()
         mBestLoc.latitude = 0.0
         mBestLoc.longitude = 0.0
         mBestLoc.accuracy = 1500f
@@ -251,7 +237,6 @@ class WmRepositoryImpl @Inject constructor(
     }
 
     suspend fun saveLocation(location: Location) {
-        //val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
         val res = LocationDbModel(
             location.time.toString(),
             location.time,
@@ -273,9 +258,6 @@ class WmRepositoryImpl @Inject constructor(
         override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
 
-
-
-
             if (mBestLoc.longitude == 0.0 || result.lastLocation.accuracy < mBestLoc.accuracy) {
                 mBestLoc.latitude = result.lastLocation.latitude
                 mBestLoc.longitude = result.lastLocation.longitude
@@ -284,7 +266,7 @@ class WmRepositoryImpl @Inject constructor(
                 mBestLoc.time = result.lastLocation.time
             }
 
-            if (result.lastLocation != null && result.lastLocation.accuracy < dsMinAccuracy) {
+            if (result.lastLocation != null && result.lastLocation.accuracy < workingTimeModel.accuracy) {
                 /*ProcessLifecycleOwner.get().lifecycleScope*/
                 externalScope.launch(Dispatchers.IO) {
                     val lastDbValue = getLastValueFromDb()
@@ -299,7 +281,7 @@ class WmRepositoryImpl @Inject constructor(
                             locB.longitude = it.longitude
                             val dist = locA.distanceTo(locB)
                             Log.e("distanceLastNew", dist.toString())
-                            if (dist > 50) {
+                            if (dist > workingTimeModel.minDist) {
                                 val res = LocationDbModel(
                                     it.time.toString(),
                                     it.time,
@@ -342,8 +324,6 @@ class WmRepositoryImpl @Inject constructor(
 
                             Log.e("insertLocationNull", res.toString())
                         }
-
-
                     }
 
                 }
@@ -374,47 +354,6 @@ class WmRepositoryImpl @Inject constructor(
     }
 
 
-    //##############################################################################
-    var dsMinAccuracy: Float
-        get() {
-            val k: Float
-            if (mSettings.contains(APP_PREFERENCES_MIN_DIST)) {
-                k = mSettings.getFloat(APP_PREFERENCES_MIN_DIST, 200f)
-            } else
-                k = 200f
-            return k
-        }
-        @SuppressLint("NewApi")
-        set(k) {
-            val editor = mSettings.edit()
-            editor.putFloat(APP_PREFERENCES_MIN_DIST, k)
-            if (android.os.Build.VERSION.SDK_INT > 9) {
-                editor.apply()
-            } else
-                editor.commit()
-        }
-
-    //##############################################################################
-    var dsWorkerReplayTime: Int
-        get() {
-            val k: Int
-            if (mSettings.contains(APP_PREFERENCES_WORKER_REPLAY_TIME)) {
-                k = mSettings.getInt(APP_PREFERENCES_WORKER_REPLAY_TIME, 180)
-            } else
-                k = 180
-            return k
-        }
-        @SuppressLint("NewApi")
-        set(k) {
-            val editor = mSettings.edit()
-            editor.putInt(APP_PREFERENCES_WORKER_REPLAY_TIME, k)
-            if (android.os.Build.VERSION.SDK_INT > 9) {
-                editor.apply()
-            } else
-                editor.commit()
-        }
-
-    //##############################################################################
     val defaultTime = Gson().toJson(
         SettingsDataModel(
             listOf("1", "1", "1", "1", "1", "1", "1"),
@@ -451,10 +390,7 @@ class WmRepositoryImpl @Inject constructor(
 
 
     private companion object {
-        val APP_PREFERENCES_MIN_DIST = "min_dist"
-        val APP_PREFERENCES_WORKER_REPLAY_TIME = "worker_replay_time"
         val APP_PREFERENCES_worktime = "worktime"
-        val APP_PREFERENCES_othersettings = "othersettings"
     }
 
 }

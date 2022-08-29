@@ -8,33 +8,27 @@ import javax.inject.Inject
 
 class SettingsViewModel @Inject constructor(
     private val getWorkingTimeUseCase: GetWorkingTimeUseCase,
+    private val сheckServiceUseCase: CheckServiceUseCase,
     private val setWorkingTimeUseCase: SetWorkingTimeUseCase
 
 ) : ViewModel() {
 
     init {
-        Log.e("SettingsViewModel",getWorkingTimeUseCase().toString())
+        Log.e("SettingsViewModel", getWorkingTimeUseCase().toString())
     }
 
-fun getWorkingTime(): SettingsDomModel
-{
-	return getWorkingTimeUseCase()
-}
+    fun getWorkingTime(): SettingsDomModel {
+        return getWorkingTimeUseCase()
+    }
 
-fun setWorkingTime(dm: SettingsDomModel)
-{
-	setWorkingTimeUseCase(dm)
-}
 
-/*
-var jsonString = gson.toJson(TestModel(1,"Test"))
-{"id":1,"description":"Test"}
-var testModel = gson.fromJson(jsonString, TestModel::class.java)
-data class TestModel(
-    val id: Int,
-    val description: String
-)
-*/
+    fun сheckService(): Boolean {
+        return сheckServiceUseCase(MyForegroundService::class.java)
+    }
 
-    companion object {}
+    fun setWorkingTime(dm: SettingsDomModel) {
+        setWorkingTimeUseCase(dm)
+    }
+
+
 }

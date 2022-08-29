@@ -16,7 +16,7 @@ class MapViewModel @Inject constructor(
 
     var lld2: LiveData<List<LocationDb>>? = null
     var lldByDay: LiveData<List<LocationDb>>? = null
-    var ld_days: List<LocationDbByDays> ?= null
+    var ld_days: List<LocationDbByDays>? = null
 
     init {
 
@@ -25,9 +25,14 @@ class MapViewModel @Inject constructor(
             // Log.e("runWorker1","15")
             //delay(3*1000)
             lld2 = getLocationsFromBdUseCase()
-            ld_days=getGropingDaysUseCase()
+            //  ld_days=getGropingDaysUseCase()
         }
 
+    }
+
+    fun getListOfDays(): List<LocationDbByDays>? {
+        viewModelScope.launch { ld_days = getGropingDaysUseCase() }
+        return ld_days
     }
 
     fun isInternetConnected() = checkInternetConnectionUseCase()
@@ -39,5 +44,4 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    companion object {}
 }

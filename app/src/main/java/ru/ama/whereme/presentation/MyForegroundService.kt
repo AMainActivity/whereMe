@@ -13,6 +13,7 @@ import androidx.lifecycle.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import ru.ama.whereme.R
+import ru.ama.whereme.data.database.SettingsDomModel
 import ru.ama.whereme.data.repository.WmRepositoryImpl
 import java.util.*
 import javax.inject.Inject
@@ -21,12 +22,12 @@ class MyForegroundService : LifecycleService() {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private var timer: CountDownTimer? = null
-    private var settingsWorkerReplayTime =50
-    private var isEnath=false
+
+    private lateinit var workingTimeModel: SettingsDomModel
+    private var isEnath = false
     private val component by lazy {
         (application as MyApp).component
     }
-    var lld2: LiveData<Location?>? = null
     private val notificationManager by lazy {
         getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
@@ -39,33 +40,32 @@ class MyForegroundService : LifecycleService() {
         log("onBind")
         return LocalBinder()
     }
+
     inner class LocalBinder : Binder() {
 
         fun getService() = this@MyForegroundService
     }
+
     private val notificationBuilder by lazy {
         createNotificationBuilder()
     }
 
-    fun startGetLocations()
-    {
-        isEnath=false
+    fun startGetLocations() {
+        workingTimeModel = repo.getWorkingTime()
+        isEnath = false
         val isGooglePlayServicesAvailab = coroutineScope.async {
             repo.isGooglePlayServicesAvailable()
         }
 
         coroutineScope.launch {
-            settingsWorkerReplayTime=repo.dsWorkerReplayTime
             startTimer()
             if (isGooglePlayServicesAvailab.await()) {
                 val sd = coroutineScope.async {
                     repo.startLocationUpdates()
-                    //   Log.e("SERVICE_TAG2", "MyForegroundService: ${lloc.toString()}")
                 }
                 coroutineScope.launch {
                     sd.await()
                 }
-                //  Toast.makeText(applicationContext,lloc.toString(), Toast.LENGTH_SHORT).show()
                 log(repo.isEnathAccuracy.value.toString() + "")
 
 
@@ -95,7 +95,7 @@ class MyForegroundService : LifecycleService() {
 
     private fun startTimer() {
         timer = object : CountDownTimer(
-            settingsWorkerReplayTime.toLong() * 1000,
+            workingTimeModel.timeOfWaitAccuracy.toLong() * 1000,
             1000
         ) {
             override fun onTick(millisUntilFinished: Long) {
@@ -108,7 +108,11 @@ class MyForegroundService : LifecycleService() {
                             )
                         }"
                     )
-                    .setProgress(settingsWorkerReplayTime, (millisUntilFinished / MILLIS_IN_SECONDS).toInt(), false)
+                    .setProgress(
+                        workingTimeModel.timeOfWaitAccuracy,
+                        (millisUntilFinished / MILLIS_IN_SECONDS).toInt(),
+                        false
+                    )
                     .build()
                 notificationManager.notify(NOTIFICATION_ID, notification)
             }
@@ -121,23 +125,26 @@ class MyForegroundService : LifecycleService() {
                 else {
                     coroutineScope.launch {
                         repo.stopLocationUpdates()
-                        repo.runAlarm(settingsWorkerReplayTime.toLong())
+                        repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
                     }
-                    cancelTimer(getString(R.string.app_name),repo.getDate(Calendar.getInstance().getTime().time))//timer?.cancel()
-                  //  stopSelf()
+                    cancelTimer(
+                        getString(R.string.app_name),
+                        "не было найдено, скоро повтор " + repo.getDate(
+                            Calendar.getInstance().getTime().time
+                        )
+                    )
                 }
             }
         }
         timer?.start()
     }
 
-    private fun cancelTimer(title:String, txtBody:String)
-    {
+    private fun cancelTimer(title: String, txtBody: String) {
         timer?.cancel()
         val notification = notificationBuilder
             .setContentTitle(title)
             .setContentText(txtBody)
-            .setProgress(0,0,false)
+            .setProgress(0, 0, false)
             .build()
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
@@ -153,30 +160,21 @@ class MyForegroundService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         log("onStartCommand")
-      //  startTimer()
 
         repo.onLocationChangedListener = {
             Log.e("onLocationListener", "$it / $isEnath")
             if (it) {
                 repo.stopLocationUpdates()
-                repo.runAlarm(settingsWorkerReplayTime.toLong())
-                cancelTimer(getString(R.string.app_name),repo.getDate(Calendar.getInstance().getTime().time))//timer?.cancel()
-                isEnath=true
-                //   stopSelf()
+                repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
+                cancelTimer(
+                    getString(R.string.app_name),
+                    "успешно получено " + repo.getDate(Calendar.getInstance().getTime().time)
+                )
+                isEnath = true
+
             }
         }
         startGetLocations()
-
-/*
-
-lifecycleScope.launch {
-                repo.setLocationTurnedOn(false)
-            }
-			
-			   if (repo.isLocationTurnedOn.first()) {}
-			
-*/
-
 
 
         return START_STICKY

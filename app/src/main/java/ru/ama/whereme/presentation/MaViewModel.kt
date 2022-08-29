@@ -8,16 +8,9 @@ import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
 class MaViewModel @Inject constructor(
-    private val getLastLocationUseCase: GetLastLocationUseCase,
-    private val stopLocationsUpdateUseCase: StopLocationsUpdateUseCase,
     private val runAlarmUseCase: RunAlarmUseCase
 ) : ViewModel() {
 
-
-
-    init {
-
-    }
 
     fun startLocationService() {
         viewModelScope.launch {
@@ -25,6 +18,4 @@ class MaViewModel @Inject constructor(
         }
     }
 
-
-    companion object {}
 }

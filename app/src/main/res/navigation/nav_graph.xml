@@ -18,7 +18,7 @@
     <fragment
         android:id="@+id/SettingsFragment"
         android:name="ru.ama.whereme.presentation.SettingsFragment"
-        android:label="@string/second_fragment_label"
+        android:label="@string/frgmnt_set_label"
         tools:layout="@layout/fragment_settings">
 
         <action
