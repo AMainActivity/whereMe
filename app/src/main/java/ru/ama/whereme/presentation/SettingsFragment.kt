@@ -10,6 +10,7 @@ import android.view.*
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatCheckBox
+import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -103,21 +104,20 @@ class SettingsFragment : Fragment() {
 
         binding.frgmntSetSwitchStart.isChecked = viewModel.сheckService()
         binding.frgmntSetSwitchStart.setOnClickListener { view ->
-            /* if (!isMyServiceRunning(p0!!.applicationContext, MyForegroundService::class.java)) {
+            if (!viewModel.сheckService()) {
+                if (viewModel.isTimeToGetLocaton())
                        ContextCompat.startForegroundService(
-                           p0!!.applicationContext,
-                           MyForegroundService.newIntent(p0!!.applicationContext)
+                           requireContext(),
+                           MyForegroundService.newIntent(requireContext())
                        )
-                       Log.e("onStartCommand", "isMyServiceRunning")
+                                   else
+                                       Toast.makeText(requireContext(),"isTimeToGetLocaton",Toast.LENGTH_SHORT).show()
+                       Log.e("onStartFromSet", "isMyServiceRunning")
                    } else {
-                       Log.e("onStartCommand2", "isMyServiceRunning")
-                       p0!!.applicationContext.bindService(
-                           MyForegroundService.newIntent(p0!!.applicationContext),
-                           serviceConnection,
-                           0
-                       )
+                       Log.e("onStopFromSet", "isMyServiceRunningFalse")
+                requireContext().stopService(MyForegroundService.newIntent(requireContext()))
 
-                   }*/
+                   }
         }
 
 

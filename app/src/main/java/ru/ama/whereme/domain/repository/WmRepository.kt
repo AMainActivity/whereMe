@@ -16,6 +16,7 @@ interface WmRepository {
 
     suspend fun stopData(): Int
     fun isMyServiceRunning(serviceClass: Class<*>): Boolean
+    fun IsTimeToGetLocaton(): Boolean
     fun runAlarm(timeInterval: Long)
     fun cancelAlarm()
 

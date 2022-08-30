@@ -9,7 +9,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val getWorkingTimeUseCase: GetWorkingTimeUseCase,
     private val сheckServiceUseCase: CheckServiceUseCase,
-    private val setWorkingTimeUseCase: SetWorkingTimeUseCase
+    private val setWorkingTimeUseCase: SetWorkingTimeUseCase,
+    private val isTimeToGetLocatonUseCase: IsTimeToGetLocatonUseCase
 
 ) : ViewModel() {
 
@@ -23,7 +24,12 @@ class SettingsViewModel @Inject constructor(
 
 
     fun сheckService(): Boolean {
+        Log.e("fromSet", сheckServiceUseCase(MyForegroundService::class.java).toString())
         return сheckServiceUseCase(MyForegroundService::class.java)
+    }
+
+    fun isTimeToGetLocaton():Boolean{
+        return isTimeToGetLocatonUseCase()
     }
 
     fun setWorkingTime(dm: SettingsDomModel) {

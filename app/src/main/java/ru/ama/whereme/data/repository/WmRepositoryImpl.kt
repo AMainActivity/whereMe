@@ -75,6 +75,52 @@ class WmRepositoryImpl @Inject constructor(
     val isEnathAccuracy: LiveData<Boolean>
         get() = _isEnathAccuracy
 
+    private fun compare2Times(start: String, end: String): Boolean {
+        var res = false
+        val sdf = SimpleDateFormat("HH:mm")
+        val strDate = sdf.parse(start)
+        val endDate = sdf.parse(end)
+        if (endDate.time > strDate.time) {
+            res = true
+        }
+        Log.e("compare2Times", "$strDate ### $endDate %%% $res")
+        return res
+    }
+
+
+    override fun IsTimeToGetLocaton(): Boolean {
+        var result = false
+        val wTime = getWorkingTime()
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = System.currentTimeMillis()
+        when (calendar[Calendar.DAY_OF_WEEK]) {
+            Calendar.MONDAY -> {
+                result = wTime.days[0].equals("1")
+            }
+            Calendar.TUESDAY -> {
+                result = wTime.days[1].equals("1")
+            }
+            Calendar.WEDNESDAY -> {
+                result = wTime.days[2].equals("1")
+            }
+            Calendar.THURSDAY -> {
+                result = wTime.days[3].equals("1")
+            }
+            Calendar.FRIDAY -> {
+                result = wTime.days[4].equals("1")
+            }
+            Calendar.SATURDAY -> {
+                result = wTime.days[5].equals("1")
+            }
+            Calendar.SUNDAY -> {
+                result = wTime.days[6].equals("1")
+            }
+        }
+
+        result= result && (compare2Times(wTime.start,getCurrentTime()) && compare2Times(getCurrentTime(),wTime.end))
+    Log.e("IsTimeToGetLocaton",result.toString())
+    return  result
+    }
 
     override fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
         val manager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -230,6 +276,13 @@ class WmRepositoryImpl @Inject constructor(
         calendar.setTimeInMillis(milliSeconds)
         return formatter.format(calendar.getTime())
     }
+    private fun getCurrentTime(): String {
+        val formatter = SimpleDateFormat("HH:mm")
+        //val calendar: Calendar = Calendar.getInstance()
+       // calendar.timeInMillis = System.currentTimeMillis()
+        return formatter.format(System.currentTimeMillis())
+    }
+
 
     private fun getCurrentDate(): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy")
