@@ -118,13 +118,17 @@ class MyForegroundService : LifecycleService() {
             }
 
             override fun onFinish() {
+                        repo.stopLocationUpdates()
                 if (repo.mBestLoc.longitude != 0.0)
                     coroutineScope.launch {
                         repo.saveLocation(repo.mBestLoc)
                     }
-                else {
+					if (!repo.isCurTimeBetweenSettings())
+					stopSelf()
+				else
+					
+                {
                     coroutineScope.launch {
-                        repo.stopLocationUpdates()
                         repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
                     }
                     cancelTimer(
@@ -165,12 +169,17 @@ class MyForegroundService : LifecycleService() {
             Log.e("onLocationListener", "$it / $isEnath")
             if (it) {
                 repo.stopLocationUpdates()
+				if (!repo.isCurTimeBetweenSettings())
+					stopSelf()
+				else
+				{
                 repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
                 cancelTimer(
                     getString(R.string.app_name),
                     "успешно получено " + repo.getDate(Calendar.getInstance().getTime().time)
                 )
                 isEnath = true
+				}
 
             }
         }

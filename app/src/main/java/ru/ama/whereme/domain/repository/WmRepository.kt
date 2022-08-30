@@ -16,8 +16,11 @@ interface WmRepository {
 
     suspend fun stopData(): Int
     fun isMyServiceRunning(serviceClass: Class<*>): Boolean
+    fun IsTimeToGetLocaton(): Boolean
     fun runAlarm(timeInterval: Long)
+    fun runAlarmClock()
     fun cancelAlarm()
+    fun cancelAlarmClock()
 
     fun getWorkingTime(): SettingsDomModel
     fun setWorkingTime(dm:SettingsDomModel)

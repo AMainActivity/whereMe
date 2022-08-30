@@ -17,8 +17,6 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
-import androidx.work.ExistingWorkPolicy
-import androidx.work.WorkManager
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -35,6 +33,7 @@ import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
 import ru.ama.whereme.data.mapper.WmMapperSettings
 import ru.ama.whereme.data.workers.Alarm
+import ru.ama.whereme.data.workers.AlarmClockStart
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.entity.LocationDbByDays
@@ -75,6 +74,58 @@ class WmRepositoryImpl @Inject constructor(
     val isEnathAccuracy: LiveData<Boolean>
         get() = _isEnathAccuracy
 
+    private fun compare2Times(start: String, end: String): Boolean {
+        var res = false
+        val sdf = SimpleDateFormat("HH:mm")
+        val strDate = sdf.parse(start)
+        val endDate = sdf.parse(end)
+        if (endDate.time > strDate.time) {
+            res = true
+        }
+        Log.e("compare2Times", "$strDate ### $endDate %%% $res")
+        return res
+    }
+
+
+		fun isCurTimeBetweenSettings():Boolean{
+        val wTime = getWorkingTime()
+			return (compare2Times(wTime.start,getCurrentTime()) && compare2Times(getCurrentTime(),wTime.end))
+		}
+
+
+    override fun IsTimeToGetLocaton(): Boolean {
+        var result = false
+        val wTime = getWorkingTime()
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = System.currentTimeMillis()
+        when (calendar[Calendar.DAY_OF_WEEK]) {
+            Calendar.MONDAY -> {
+                result = wTime.days[0].equals("1")
+            }
+            Calendar.TUESDAY -> {
+                result = wTime.days[1].equals("1")
+            }
+            Calendar.WEDNESDAY -> {
+                result = wTime.days[2].equals("1")
+            }
+            Calendar.THURSDAY -> {
+                result = wTime.days[3].equals("1")
+            }
+            Calendar.FRIDAY -> {
+                result = wTime.days[4].equals("1")
+            }
+            Calendar.SATURDAY -> {
+                result = wTime.days[5].equals("1")
+            }
+            Calendar.SUNDAY -> {
+                result = wTime.days[6].equals("1")
+            }
+        }
+
+        result= result && isCurTimeBetweenSettings()
+    Log.e("IsTimeToGetLocaton",result.toString())
+    return  result
+    }
 
     override fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
         val manager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -99,6 +150,38 @@ class WmRepositoryImpl @Inject constructor(
             val netInfo = cm.activeNetworkInfo
             return netInfo != null && netInfo.isConnectedOrConnecting
         }
+    }
+
+
+    override fun runAlarmClock() {
+        Log.e("runAlarmClock", "AlarmClock" )
+        val wTime = getWorkingTime()
+        val am = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val i = Intent(application, AlarmClockStart::class.java)
+        val pi = PendingIntent.getBroadcast(application, 0, i, 0)
+ val calendar: Calendar = Calendar.getInstance().apply {
+            timeInMillis = System.currentTimeMillis()
+            set(Calendar.HOUR_OF_DAY, wTime.start.split(":")[0].toInt())
+            set(Calendar.MINUTE, wTime.start.split(":")[1].toInt())
+        }
+        if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
+            calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
+        }
+        am.cancel(pi)
+		am.setRepeating(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                24 * 60 * 60 * 1000,
+                pi
+            )
+    }
+
+    override fun cancelAlarmClock() {
+        Log.e("runAlarmClock", "cancelAlarmClock")
+        val intent = Intent(application, AlarmClockStart::class.java)
+        val sender = PendingIntent.getBroadcast(application, 0, intent, 0)
+        val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmManager.cancel(sender)
     }
 
     override fun runAlarm(timeInterval: Long) {
@@ -230,6 +313,13 @@ class WmRepositoryImpl @Inject constructor(
         calendar.setTimeInMillis(milliSeconds)
         return formatter.format(calendar.getTime())
     }
+    private fun getCurrentTime(): String {
+        val formatter = SimpleDateFormat("HH:mm")
+        //val calendar: Calendar = Calendar.getInstance()
+       // calendar.timeInMillis = System.currentTimeMillis()
+        return formatter.format(System.currentTimeMillis())
+    }
+
 
     private fun getCurrentDate(): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy")

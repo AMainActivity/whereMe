@@ -14,7 +14,7 @@ class MaViewModel @Inject constructor(
 
     fun startLocationService() {
         viewModelScope.launch {
-            runAlarmUseCase(10)
+        //    runAlarmUseCase(10)
         }
     }
 

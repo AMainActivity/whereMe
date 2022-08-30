@@ -10,6 +10,7 @@ import android.view.*
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatCheckBox
+import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -103,21 +104,24 @@ class SettingsFragment : Fragment() {
 
         binding.frgmntSetSwitchStart.isChecked = viewModel.сheckService()
         binding.frgmntSetSwitchStart.setOnClickListener { view ->
-            /* if (!isMyServiceRunning(p0!!.applicationContext, MyForegroundService::class.java)) {
-                       ContextCompat.startForegroundService(
-                           p0!!.applicationContext,
-                           MyForegroundService.newIntent(p0!!.applicationContext)
-                       )
-                       Log.e("onStartCommand", "isMyServiceRunning")
-                   } else {
-                       Log.e("onStartCommand2", "isMyServiceRunning")
-                       p0!!.applicationContext.bindService(
-                           MyForegroundService.newIntent(p0!!.applicationContext),
-                           serviceConnection,
-                           0
-                       )
+            if (!viewModel.сheckService()) {
+                if (viewModel.isTimeToGetLocaton())
+                    ContextCompat.startForegroundService(
+                        requireContext(),
+                        MyForegroundService.newIntent(requireContext())
+                    )
+                else {
+                    Toast.makeText(requireContext(), "будильник установлен", Toast.LENGTH_SHORT)
+                        .show()
+                    viewModel.runAlarmClock()
+                }
+                Log.e("onStartFromSet", "isMyServiceRunning")
+            } else {
+                Log.e("onStopFromSet", "isMyServiceRunningFalse")
+                viewModel.cancelAlarmClock()
+                requireContext().stopService(MyForegroundService.newIntent(requireContext()))
 
-                   }*/
+            }
         }
 
 
@@ -145,10 +149,9 @@ class SettingsFragment : Fragment() {
                             "время должо быть раньше времени конца: ${workingTimeModel.end}",
                             Toast.LENGTH_SHORT
                         ).show()
-                        else
-                    {
+                    else {
                         binding.frgmntSetButStart.setText(
-                            "$h:$m",null
+                            "$h:$m", null
                         )
                     }
                     //     viewModel.setWorkingTime(workingTimeModel.copy(start = "$h:$m"))
@@ -184,9 +187,9 @@ class SettingsFragment : Fragment() {
                                 "время должо быть позже времени старта: ${workingTimeModel.start}",
                                 Toast.LENGTH_SHORT
                             ).show()
-                         else
+                        else
                             binding.frgmntSetButEnd.setText(
-                                "$h:$m",null
+                                "$h:$m", null
                             )
                         // viewModel.setWorkingTime(workingTimeModel.copy(end = "$h:$m"))
                     },
