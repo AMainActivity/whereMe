@@ -79,7 +79,7 @@ class WmRepositoryImpl @Inject constructor(
         val sdf = SimpleDateFormat("HH:mm")
         val strDate = sdf.parse(start)
         val endDate = sdf.parse(end)
-        if (endDate.time > strDate.time) {
+        if (endDate.time >= strDate.time) {
             res = true
         }
         Log.e("compare2Times", "$strDate ### $endDate %%% $res")
