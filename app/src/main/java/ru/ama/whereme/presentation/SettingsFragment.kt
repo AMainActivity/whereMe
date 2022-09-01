@@ -101,7 +101,7 @@ class SettingsFragment : Fragment() {
 
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
         setDays()
-
+        binding.frgmntSetSwitchStart.setText("Начать слежение (${if (workingTimeModel.isEnable) "включен" else "выключен"})")
         binding.frgmntSetSwitchStart.isChecked = viewModel.сheckService()
         binding.frgmntSetSwitchStart.setOnClickListener { view ->
             if (!viewModel.сheckService()) {
@@ -257,6 +257,7 @@ class SettingsFragment : Fragment() {
         for (cb in listOfCheckBox) {
             listOfDays1.add((cb.isChecked).toIntTxt())
         }
+        workingTimeModel = viewModel.getWorkingTime()
         viewModel.setWorkingTime(
             SettingsDomModel(
                 listOfDays1,
@@ -265,7 +266,8 @@ class SettingsFragment : Fragment() {
                 binding.frgmntSetAccurEt.text.toString().toInt(),
                 binding.frgmntSetMdEt.text.toString().toInt(),
                 binding.frgmntSetTimeAcEt.text.toString().toInt(),
-                binding.frgmntSetTimePovtorEt.text.toString().toInt()
+                binding.frgmntSetTimePovtorEt.text.toString().toInt(),
+                isEnable = workingTimeModel.isEnable
             )
         )
     }

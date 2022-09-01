@@ -8,5 +8,6 @@ data class SettingsDataModel(
   var minDist: Int,
   var accuracy: Int,
   var timeOfWaitAccuracy: Int,
-  var timeOfWorkingWM: Int
+  var timeOfWorkingWM: Int,
+  var isEnable:Boolean
 )
