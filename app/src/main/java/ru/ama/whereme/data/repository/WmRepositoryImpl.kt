@@ -184,6 +184,7 @@ class WmRepositoryImpl @Inject constructor(
         val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(sender)
         setWorkingTime(getWorkingTime().copy(isEnable = false))
+        cancelAlarm()
     }
 
     override fun runAlarm(timeInterval: Long) {

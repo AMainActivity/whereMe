@@ -52,17 +52,20 @@
 
 
 
-                <Switch
+                <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/frgmnt_set_switch_start"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_marginLeft="15dp"
-                    android:layout_marginTop="28dp"
-                    android:layout_marginEnd="15dp"
-                    android:layout_marginRight="15dp"
+                    android:layout_margin="5dp"
                     android:paddingLeft="15dp"
                     android:text="Начать слежение" />
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/frgmnt_set_switch_ac"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="5dp"
+                        android:paddingLeft="15dp"
+                        android:text="Будильник" />
 
                 <!--androidx.appcompat.widget.AppCompatButton
                     android:text="Рабочие дни"
@@ -72,7 +75,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     ></androidx.appcompat.widget.AppCompatButton-->
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Рабочие дни"/>
@@ -93,12 +96,12 @@
                                 android:layout_height="wrap_content"
                                 android:orientation="vertical">
 
-                                <TextView
+                                <com.google.android.material.textview.MaterialTextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
                                     android:text="пн" />
-                                <androidx.appcompat.widget.AppCompatCheckBox
+                                <com.google.android.material.checkbox.MaterialCheckBox
                                     android:id="@+id/frgmnt_set_cb_d1"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -113,13 +116,12 @@
                                 android:layout_height="wrap_content"
                                 android:orientation="vertical">
 
-                                <TextView
+                                <com.google.android.material.textview.MaterialTextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
                                     android:text="вт" />
-
-                                <androidx.appcompat.widget.AppCompatCheckBox
+                                <com.google.android.material.checkbox.MaterialCheckBox
                                     android:id="@+id/frgmnt_set_cb_d2"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -131,12 +133,12 @@
                                 android:layout_height="wrap_content"
                                 android:orientation="vertical">
 
-                                <TextView
+                                <com.google.android.material.textview.MaterialTextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
                                     android:text="ср" />
-                                <androidx.appcompat.widget.AppCompatCheckBox
+                                <com.google.android.material.checkbox.MaterialCheckBox
                                     android:id="@+id/frgmnt_set_cb_d3"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -150,12 +152,12 @@
                                 android:layout_height="wrap_content"
                                 android:orientation="vertical">
 
-                                <TextView
+                                <com.google.android.material.textview.MaterialTextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
                                     android:text="чт" />
-                                <androidx.appcompat.widget.AppCompatCheckBox
+                                <com.google.android.material.checkbox.MaterialCheckBox
                                     android:id="@+id/frgmnt_set_cb_d4"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -168,12 +170,12 @@
                                 android:layout_height="wrap_content"
                                 android:orientation="vertical">
 
-                                <TextView
+                                <com.google.android.material.textview.MaterialTextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
                                     android:text="пт" />
-                                <androidx.appcompat.widget.AppCompatCheckBox
+                                <com.google.android.material.checkbox.MaterialCheckBox
                                     android:id="@+id/frgmnt_set_cb_d5"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -186,12 +188,12 @@
                                 android:layout_height="wrap_content"
                                 android:orientation="vertical">
 
-                                <TextView
+                                <com.google.android.material.textview.MaterialTextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
                                     android:text="сб" />
-                                <androidx.appcompat.widget.AppCompatCheckBox
+                                <com.google.android.material.checkbox.MaterialCheckBox
                                     android:id="@+id/frgmnt_set_cb_d6"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -204,12 +206,12 @@
                                 android:layout_height="wrap_content"
                                 android:orientation="vertical">
 
-                                <TextView
+                                <com.google.android.material.textview.MaterialTextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
                                     android:text="вс" />
-                                <androidx.appcompat.widget.AppCompatCheckBox
+                                <com.google.android.material.checkbox.MaterialCheckBox
                                     android:id="@+id/frgmnt_set_cb_d7"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -228,26 +230,28 @@
                         android:layout_gravity="center"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
-                <androidx.appcompat.widget.AppCompatButton
+                <com.google.android.material.button.MaterialButton
                     android:text="Время старта"
                     android:id="@+id/frgmnt_set_but_start"
                     android:theme="@style/ButtonStyle"
                     android:foreground="?android:attr/selectableItemBackground"
                     android:layout_width="match_parent"
+                    android:layout_margin="2dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    ></androidx.appcompat.widget.AppCompatButton>
+                    ></com.google.android.material.button.MaterialButton>
 
 
-                <androidx.appcompat.widget.AppCompatButton
+                <com.google.android.material.button.MaterialButton
                     android:text="Время окончания"
                     android:id="@+id/frgmnt_set_but_end"
                     android:theme="@style/ButtonStyle"
                     android:foreground="?android:attr/selectableItemBackground"
                     android:layout_width="match_parent"
                     android:layout_weight="1"
+                    android:layout_margin="2dp"
                     android:layout_height="wrap_content"
-                    ></androidx.appcompat.widget.AppCompatButton>
+                    ></com.google.android.material.button.MaterialButton>
 
                     </LinearLayout>
                     <com.google.android.material.textfield.TextInputLayout
@@ -290,6 +294,7 @@
                             android:layout_margin="5dp"
                             android:layout_gravity="center_vertical"
                             android:hint="Точность"
+                            android:background="@color/white"
                             android:maxLines="1"
                             android:inputType="number"
                             android:singleLine="true"/>
@@ -312,6 +317,7 @@
                             android:layout_margin="5dp"
                             android:layout_gravity="center_vertical"
                             android:hint="Время ожидания точности"
+                            android:background="@color/white"
                             android:maxLines="1"
                             android:inputType="number"
                             android:singleLine="true"/>
@@ -334,6 +340,7 @@
                             android:layout_margin="5dp"
                             android:layout_gravity="center_vertical"
                             android:hint="Периодичность контроля"
+                            android:background="@color/white"
                             android:maxLines="1"
                             android:inputType="number"
                             android:singleLine="true"/>

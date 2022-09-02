@@ -4,14 +4,13 @@ import android.annotation.SuppressLint
 import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Bundle
-import android.text.Html
 import android.util.Log
 import android.view.*
+import android.widget.CompoundButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.core.content.ContextCompat
-import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import ru.ama.whereme.R
@@ -101,28 +100,40 @@ class SettingsFragment : Fragment() {
 
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
         setDays()
-        binding.frgmntSetSwitchStart.setText("Начать слежение (${if (workingTimeModel.isEnable) "включен" else "выключен"})")
         binding.frgmntSetSwitchStart.isChecked = viewModel.сheckService()
+        binding.frgmntSetSwitchAc.isChecked = workingTimeModel.isEnable
         binding.frgmntSetSwitchStart.setOnClickListener { view ->
             if (!viewModel.сheckService()) {
-                if (viewModel.isTimeToGetLocaton())
+              //  if (viewModel.isTimeToGetLocaton())
                     ContextCompat.startForegroundService(
                         requireContext(),
                         MyForegroundService.newIntent(requireContext())
                     )
-                else {
+               /* else {
                     Toast.makeText(requireContext(), "будильник установлен", Toast.LENGTH_SHORT)
                         .show()
                     viewModel.runAlarmClock()
-                }
-                Log.e("onStartFromSet", "isMyServiceRunning")
+                }*/
+                Log.e("frgmntSetSwitchStart", "isMyServiceRunning")
             } else {
-                Log.e("onStopFromSet", "isMyServiceRunningFalse")
-                viewModel.cancelAlarmClock()
+                Log.e("frgmntSetSwitchStart", "isMyServiceRunningFalse")
                 requireContext().stopService(MyForegroundService.newIntent(requireContext()))
 
             }
         }
+        binding.frgmntSetSwitchAc.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
+            if (isChecked) {
+                Toast.makeText(requireContext(), "будильник установлен", Toast.LENGTH_SHORT)
+                    .show()
+                viewModel.runAlarmClock()
+                Log.e("frgmntSetSwitchAc", "будильник установлен")
+            } else {
+                Log.e("frgmntSetSwitchAc", "будильник отключен")
+                viewModel.cancelAlarmClock()
+                requireContext().stopService(MyForegroundService.newIntent(requireContext()))
+
+            }
+        })
 
 
         binding.frgmntSetButStart.setText(
