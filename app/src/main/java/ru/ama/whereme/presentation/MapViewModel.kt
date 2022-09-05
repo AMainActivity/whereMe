@@ -16,7 +16,11 @@ class MapViewModel @Inject constructor(
 
     var lld2: LiveData<List<LocationDb>>? = null
     var lldByDay: LiveData<List<LocationDb>>? = null
-    var ld_days: List<LocationDbByDays>? = null
+    //var ld_days: LiveData<List<LocationDbByDays>>? = null
+
+    private val _ld_days = MutableLiveData<List<LocationDbByDays>>()
+    val ld_days: LiveData<List<LocationDbByDays>>
+        get() = _ld_days
 
     init {
 
@@ -25,15 +29,16 @@ class MapViewModel @Inject constructor(
             // Log.e("runWorker1","15")
             //delay(3*1000)
             lld2 = getLocationsFromBdUseCase()
+            _ld_days.value = getGropingDaysUseCase()
             //  ld_days=getGropingDaysUseCase()
         }
 
     }
 
-    fun getListOfDays(): List<LocationDbByDays>? {
-        viewModelScope.launch { ld_days = getGropingDaysUseCase() }
-        return ld_days
-    }
+    /*fun getListOfDays(): List<LocationDbByDays>? {
+        viewModelScope.async { _ld_days.value = getGropingDaysUseCase() }
+        return _ld_days
+    }*/
 
     fun isInternetConnected() = checkInternetConnectionUseCase()
 

@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentFirstBinding
 import ru.ama.whereme.databinding.ItemDateListBinding
+import ru.ama.whereme.domain.entity.LocationDbByDays
 import javax.inject.Inject
 
 
@@ -35,6 +36,7 @@ class MapFragment : Fragment() {
     private var _binding: FragmentFirstBinding? = null
     private val binding get() = _binding ?: throw RuntimeException("FragmentFirstBinding == null")
     private lateinit var viewModel: MapViewModel
+    lateinit var listDays:List<LocationDbByDays>
     private val component by lazy {
         (requireActivity().application as MyApp).component
     }
@@ -79,7 +81,7 @@ class MapFragment : Fragment() {
     }
 
     private fun showPopupText(anchor: View) {
-        val listDays = viewModel.getListOfDays()
+       // val listDays = viewModel.getListOfDays()
         if (listDays != null) {
             val listOfDays: MutableList<String> = mutableListOf<String>()
             val listOfIds: MutableList<Int> = mutableListOf<Int>()
@@ -185,6 +187,10 @@ class MapFragment : Fragment() {
 
 
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
+        viewModel.ld_days?.observe(viewLifecycleOwner) {
+            listDays=it
+        }
+
         if (Build.VERSION.SDK_INT >= 11) {
             val settings: WebSettings = binding.frgmntLocations.settings
             settings.setBuiltInZoomControls(false)

@@ -25,6 +25,7 @@ class MyForegroundService : LifecycleService() {
 
     private lateinit var workingTimeModel: SettingsDomModel
     private var isEnath = false
+    var isServiseAlive: ((Boolean) -> Unit)? = null
     private val component by lazy {
         (application as MyApp).component
     }
@@ -165,6 +166,7 @@ class MyForegroundService : LifecycleService() {
         super.onStartCommand(intent, flags, startId)
         log("onStartCommand")
 
+        isServiseAlive?.invoke(true)
         repo.onLocationChangedListener = {
             Log.e("onLocationListener", "$it / $isEnath")
             if (it) {
@@ -192,6 +194,7 @@ class MyForegroundService : LifecycleService() {
     override fun onDestroy() {
         super.onDestroy()
         timer?.cancel()
+        isServiseAlive?.invoke(false)
         coroutineScope.cancel()
         log("onDestroy")
     }

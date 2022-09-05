@@ -2,8 +2,11 @@ package ru.ama.whereme.presentation
 
 import android.annotation.SuppressLint
 import android.app.TimePickerDialog
+import android.content.ComponentName
 import android.content.Context
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
 import android.view.*
 import android.widget.CompoundButton
@@ -45,6 +48,11 @@ class SettingsFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
+        requireActivity().bindService(
+            MyForegroundService.newIntent(requireContext()),
+            serviceConnection,
+            0
+        )
     }
 
 
@@ -100,20 +108,19 @@ class SettingsFragment : Fragment() {
 
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
         setDays()
-        binding.frgmntSetSwitchStart.isChecked = viewModel.сheckService()
         binding.frgmntSetSwitchAc.isChecked = workingTimeModel.isEnable
         binding.frgmntSetSwitchStart.setOnClickListener { view ->
             if (!viewModel.сheckService()) {
-              //  if (viewModel.isTimeToGetLocaton())
-                    ContextCompat.startForegroundService(
-                        requireContext(),
-                        MyForegroundService.newIntent(requireContext())
-                    )
-               /* else {
-                    Toast.makeText(requireContext(), "будильник установлен", Toast.LENGTH_SHORT)
-                        .show()
-                    viewModel.runAlarmClock()
-                }*/
+                //  if (viewModel.isTimeToGetLocaton())
+                ContextCompat.startForegroundService(
+                    requireContext(),
+                    MyForegroundService.newIntent(requireContext())
+                )
+                /* else {
+                     Toast.makeText(requireContext(), "будильник установлен", Toast.LENGTH_SHORT)
+                         .show()
+                     viewModel.runAlarmClock()
+                 }*/
                 Log.e("frgmntSetSwitchStart", "isMyServiceRunning")
             } else {
                 Log.e("frgmntSetSwitchStart", "isMyServiceRunningFalse")
@@ -231,6 +238,19 @@ class SettingsFragment : Fragment() {
     }
 
 
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = (service as? MyForegroundService.LocalBinder) ?: return
+            val foregroundService = binder.getService()
+            foregroundService.isServiseAlive = { flag ->
+                binding.frgmntSetSwitchStart.isChecked = flag //viewModel.сheckService()
+            }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+        }
+    }
+
     private fun compare2Times(start: String, end: String): Boolean {
         var res = false
         val sdf = SimpleDateFormat("HH:mm")
@@ -274,13 +294,18 @@ class SettingsFragment : Fragment() {
                 listOfDays1,
                 binding.frgmntSetButStart.text.toString(),
                 binding.frgmntSetButEnd.text.toString(),
-                binding.frgmntSetAccurEt.text.toString().toInt(),
                 binding.frgmntSetMdEt.text.toString().toInt(),
+                binding.frgmntSetAccurEt.text.toString().toInt(),
                 binding.frgmntSetTimeAcEt.text.toString().toInt(),
                 binding.frgmntSetTimePovtorEt.text.toString().toInt(),
                 isEnable = workingTimeModel.isEnable
             )
         )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        requireActivity().unbindService(serviceConnection)
     }
 
     private fun Boolean.toIntTxt() = if (this) "1" else "0"
