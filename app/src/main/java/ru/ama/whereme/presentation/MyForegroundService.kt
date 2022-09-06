@@ -2,6 +2,7 @@ package ru.ama.whereme.presentation
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.location.Location
@@ -9,6 +10,7 @@ import android.os.*
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.app.TaskStackBuilder
 import androidx.lifecycle.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -81,11 +83,22 @@ class MyForegroundService : LifecycleService() {
 
     }
 
-    private fun createNotificationBuilder() = NotificationCompat.Builder(this, CHANNEL_ID)
-        .setContentTitle("служба")
-        .setContentText("определения местоположения")
-        .setSmallIcon(R.drawable.ic_launcher_background)
-        .setOnlyAlertOnce(true)
+    private fun createNotificationBuilder():NotificationCompat.Builder {
+         val resultIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+         val resultPendingIntent: PendingIntent? =  PendingIntent.getActivity(
+            this, 0, resultIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val b= NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("служба")
+            .setContentText("определения местоположения")
+            .setSmallIcon(R.drawable.ic_launcher_background)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(resultPendingIntent)
+        return  b
+    }
 
     private fun getFormattedLeftTime(millisUntilFinished: Long): String {
 

@@ -109,6 +109,7 @@ class SettingsFragment : Fragment() {
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
         setDays()
         binding.frgmntSetSwitchAc.isChecked = workingTimeModel.isEnable
+        binding.frgmntSetSwitchStart.isChecked =viewModel.сheckService()
         binding.frgmntSetSwitchStart.setOnClickListener { view ->
             if (!viewModel.сheckService()) {
                 //  if (viewModel.isTimeToGetLocaton())
