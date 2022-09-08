@@ -15,6 +15,7 @@ class SettingsViewModel @Inject constructor(
     private val setWorkingTimeUseCase: SetWorkingTimeUseCase,
     private val runAlarmClockUseCase: RunAlarmClockUseCase,
     private val cancalAlarmClockUseCase: CancalAlarmClockUseCase,
+    private val cancalAlarmServiceUseCase: CancalAlarmServiceUseCase,
     private val isTimeToGetLocatonUseCase: IsTimeToGetLocatonUseCase
 
 ) : ViewModel() {
@@ -35,6 +36,10 @@ fun runAlarmClock()
 fun cancelAlarmClock()
 {
     cancalAlarmClockUseCase()
+}
+fun cancelAlarmService()
+{
+    cancalAlarmServiceUseCase()
 }
 
     fun сheckService(): Boolean {

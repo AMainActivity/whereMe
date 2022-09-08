@@ -25,6 +25,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ru.ama.whereme.R
+import ru.ama.whereme.databinding.DatePickerDaysBinding
 import ru.ama.whereme.databinding.FragmentFirstBinding
 import ru.ama.whereme.databinding.ItemDateListBinding
 import ru.ama.whereme.domain.entity.LocationDbByDays
@@ -72,6 +73,11 @@ class MapFragment : Fragment() {
                 findNavController().navigate(R.id.action_FirstFragment_to_SettingsFragment)
                 true
             }
+            R.id.menu_day_picker -> {
+
+                showPopupText2(requireActivity().findViewById(R.id.menu_day_picker))
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -79,6 +85,52 @@ class MapFragment : Fragment() {
     private fun setActionBarSubTitle(txt: String) {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = txt
     }
+
+    private fun showPopupText2(anchor: View) {
+        // val listDays = viewModel.getListOfDays()
+
+            val listOfDays: MutableList<String> = mutableListOf<String>()
+            val listOfIds: MutableList<Int> = mutableListOf<Int>()
+            val popupWindow = PopupWindow(requireContext())
+            ///popupWindow.animationStyle = R.style.dialog_animation
+            // val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+            val adapter = ArrayAdapter(
+                requireContext(), android.R.layout.simple_list_item_1,
+                listOfDays
+            )
+            popupWindow.setBackgroundDrawable(
+                ResourcesCompat.getDrawable(
+                    getResources(),
+                    R.drawable.nulldr,
+                    null
+                )
+            )
+            popupWindow.isFocusable = true
+            popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
+            popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
+            val binding2 = DatePickerDaysBinding.inflate(layoutInflater)
+            //  viewModel.ld_days?.observe(viewLifecycleOwner) {
+            var sdf = ""
+            listOfDays.clear()
+            for (asd in listDays) {
+                sdf += "\n" + asd.datestart
+                listOfDays.add(asd.datestart)
+                listOfIds.add((asd._id).toInt())
+            }
+
+
+
+
+
+            popupWindow.contentView = binding2.root
+           // popupWindow.dismiss()
+            popupWindow.showAsDropDown(anchor)
+
+
+
+
+    }
+
 
     private fun showPopupText(anchor: View) {
        // val listDays = viewModel.getListOfDays()

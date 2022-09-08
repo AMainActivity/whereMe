@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.*
 import android.widget.CompoundButton
@@ -47,7 +49,7 @@ class SettingsFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
+        // setHasOptionsMenu(true)
         requireActivity().bindService(
             MyForegroundService.newIntent(requireContext()),
             serviceConnection,
@@ -56,20 +58,20 @@ class SettingsFragment : Fragment() {
     }
 
 
-    override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
-        menuInflater.inflate(R.menu.menu_set_fragment, menu)
-    }
+    /* override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
+         menuInflater.inflate(R.menu.menu_set_fragment, menu)
+     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+     override fun onOptionsItemSelected(item: MenuItem): Boolean {
 
-        return when (item.itemId) {
-            R.id.menu_set_frgmnt -> {
-                saveSettings()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
+         return when (item.itemId) {
+             R.id.menu_set_frgmnt -> {
+                 saveSettings()
+                 true
+             }
+             else -> super.onOptionsItemSelected(item)
+         }
+     }*/
 
     private fun setActionBarSubTitle(txt: String) {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = txt
@@ -109,7 +111,7 @@ class SettingsFragment : Fragment() {
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
         setDays()
         binding.frgmntSetSwitchAc.isChecked = workingTimeModel.isEnable
-        binding.frgmntSetSwitchStart.isChecked =viewModel.сheckService()
+        binding.frgmntSetSwitchStart.isChecked = viewModel.сheckService()
         binding.frgmntSetSwitchStart.setOnClickListener { view ->
             if (!viewModel.сheckService()) {
                 //  if (viewModel.isTimeToGetLocaton())
@@ -126,7 +128,7 @@ class SettingsFragment : Fragment() {
             } else {
                 Log.e("frgmntSetSwitchStart", "isMyServiceRunningFalse")
                 requireContext().stopService(MyForegroundService.newIntent(requireContext()))
-
+                viewModel.cancelAlarmService()
             }
         }
         binding.frgmntSetSwitchAc.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
@@ -169,6 +171,9 @@ class SettingsFragment : Fragment() {
                             Toast.LENGTH_SHORT
                         ).show()
                     else {
+                        viewModel.setWorkingTime(workingTimeModel.copy(start = "$h:$m", isEnable = true))
+                        binding.frgmntSetSwitchAc.isChecked = false
+                        binding.frgmntSetSwitchAc.isChecked = true
                         binding.frgmntSetButStart.setText(
                             "$h:$m", null
                         )
@@ -206,10 +211,14 @@ class SettingsFragment : Fragment() {
                                 "время должо быть позже времени старта: ${workingTimeModel.start}",
                                 Toast.LENGTH_SHORT
                             ).show()
-                        else
+                        else {
+                            viewModel.setWorkingTime(workingTimeModel.copy(end = "$h:$m", isEnable = true))
+                            binding.frgmntSetSwitchAc.isChecked = false
+                            binding.frgmntSetSwitchAc.isChecked = true
                             binding.frgmntSetButEnd.setText(
                                 "$h:$m", null
                             )
+                        }
                         // viewModel.setWorkingTime(workingTimeModel.copy(end = "$h:$m"))
                     },
                     getHourFromSet(3).toInt(),
@@ -228,6 +237,56 @@ class SettingsFragment : Fragment() {
              }*/
         }
         setOtherSettings()
+
+        binding.frgmntSetMdEt.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                workingTimeModel = viewModel.getWorkingTime()
+            }
+
+            override fun afterTextChanged(s: Editable) {
+                viewModel.setWorkingTime(workingTimeModel.copy(minDist = s.toString().toInt()))
+            }
+        })
+        binding.frgmntSetAccurEt.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                workingTimeModel = viewModel.getWorkingTime()
+            }
+
+            override fun afterTextChanged(s: Editable) {
+                viewModel.setWorkingTime(workingTimeModel.copy(accuracy = s.toString().toInt()))
+            }
+        })
+        binding.frgmntSetTimeAcEt.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                workingTimeModel = viewModel.getWorkingTime()
+            }
+
+            override fun afterTextChanged(s: Editable) {
+                viewModel.setWorkingTime(
+                    workingTimeModel.copy(
+                        timeOfWaitAccuracy = s.toString().toInt()
+                    )
+                )
+            }
+        })
+        binding.frgmntSetTimePovtorEt.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                workingTimeModel = viewModel.getWorkingTime()
+            }
+
+            override fun afterTextChanged(s: Editable) {
+                viewModel.setWorkingTime(
+                    workingTimeModel.copy(
+                        timeOfWorkingWM = s.toString().toInt()
+                    )
+                )
+            }
+        })
+
 
     }
 
@@ -276,6 +335,11 @@ class SettingsFragment : Fragment() {
             binding.frgmntSetCbD6,
             binding.frgmntSetCbD7
         )
+        for (cb in listOfCheckBox) {
+            cb.setOnCheckedChangeListener { buttonView, isChecked ->
+                saveSettings()
+            }
+        }
         if (listOfDays.size == listOfCheckBox.size) {
             for (i in listOfDays.indices) {
                 listOfCheckBox[i].isChecked = listOfDays[i].equals("1")
@@ -290,7 +354,9 @@ class SettingsFragment : Fragment() {
             listOfDays1.add((cb.isChecked).toIntTxt())
         }
         workingTimeModel = viewModel.getWorkingTime()
-        viewModel.setWorkingTime(
+
+        viewModel.setWorkingTime(workingTimeModel.copy(days = listOfDays1))
+        /*viewModel.setWorkingTime(
             SettingsDomModel(
                 listOfDays1,
                 binding.frgmntSetButStart.text.toString(),
@@ -301,7 +367,7 @@ class SettingsFragment : Fragment() {
                 binding.frgmntSetTimePovtorEt.text.toString().toInt(),
                 isEnable = workingTimeModel.isEnable
             )
-        )
+        )*/
     }
 
     override fun onDestroy() {
