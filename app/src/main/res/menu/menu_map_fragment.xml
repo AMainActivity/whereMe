@@ -5,17 +5,17 @@
 
     <item
         android:id="@+id/menu_day_picker"
-        android:icon="@android:drawable/ic_menu_info_details"
+        android:icon="@android:drawable/ic_menu_my_calendar"
         android:title="список дат"
         app:showAsAction="always" />
-    <item
+    <!--item
         android:id="@+id/menu_day_list"
         android:icon="@android:drawable/ic_menu_info_details"
         android:title="список дат"
-        app:showAsAction="always" />
+        app:showAsAction="always" /-->
     <item
         android:id="@+id/menu_set_frgmnt"
-        android:icon="@android:drawable/ic_menu_info_details"
+        android:icon="@android:drawable/ic_menu_preferences"
         android:title="настройки"
         app:showAsAction="always" />
     

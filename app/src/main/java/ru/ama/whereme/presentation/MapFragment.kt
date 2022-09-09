@@ -29,6 +29,8 @@ import ru.ama.whereme.databinding.DatePickerDaysBinding
 import ru.ama.whereme.databinding.FragmentFirstBinding
 import ru.ama.whereme.databinding.ItemDateListBinding
 import ru.ama.whereme.domain.entity.LocationDbByDays
+import java.text.SimpleDateFormat
+import java.util.*
 import javax.inject.Inject
 
 
@@ -37,7 +39,7 @@ class MapFragment : Fragment() {
     private var _binding: FragmentFirstBinding? = null
     private val binding get() = _binding ?: throw RuntimeException("FragmentFirstBinding == null")
     private lateinit var viewModel: MapViewModel
-    lateinit var listDays:List<LocationDbByDays>
+    lateinit var listDays: List<LocationDbByDays>
     private val component by lazy {
         (requireActivity().application as MyApp).component
     }
@@ -64,10 +66,10 @@ class MapFragment : Fragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
 
         return when (item.itemId) {
-            R.id.menu_day_list -> {
+           /* R.id.menu_day_list -> {
                 showPopupText(requireActivity().findViewById(R.id.menu_day_list))
                 true
-            }
+            }*/
             R.id.menu_set_frgmnt -> {
 
                 findNavController().navigate(R.id.action_FirstFragment_to_SettingsFragment)
@@ -75,7 +77,7 @@ class MapFragment : Fragment() {
             }
             R.id.menu_day_picker -> {
 
-                showPopupText2(requireActivity().findViewById(R.id.menu_day_picker))
+                showPopupDatePicker(requireActivity().findViewById(R.id.menu_day_picker))
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -86,54 +88,55 @@ class MapFragment : Fragment() {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = txt
     }
 
-    private fun showPopupText2(anchor: View) {
-        // val listDays = viewModel.getListOfDays()
+    private fun showPopupDatePicker(anchor: View) {
+        val popupWindow = PopupWindow(requireContext())
+        ///popupWindow.animationStyle = R.style.dialog_animation
+        popupWindow.setBackgroundDrawable(
+            ResourcesCompat.getDrawable(
+                getResources(),
+                R.drawable.nulldr,
+                null
+            )
+        )
+        popupWindow.isFocusable = true
+        popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
+        popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
+        val binding2 = DatePickerDaysBinding.inflate(layoutInflater)
+        binding2.frgmntMapDp.setOnDateChangedListener { datePicker,  year,  monthOfYear,  dayOfMonth ->
+            val formatter = SimpleDateFormat("dd.MM.yyyy")
+            val calendar: Calendar = Calendar.getInstance()
+            calendar.set(year,monthOfYear,dayOfMonth)
+            val s= formatter.format(calendar.getTime())
+            viewModel.getDataByDate(s)
+            viewModel.lldByDay?.observe(viewLifecycleOwner) {
+                if (it.size>1) {
+                    val postData = Gson().toJson(it).toString()
+                    binding.frgmntLocations.evaluateJavascript(
+                        "javascript:fromAndroid(${postData})",
+                        null
+                    )
+                    popupWindow.dismiss()
+                    setActionBarSubTitle(s)
+                }
+                else
 
-            val listOfDays: MutableList<String> = mutableListOf<String>()
-            val listOfIds: MutableList<Int> = mutableListOf<Int>()
-            val popupWindow = PopupWindow(requireContext())
-            ///popupWindow.animationStyle = R.style.dialog_animation
-            // val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            val adapter = ArrayAdapter(
-                requireContext(), android.R.layout.simple_list_item_1,
-                listOfDays
-            )
-            popupWindow.setBackgroundDrawable(
-                ResourcesCompat.getDrawable(
-                    getResources(),
-                    R.drawable.nulldr,
-                    null
-                )
-            )
-            popupWindow.isFocusable = true
-            popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
-            popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
-            val binding2 = DatePickerDaysBinding.inflate(layoutInflater)
-            //  viewModel.ld_days?.observe(viewLifecycleOwner) {
-            var sdf = ""
-            listOfDays.clear()
-            for (asd in listDays) {
-                sdf += "\n" + asd.datestart
-                listOfDays.add(asd.datestart)
-                listOfIds.add((asd._id).toInt())
+                    Toast.makeText(
+                        requireContext(),
+                        "нет данных",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                Log.e("getLocationlldByDay", it.toString())
             }
-
-
-
-
-
-            popupWindow.contentView = binding2.root
-           // popupWindow.dismiss()
-            popupWindow.showAsDropDown(anchor)
-
-
-
+        }
+        popupWindow.contentView = binding2.root
+        // popupWindow.dismiss()
+        popupWindow.showAsDropDown(anchor)
 
     }
 
 
-    private fun showPopupText(anchor: View) {
-       // val listDays = viewModel.getListOfDays()
+    /*private fun showPopupText(anchor: View) {
+        // val listDays = viewModel.getListOfDays()
         if (listDays != null) {
             val listOfDays: MutableList<String> = mutableListOf<String>()
             val listOfIds: MutableList<Int> = mutableListOf<Int>()
@@ -202,7 +205,7 @@ class MapFragment : Fragment() {
             ).show()
 
     }
-
+*/
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -216,9 +219,13 @@ class MapFragment : Fragment() {
 
     private fun setUrl(url: String) {
         if (viewModel.isInternetConnected())
-            binding.frgmntLocations.loadUrl(url)
+        { binding.frgmntLocations.loadUrl(url)
+        binding.frgmntMapReply.visibility=View.GONE
+        }
         else {
-            val builder = AlertDialog.Builder(requireContext())
+            binding.frgmntMapReply.visibility=View.VISIBLE
+            binding.frgmntLocations.loadData("Нет подключения, нет возможноти показать карту. Функционал получения местоположений доступен без наличия интернета", "text/html; charset=utf-8", "UTF-8");
+           /* val builder = AlertDialog.Builder(requireContext())
             builder.setMessage("Нет подключения к сети...")
                 .setCancelable(false)
                 .setPositiveButton("повторить") { dialog, id ->
@@ -229,7 +236,7 @@ class MapFragment : Fragment() {
                     requireActivity().finish()
                 }
             val alert: AlertDialog = builder.create()
-            alert.show()
+            alert.show()*/
         }
     }
 
@@ -240,7 +247,7 @@ class MapFragment : Fragment() {
 
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
         viewModel.ld_days?.observe(viewLifecycleOwner) {
-            listDays=it
+            listDays = it
         }
 
         if (Build.VERSION.SDK_INT >= 11) {
@@ -281,7 +288,7 @@ class MapFragment : Fragment() {
         binding.frgmntLocations.settings.javaScriptEnabled = true
 
         val url = "https://kol.hhos.ru/map/i.php"
-
+        binding.frgmntMapReply.setOnClickListener { setUrl(url) }
         setUrl(url)
         binding.frgmntLocations.addJavascriptInterface(WebAppInterface(requireContext()), "Android")
 

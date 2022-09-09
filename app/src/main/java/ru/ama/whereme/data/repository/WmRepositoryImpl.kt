@@ -165,7 +165,7 @@ class WmRepositoryImpl @Inject constructor(
             set(Calendar.MINUTE, wTime.start.split(":")[1].toInt())
         }
         if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
-            calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1);
+            calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1)
         }
         am.cancel(pi)
 		am.setRepeating(
@@ -184,7 +184,7 @@ class WmRepositoryImpl @Inject constructor(
         val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(sender)
         setWorkingTime(getWorkingTime().copy(isEnable = false))
-        cancelAlarm()
+        //cancelAlarm()
     }
 
     override fun runAlarm(timeInterval: Long) {

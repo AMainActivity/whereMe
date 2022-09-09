@@ -5,6 +5,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".presentation.MainActivity">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
     <WebView
         android:id="@+id/frgmnt_locations"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -14,5 +18,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+        <com.google.android.material.button.MaterialButton
+            android:layout_width="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:layout_height="wrap_content"
+            android:text="повторить"
+            android:id="@+id/frgmnt_map_reply"/>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

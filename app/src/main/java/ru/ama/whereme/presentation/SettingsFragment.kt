@@ -107,7 +107,7 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = null
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
         setDays()
         binding.frgmntSetSwitchAc.isChecked = workingTimeModel.isEnable
@@ -140,7 +140,7 @@ class SettingsFragment : Fragment() {
             } else {
                 Log.e("frgmntSetSwitchAc", "будильник отключен")
                 viewModel.cancelAlarmClock()
-                requireContext().stopService(MyForegroundService.newIntent(requireContext()))
+               // requireContext().stopService(MyForegroundService.newIntent(requireContext()))
 
             }
         })
@@ -172,7 +172,8 @@ class SettingsFragment : Fragment() {
                         ).show()
                     else {
                         viewModel.setWorkingTime(workingTimeModel.copy(start = "$h:$m", isEnable = true))
-                        binding.frgmntSetSwitchAc.isChecked = false
+                        if (binding.frgmntSetSwitchAc.isChecked )
+                            viewModel.runAlarmClock() else
                         binding.frgmntSetSwitchAc.isChecked = true
                         binding.frgmntSetButStart.setText(
                             "$h:$m", null
@@ -213,7 +214,8 @@ class SettingsFragment : Fragment() {
                             ).show()
                         else {
                             viewModel.setWorkingTime(workingTimeModel.copy(end = "$h:$m", isEnable = true))
-                            binding.frgmntSetSwitchAc.isChecked = false
+                            if (binding.frgmntSetSwitchAc.isChecked )
+                                viewModel.runAlarmClock() else
                             binding.frgmntSetSwitchAc.isChecked = true
                             binding.frgmntSetButEnd.setText(
                                 "$h:$m", null
