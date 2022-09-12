@@ -19,6 +19,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import ru.ama.whereme.R
@@ -51,8 +52,23 @@ class MainActivity : AppCompatActivity() {
 
         startService()
 
-    }
+        val firstFragment=MapFragment()
+        val secondFragment=SettingsFragment()
+        setCurrentFragment(firstFragment)
+        binding.contentMain.bottomNavigationView.setOnItemSelectedListener {
+            when(it.itemId){
+                R.id.page_1->setCurrentFragment(firstFragment)
+                R.id.page_2->setCurrentFragment(secondFragment)
 
+            }
+            true
+        }
+    }
+    private fun setCurrentFragment(fragment: Fragment)=
+        supportFragmentManager.beginTransaction().apply {
+            replace(R.id.nav_host_fragment_content_main,fragment)
+            commit()
+        }
 
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
