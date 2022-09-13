@@ -52,21 +52,25 @@ class MainActivity : AppCompatActivity() {
 
         startService()
 
-        val firstFragment=MapFragment()
-        val secondFragment=SettingsFragment()
-        setCurrentFragment(firstFragment)
+        val mapFragment = MapFragment()
+        val setFragment = SettingsFragment()
+        val aboutFragment = AboutFragment()
+        val profileFragment = ProfileFragment()
+        setCurrentFragment(mapFragment)
         binding.contentMain.bottomNavigationView.setOnItemSelectedListener {
-            when(it.itemId){
-                R.id.page_1->setCurrentFragment(firstFragment)
-                R.id.page_2->setCurrentFragment(secondFragment)
-
+            when (it.itemId) {
+                R.id.page_1 -> setCurrentFragment(mapFragment)
+                R.id.page_2 -> setCurrentFragment(setFragment)
+                R.id.page_3 -> setCurrentFragment(profileFragment)
+                R.id.page_4 -> setCurrentFragment(aboutFragment)
             }
             true
         }
     }
-    private fun setCurrentFragment(fragment: Fragment)=
+
+    private fun setCurrentFragment(fragment: Fragment) =
         supportFragmentManager.beginTransaction().apply {
-            replace(R.id.nav_host_fragment_content_main,fragment)
+            replace(R.id.nav_host_fragment_content_main, fragment)
             commit()
         }
 

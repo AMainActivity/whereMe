@@ -5,9 +5,8 @@ import androidx.lifecycle.ViewModel
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
-import ru.ama.whereme.presentation.MapViewModel
-import ru.ama.whereme.presentation.MaViewModel
-import ru.ama.whereme.presentation.SettingsViewModel
+import ru.ama.whereme.presentation.*
+import ru.ama.whereme.presentationn.ViewModelSplash
 
 @Module
 interface ViewModelModule {
@@ -24,4 +23,16 @@ interface ViewModelModule {
     @IntoMap
     @ViewModelKey(SettingsViewModel::class)
     fun bindSettingsViewModel(viewModel: SettingsViewModel): ViewModel
+ @Binds
+    @IntoMap
+    @ViewModelKey(ProfileViewModel::class)
+    fun bindProfileViewModel(viewModel: ProfileViewModel): ViewModel
+ @Binds
+    @IntoMap
+    @ViewModelKey(AboutViewModel::class)
+    fun bindAboutViewModel(viewModel: AboutViewModel): ViewModel
+ @Binds
+    @IntoMap
+    @ViewModelKey(ViewModelSplash::class)
+    fun bindSplashViewModel(viewModel: ViewModelSplash): ViewModel
 }

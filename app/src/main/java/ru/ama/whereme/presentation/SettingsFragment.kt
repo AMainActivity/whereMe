@@ -8,6 +8,8 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.text.Editable
+import android.text.InputFilter
+import android.text.Spanned
 import android.text.TextWatcher
 import android.util.Log
 import android.view.*
@@ -140,7 +142,7 @@ class SettingsFragment : Fragment() {
             } else {
                 Log.e("frgmntSetSwitchAc", "будильник отключен")
                 viewModel.cancelAlarmClock()
-               // requireContext().stopService(MyForegroundService.newIntent(requireContext()))
+                // requireContext().stopService(MyForegroundService.newIntent(requireContext()))
 
             }
         })
@@ -171,10 +173,15 @@ class SettingsFragment : Fragment() {
                             Toast.LENGTH_SHORT
                         ).show()
                     else {
-                        viewModel.setWorkingTime(workingTimeModel.copy(start = "$h:$m", isEnable = true))
-                        if (binding.frgmntSetSwitchAc.isChecked )
+                        viewModel.setWorkingTime(
+                            workingTimeModel.copy(
+                                start = "$h:$m",
+                                isEnable = true
+                            )
+                        )
+                        if (binding.frgmntSetSwitchAc.isChecked)
                             viewModel.runAlarmClock() else
-                        binding.frgmntSetSwitchAc.isChecked = true
+                            binding.frgmntSetSwitchAc.isChecked = true
                         binding.frgmntSetButStart.setText(
                             "$h:$m", null
                         )
@@ -213,10 +220,15 @@ class SettingsFragment : Fragment() {
                                 Toast.LENGTH_SHORT
                             ).show()
                         else {
-                            viewModel.setWorkingTime(workingTimeModel.copy(end = "$h:$m", isEnable = true))
-                            if (binding.frgmntSetSwitchAc.isChecked )
+                            viewModel.setWorkingTime(
+                                workingTimeModel.copy(
+                                    end = "$h:$m",
+                                    isEnable = true
+                                )
+                            )
+                            if (binding.frgmntSetSwitchAc.isChecked)
                                 viewModel.runAlarmClock() else
-                            binding.frgmntSetSwitchAc.isChecked = true
+                                binding.frgmntSetSwitchAc.isChecked = true
                             binding.frgmntSetButEnd.setText(
                                 "$h:$m", null
                             )
@@ -247,45 +259,79 @@ class SettingsFragment : Fragment() {
             }
 
             override fun afterTextChanged(s: Editable) {
-                viewModel.setWorkingTime(workingTimeModel.copy(minDist = s.toString().toInt()))
+                workingTimeModel = viewModel.getWorkingTime()
+                if (s.length > 0) {
+                    if (s.toString().toInt() >= 100) {
+                        viewModel.setWorkingTime(
+                            workingTimeModel.copy(
+                                minDist = s.toString().toInt()
+                            )
+                        )
+                        binding.frgmntSetMdEt.error = null
+                    } else
+                        binding.frgmntSetMdEt.error = "введите число больше 100"
+                } else
+                    binding.frgmntSetMdEt.error = "введите"
             }
         })
         binding.frgmntSetAccurEt.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                workingTimeModel = viewModel.getWorkingTime()
-            }
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
 
             override fun afterTextChanged(s: Editable) {
-                viewModel.setWorkingTime(workingTimeModel.copy(accuracy = s.toString().toInt()))
+                workingTimeModel = viewModel.getWorkingTime()
+                if (s.length > 0) {
+                    if (s.toString().toInt() >= 10) {
+                        viewModel.setWorkingTime(
+                            workingTimeModel.copy(
+                                accuracy = s.toString().toInt()
+                            )
+                        )
+                        binding.frgmntSetAccurEt.error = null
+                    } else
+                        binding.frgmntSetAccurEt.error = "введите число больше 10"
+                } else
+                    binding.frgmntSetAccurEt.error = "введите"
             }
         })
         binding.frgmntSetTimeAcEt.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                workingTimeModel = viewModel.getWorkingTime()
-            }
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
 
             override fun afterTextChanged(s: Editable) {
-                viewModel.setWorkingTime(
-                    workingTimeModel.copy(
-                        timeOfWaitAccuracy = s.toString().toInt()
-                    )
-                )
+                workingTimeModel = viewModel.getWorkingTime()
+                if (s.length > 0) {
+                    if (s.toString().toInt() >= 50) {
+                        viewModel.setWorkingTime(
+                            workingTimeModel.copy(
+                                timeOfWaitAccuracy = s.toString().toInt()
+                            )
+                        )
+                        binding.frgmntSetTimeAcEt.error = null
+                    } else
+                        binding.frgmntSetTimeAcEt.error = "введите число больше 50"
+                } else
+                    binding.frgmntSetTimeAcEt.error = "введите"
+
             }
         })
         binding.frgmntSetTimePovtorEt.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                workingTimeModel = viewModel.getWorkingTime()
-            }
-
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable) {
-                viewModel.setWorkingTime(
-                    workingTimeModel.copy(
-                        timeOfWorkingWM = s.toString().toInt()
-                    )
-                )
+                workingTimeModel = viewModel.getWorkingTime()
+                if (s.length > 0) {
+                    if (s.toString().toInt() >= 20) {
+                        viewModel.setWorkingTime(
+                            workingTimeModel.copy(
+                                timeOfWorkingWM = s.toString().toInt()
+                            )
+                        )
+                        binding.frgmntSetTimePovtorEt.error = null
+                    } else
+                        binding.frgmntSetTimePovtorEt.error = "введите число больше 20"
+                } else
+                    binding.frgmntSetTimePovtorEt.error = "введите"
             }
         })
 

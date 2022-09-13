@@ -269,7 +269,7 @@ class MapFragment : Fragment() {
 
 
         //wv.loadDataWithBaseURL(null,getString(R.string.frgmnt_instructions),"text/html","UTF-8","")
-        binding.frgmntLocations.webViewClient = object : WebViewClient() {
+        /*binding.frgmntLocations.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 view?.getContext()?.startActivity(
                     Intent(Intent.ACTION_VIEW, Uri.parse(url))
@@ -280,11 +280,11 @@ class MapFragment : Fragment() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                viewModel.lld2?.observe(viewLifecycleOwner) {
+               /* viewModel.lld2?.observe(viewLifecycleOwner) {
 
-                }
+                }*/
             }
-        }
+        }*/
         binding.frgmntLocations.settings.javaScriptEnabled = true
 
         val url = "https://kol.hhos.ru/map/i.php"

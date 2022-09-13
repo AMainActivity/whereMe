@@ -19,10 +19,13 @@ import ru.ama.whereme.presentation.*
 interface ApplicationComponent {
 
     fun inject(activity: MainActivity)
+    fun inject(activity: SplashActivity)
     fun inject(startServiceReceiver: StartServiceReceiver)
     fun inject(alarmClockStart: AlarmClockStart)
     fun inject(fragment: SettingsFragment)
     fun inject(fragment: MapFragment)
+    fun inject(fragment: ProfileFragment)
+    fun inject(fragment: AboutFragment)
     fun inject(myForegroundService: MyForegroundService)
     fun inject(application: MyApp)
 
