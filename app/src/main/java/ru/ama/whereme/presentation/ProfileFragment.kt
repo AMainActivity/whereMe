@@ -49,6 +49,9 @@ class ProfileFragment : Fragment() {
     ): View? {
 
         _binding = FragmentProfileBinding.inflate(inflater, container, false)
+        binding.frgmntProButCk.setOnClickListener {
+            viewModel.checkKod(binding.frgmntProEt.text.toString())
+        }
         return binding.root
 
     }

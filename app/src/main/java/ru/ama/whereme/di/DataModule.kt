@@ -16,8 +16,10 @@ import dagger.Provides
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import ru.ama.ottest.data.network.TestApiService
 import ru.ama.whereme.data.database.AppDatabase
 import ru.ama.whereme.data.database.LocationDao
+import ru.ama.whereme.data.network.TestApiFactory
 import ru.ama.whereme.data.repository.WmRepositoryImpl
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.repository.WmRepository
@@ -50,6 +52,12 @@ interface DataModule {
         @Provides
         @ApplicationScope
         fun provideGoogleApiAvailability() = GoogleApiAvailability.getInstance()
+
+		@Provides
+        @ApplicationScope
+        fun provideApiService(): TestApiService {
+            return TestApiFactory.apiService
+        }
 
     /*@Provides
     @ApplicationScope

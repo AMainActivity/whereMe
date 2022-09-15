@@ -28,13 +28,19 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.RequestBody
+import retrofit2.Response
+import ru.ama.ottest.data.mapper.WmMapperJwt
+import ru.ama.ottest.data.network.TestApiService
 import ru.ama.whereme.data.database.*
 import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
 import ru.ama.whereme.data.mapper.WmMapperSettings
+import ru.ama.whereme.data.network.model.JsonJwtDto
 import ru.ama.whereme.data.workers.Alarm
 import ru.ama.whereme.data.workers.AlarmClockStart
 import ru.ama.whereme.di.ApplicationScope
+import ru.ama.whereme.domain.entity.JsonJwt
 import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.entity.LocationDbByDays
 import ru.ama.whereme.domain.repository.WmRepository
@@ -47,11 +53,13 @@ class WmRepositoryImpl @Inject constructor(
     private val mapper: WmMapper,
     private val mapperByDays: WmMapperByDays,
     private val mapperSetTime: WmMapperSettings,
+    private val mapperJwt: WmMapperJwt,
     private val locationDao: LocationDao,
     private val application: Application,
     private val fusedLocationProviderClient: FusedLocationProviderClient,
     @ApplicationScope private val externalScope: CoroutineScope,
     private val googleApiAvailability: GoogleApiAvailability,
+    private val apiService: TestApiService,
     private val mSettings: SharedPreferences
 ) : WmRepository {
 
@@ -93,6 +101,12 @@ class WmRepositoryImpl @Inject constructor(
 		}
 
 
+    override suspend fun checkKod(request : RequestBody) : Response<JsonJwtDto>
+	{
+       var sd= apiService.getTestById(request).body()?.let { mapperJwt.mapDtoToModel(it) }
+		return Response< sd >
+	}
+	
     override fun IsTimeToGetLocaton(): Boolean {
         var result = false
         val wTime = getWorkingTime()
