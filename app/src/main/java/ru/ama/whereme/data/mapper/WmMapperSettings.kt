@@ -1,6 +1,7 @@
 package ru.ama.whereme.data.mapper
 
 import ru.ama.whereme.data.database.*
+import ru.ama.whereme.domain.entity.SettingsDomModel
 import javax.inject.Inject
 
 class WmMapperSettings @Inject constructor() {

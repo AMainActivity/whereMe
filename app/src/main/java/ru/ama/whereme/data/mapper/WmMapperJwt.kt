@@ -14,7 +14,10 @@ class WmMapperJwt @Inject constructor() {
         posId = dto.posId,
         famId = dto.famId,
         name = dto.name,
-        isActivate = dto.isActivate
+        isActivate = dto.isActivate,
+        respCode = dto.respCode,
+        respError = dto.respError,
+        respIsSuccess = dto.respIsSuccess
     )
 
     fun mapModelToDto(model: JsonJwt) = JsonJwtDto(
@@ -24,7 +27,10 @@ class WmMapperJwt @Inject constructor() {
         tokenJwt = model.tokenJwt,
         famId = model.famId,
         name = model.name,
-        isActivate = model.isActivate
+        isActivate = model.isActivate,
+        respCode = model.respCode,
+        respError = model.respError,
+        respIsSuccess = model.respIsSuccess
     )
    
 }

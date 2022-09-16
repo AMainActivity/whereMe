@@ -15,8 +15,8 @@ import androidx.lifecycle.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import ru.ama.whereme.R
-import ru.ama.whereme.data.database.SettingsDomModel
 import ru.ama.whereme.data.repository.WmRepositoryImpl
+import ru.ama.whereme.domain.entity.SettingsDomModel
 import java.util.*
 import javax.inject.Inject
 

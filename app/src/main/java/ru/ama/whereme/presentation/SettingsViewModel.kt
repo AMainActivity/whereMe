@@ -5,7 +5,7 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
 import androidx.lifecycle.*
-import ru.ama.whereme.data.database.SettingsDomModel
+import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 

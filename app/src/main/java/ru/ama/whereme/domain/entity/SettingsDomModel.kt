@@ -1,4 +1,4 @@
-package ru.ama.whereme.data.database
+package ru.ama.whereme.domain.entity
 
 
 import android.os.Parcelable

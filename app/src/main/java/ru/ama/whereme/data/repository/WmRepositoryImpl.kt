@@ -28,7 +28,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.parcelize.IgnoredOnParcel
 import okhttp3.RequestBody
+import okhttp3.ResponseBody
 import retrofit2.Response
 import ru.ama.ottest.data.mapper.WmMapperJwt
 import ru.ama.ottest.data.network.TestApiService
@@ -43,6 +45,7 @@ import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.JsonJwt
 import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.entity.LocationDbByDays
+import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.repository.WmRepository
 import java.text.SimpleDateFormat
 import java.util.*
@@ -95,18 +98,36 @@ class WmRepositoryImpl @Inject constructor(
     }
 
 
-		fun isCurTimeBetweenSettings():Boolean{
+    fun isCurTimeBetweenSettings(): Boolean {
         val wTime = getWorkingTime()
-			return (compare2Times(wTime.start,getCurrentTime()) && compare2Times(getCurrentTime(),wTime.end))
-		}
+        return (compare2Times(wTime.start, getCurrentTime()) && compare2Times(
+            getCurrentTime(),
+            wTime.end
+        ))
+    }
 
 
-    override suspend fun checkKod(request : RequestBody) : Response<JsonJwtDto>
-	{
-       var sd= apiService.getTestById(request).body()?.let { mapperJwt.mapDtoToModel(it) }
-		return Response< sd >
-	}
-	
+    override suspend fun checkKod(request: RequestBody): JsonJwt {
+        val responc = apiService.getTestById(request)
+       val mBody= responc.body()?.let { mapperJwt.mapDtoToModel(it) }
+
+        val res=JsonJwt( mBody!!.error,
+            mBody!!.message,
+            mBody!!.tokenJwt,
+            mBody!!.posId,
+            mBody!!.famId,
+            mBody!!.name,
+            mBody!!.isActivate,
+            responc.isSuccessful,
+            responc.errorBody(),
+         responc.code())
+
+        /* nBody = sd.body()?.let { mapperJwt.mapDtoToModel(it) }
+         nError = sd.errorBody()?.let { it }
+         h: Response<JsonJwt> = sd.raw()*/
+        return res
+    }
+
     override fun IsTimeToGetLocaton(): Boolean {
         var result = false
         val wTime = getWorkingTime()
@@ -136,9 +157,9 @@ class WmRepositoryImpl @Inject constructor(
             }
         }
 
-        result= result && isCurTimeBetweenSettings()
-    Log.e("IsTimeToGetLocaton",result.toString())
-    return  result
+        result = result && isCurTimeBetweenSettings()
+        Log.e("IsTimeToGetLocaton", result.toString())
+        return result
     }
 
     override fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
@@ -168,12 +189,12 @@ class WmRepositoryImpl @Inject constructor(
 
 
     override fun runAlarmClock() {
-        Log.e("runAlarmClock", "AlarmClock" )
+        Log.e("runAlarmClock", "AlarmClock")
         val wTime = getWorkingTime()
         val am = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val i = Intent(application, AlarmClockStart::class.java)
         val pi = PendingIntent.getBroadcast(application, 0, i, 0)
- val calendar: Calendar = Calendar.getInstance().apply {
+        val calendar: Calendar = Calendar.getInstance().apply {
             timeInMillis = System.currentTimeMillis()
             set(Calendar.HOUR_OF_DAY, wTime.start.split(":")[0].toInt())
             set(Calendar.MINUTE, wTime.start.split(":")[1].toInt())
@@ -182,12 +203,12 @@ class WmRepositoryImpl @Inject constructor(
             calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1)
         }
         am.cancel(pi)
-		am.setRepeating(
-                AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                24 * 60 * 60 * 1000,
-                pi
-            )
+        am.setRepeating(
+            AlarmManager.RTC_WAKEUP,
+            calendar.timeInMillis,
+            24 * 60 * 60 * 1000,
+            pi
+        )
         setWorkingTime(wTime.copy(isEnable = true))
     }
 
@@ -330,10 +351,11 @@ class WmRepositoryImpl @Inject constructor(
         calendar.setTimeInMillis(milliSeconds)
         return formatter.format(calendar.getTime())
     }
+
     private fun getCurrentTime(): String {
         val formatter = SimpleDateFormat("HH:mm")
         //val calendar: Calendar = Calendar.getInstance()
-       // calendar.timeInMillis = System.currentTimeMillis()
+        // calendar.timeInMillis = System.currentTimeMillis()
         return formatter.format(System.currentTimeMillis())
     }
 

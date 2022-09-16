@@ -21,8 +21,8 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import ru.ama.whereme.R
-import ru.ama.whereme.data.database.SettingsDomModel
 import ru.ama.whereme.databinding.FragmentSettingsBinding
+import ru.ama.whereme.domain.entity.SettingsDomModel
 import java.text.SimpleDateFormat
 import javax.inject.Inject
 
