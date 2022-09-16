@@ -42,10 +42,7 @@ import ru.ama.whereme.data.network.model.JsonJwtDto
 import ru.ama.whereme.data.workers.Alarm
 import ru.ama.whereme.data.workers.AlarmClockStart
 import ru.ama.whereme.di.ApplicationScope
-import ru.ama.whereme.domain.entity.JsonJwt
-import ru.ama.whereme.domain.entity.LocationDb
-import ru.ama.whereme.domain.entity.LocationDbByDays
-import ru.ama.whereme.domain.entity.SettingsDomModel
+import ru.ama.whereme.domain.entity.*
 import ru.ama.whereme.domain.repository.WmRepository
 import java.text.SimpleDateFormat
 import java.util.*
@@ -107,17 +104,11 @@ class WmRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun checkKod(request: RequestBody): JsonJwt {
+    override suspend fun checkKod(request: RequestBody): ResponseJwtEntity {
         val responc = apiService.getTestById(request)
        val mBody= responc.body()?.let { mapperJwt.mapDtoToModel(it) }
 
-        val res=JsonJwt( mBody!!.error,
-            mBody!!.message,
-            mBody!!.tokenJwt,
-            mBody!!.posId,
-            mBody!!.famId,
-            mBody!!.name,
-            mBody!!.isActivate,
+        val res=ResponseJwtEntity( mBody,
             responc.isSuccessful,
             responc.errorBody(),
          responc.code())

@@ -13,7 +13,7 @@ interface TestApiService {
     @POST("gkk_ChechKod.php")
     suspend fun getTestById(
         @Body request : RequestBody
-    ): JsonJwtDto
+    ): Response<JsonJwtDto>
 
     
     companion object {

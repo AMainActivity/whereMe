@@ -18,9 +18,12 @@ data class JsonJwtDto(
     @Expose
     @SerializedName("name") val name: String?=null,
     @Expose
-    @SerializedName("isactivate") val isActivate: Int,
+    @SerializedName("isactivate") val isActivate: Int
+)
+
+data class ResponseJwtDto(
+    val mBody:JsonJwtDto?=null,
     val respIsSuccess: Boolean,
     val respError:ResponseBody?=null,
     val respCode:Int
-
 )

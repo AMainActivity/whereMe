@@ -27,5 +27,5 @@ interface WmRepository {
     fun setWorkingTime(dm:SettingsDomModel)
 
     suspend fun getLastLocation(): Location?
-    suspend fun checkKod(request : RequestBody): JsonJwt
+    suspend fun checkKod(request : RequestBody): ResponseJwtEntity
 }
