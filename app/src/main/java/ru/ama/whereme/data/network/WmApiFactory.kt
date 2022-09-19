@@ -2,9 +2,9 @@ package ru.ama.whereme.data.network
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import ru.ama.ottest.data.network.TestApiService
+import ru.ama.ottest.data.network.WmApiService
 
-object TestApiFactory {
+object WmApiFactory {
 
     private const val BASE_URL = "https://kol.hhos.ru/gkk/"
 
@@ -13,5 +13,5 @@ object TestApiFactory {
         .baseUrl(BASE_URL)
         .build()
 
-    val apiService = retrofit.create(TestApiService::class.java)
+    val apiService = retrofit.create(WmApiService::class.java)
 }

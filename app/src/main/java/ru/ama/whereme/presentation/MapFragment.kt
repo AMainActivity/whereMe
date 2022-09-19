@@ -70,11 +70,11 @@ class MapFragment : Fragment() {
                 showPopupText(requireActivity().findViewById(R.id.menu_day_list))
                 true
             }*/
-            R.id.menu_set_frgmnt -> {
+           /* R.id.menu_set_frgmnt -> {
 
                 findNavController().navigate(R.id.action_FirstFragment_to_SettingsFragment)
                 true
-            }
+            }*/
             R.id.menu_day_picker -> {
 
                 showPopupDatePicker(requireActivity().findViewById(R.id.menu_day_picker))
@@ -109,7 +109,7 @@ class MapFragment : Fragment() {
             val s= formatter.format(calendar.getTime())
             viewModel.getDataByDate(s)
             viewModel.lldByDay?.observe(viewLifecycleOwner) {
-                if (it.size>1) {
+                if (it.size>=1) {
                     val postData = Gson().toJson(it).toString()
                     binding.frgmntLocations.evaluateJavascript(
                         "javascript:fromAndroid(${postData})",

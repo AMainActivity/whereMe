@@ -28,17 +28,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.parcelize.IgnoredOnParcel
 import okhttp3.RequestBody
-import okhttp3.ResponseBody
-import retrofit2.Response
 import ru.ama.ottest.data.mapper.WmMapperJwt
-import ru.ama.ottest.data.network.TestApiService
+import ru.ama.ottest.data.network.WmApiService
 import ru.ama.whereme.data.database.*
 import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
 import ru.ama.whereme.data.mapper.WmMapperSettings
-import ru.ama.whereme.data.network.model.JsonJwtDto
 import ru.ama.whereme.data.workers.Alarm
 import ru.ama.whereme.data.workers.AlarmClockStart
 import ru.ama.whereme.di.ApplicationScope
@@ -59,7 +55,7 @@ class WmRepositoryImpl @Inject constructor(
     private val fusedLocationProviderClient: FusedLocationProviderClient,
     @ApplicationScope private val externalScope: CoroutineScope,
     private val googleApiAvailability: GoogleApiAvailability,
-    private val apiService: TestApiService,
+    private val apiService: WmApiService,
     private val mSettings: SharedPreferences
 ) : WmRepository {
 
@@ -105,13 +101,15 @@ class WmRepositoryImpl @Inject constructor(
 
 
     override suspend fun checkKod(request: RequestBody): ResponseJwtEntity {
-        val responc = apiService.getTestById(request)
-       val mBody= responc.body()?.let { mapperJwt.mapDtoToModel(it) }
+        val responc = apiService.chekcKod(request)
+        val mBody = responc.body()?.let { mapperJwt.mapDtoToModel(it) }
 
-        val res=ResponseJwtEntity( mBody,
+        val res = ResponseJwtEntity(
+            mBody,
             responc.isSuccessful,
             responc.errorBody(),
-         responc.code())
+            responc.code()
+        )
 
         /* nBody = sd.body()?.let { mapperJwt.mapDtoToModel(it) }
          nError = sd.errorBody()?.let { it }
@@ -487,6 +485,12 @@ class WmRepositoryImpl @Inject constructor(
         )
     )
 
+    override fun getWmJwToken() = jwToken
+
+    override fun setWmJwToken(jwt: String) {
+        jwToken = jwt
+    }
+
     var worktime: String?
         get() {
             val k: String?
@@ -508,10 +512,31 @@ class WmRepositoryImpl @Inject constructor(
             } else
                 editor.commit()
         }
-
+    var jwToken: String
+        get() {
+            val k: String
+            if (mSettings.contains(APP_PREFERENCES_jwt)) {
+                k = mSettings.getString(
+                    APP_PREFERENCES_jwt,
+                    ""
+                ).toString()
+            } else
+                k = ""
+            return k
+        }
+        @SuppressLint("NewApi")
+        set(k) {
+            val editor = mSettings.edit()
+            editor.putString(APP_PREFERENCES_jwt, k)
+            if (android.os.Build.VERSION.SDK_INT > 9) {
+                editor.apply()
+            } else
+                editor.commit()
+        }
 
     private companion object {
         val APP_PREFERENCES_worktime = "worktime"
+        val APP_PREFERENCES_jwt = "jwt"
     }
 
 }

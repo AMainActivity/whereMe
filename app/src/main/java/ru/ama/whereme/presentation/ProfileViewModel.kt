@@ -10,15 +10,20 @@ import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
 import ru.ama.whereme.domain.usecase.CheckKodUseCase
+import ru.ama.whereme.domain.usecase.GetJwTokenUseCase
+import ru.ama.whereme.domain.usecase.SetJwTokenUseCase
 import javax.inject.Inject
 
 
 class ProfileViewModel @Inject constructor(
-    private val checkKodUseCase: CheckKodUseCase
+    private val checkKodUseCase: CheckKodUseCase,
+    private val setWmJwTokenUseCase: SetJwTokenUseCase,
+    getJwTokenUseCase: GetJwTokenUseCase
 ) : ViewModel() {
 
     init {
 
+        Log.e("getJwTokenUseCase",getJwTokenUseCase().toString())
     }
 
 fun checkKod(kod:String)
@@ -30,7 +35,12 @@ fun checkKod(kod:String)
  viewModelScope.launch {
      val response = checkKodUseCase(requestBody)
      Log.e("responseCode",response.respCode.toString())
+     Log.e("response",response.toString())
      if (response.respIsSuccess) {
+         response.mBody?.let { 
+             if (it.error==false && it.message.equals("1"))
+             setWmJwTokenUseCase(it.tokenJwt)
+         }
      }
      else
      {

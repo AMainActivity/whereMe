@@ -3,10 +3,6 @@ package ru.ama.whereme.diO
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStoreFile
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -16,10 +12,10 @@ import dagger.Provides
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import ru.ama.ottest.data.network.TestApiService
+import ru.ama.ottest.data.network.WmApiService
 import ru.ama.whereme.data.database.AppDatabase
 import ru.ama.whereme.data.database.LocationDao
-import ru.ama.whereme.data.network.TestApiFactory
+import ru.ama.whereme.data.network.WmApiFactory
 import ru.ama.whereme.data.repository.WmRepositoryImpl
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.repository.WmRepository
@@ -55,8 +51,8 @@ interface DataModule {
 
 		@Provides
         @ApplicationScope
-        fun provideApiService(): TestApiService {
-            return TestApiFactory.apiService
+        fun provideApiService(): WmApiService {
+            return WmApiFactory.apiService
         }
 
     /*@Provides

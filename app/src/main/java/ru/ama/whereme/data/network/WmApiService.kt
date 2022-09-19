@@ -8,10 +8,10 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 import ru.ama.whereme.data.network.model.JsonJwtDto
 
-interface TestApiService {
+interface WmApiService {
 
     @POST("gkk_ChechKod.php")
-    suspend fun getTestById(
+    suspend fun chekcKod(
         @Body request : RequestBody
     ): Response<JsonJwtDto>
 

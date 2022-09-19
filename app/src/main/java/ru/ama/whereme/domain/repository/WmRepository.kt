@@ -26,6 +26,9 @@ interface WmRepository {
     fun getWorkingTime(): SettingsDomModel
     fun setWorkingTime(dm:SettingsDomModel)
 
+    fun getWmJwToken(): String
+    fun setWmJwToken(jwt:String)
+
     suspend fun getLastLocation(): Location?
     suspend fun checkKod(request : RequestBody): ResponseJwtEntity
 }
