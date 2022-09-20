@@ -1,6 +1,8 @@
 package ru.ama.ottest.data.mapper
 
+import ru.ama.whereme.data.network.model.JsonDto
 import ru.ama.whereme.data.network.model.JsonJwtDto
+import ru.ama.whereme.domain.entity.JsonEntity
 import ru.ama.whereme.domain.entity.JsonJwt
 import javax.inject.Inject
 
@@ -26,5 +28,15 @@ class WmMapperJwt @Inject constructor() {
         name = model.name,
         isActivate = model.isActivate
     )
-   
+
+    fun mapAllDtoToModel(dto: JsonDto) = JsonEntity(
+        error = dto.error,
+        message = dto.message
+    )
+
+    fun mapAllModelToDto(model: JsonEntity) = JsonDto(
+        error = model.error,
+        message = model.message
+    )
+
 }

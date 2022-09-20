@@ -281,6 +281,19 @@ class WmRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun checkWmJwToken(request : RequestBody) :ResponseEntity{
+        val responc = apiService.checkToken(request)
+        val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
+
+        val res = ResponseEntity(
+            mBody,
+            responc.isSuccessful,
+            responc.errorBody(),
+            responc.code()
+        )
+        return res
+    }
+
     override suspend fun GetLocationsFromBd(): LiveData<List<LocationDb>> {
         return Transformations.map(locationDao.getLocations()) {
             it.map {

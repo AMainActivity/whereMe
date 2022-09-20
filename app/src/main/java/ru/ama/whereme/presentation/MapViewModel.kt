@@ -5,6 +5,8 @@ import androidx.lifecycle.*
 import kotlinx.coroutines.*
 import ru.ama.whereme.domain.entity.*
 import ru.ama.whereme.domain.usecase.*
+import java.text.SimpleDateFormat
+import java.util.*
 import javax.inject.Inject
 
 class MapViewModel @Inject constructor(
@@ -32,7 +34,7 @@ class MapViewModel @Inject constructor(
             _ld_days.value = getGropingDaysUseCase()
             //  ld_days=getGropingDaysUseCase()
         }
-
+getDataByDate(getCurrentDate())
     }
 
     /*fun getListOfDays(): List<LocationDbByDays>? {
@@ -41,7 +43,11 @@ class MapViewModel @Inject constructor(
     }*/
 
     fun isInternetConnected() = checkInternetConnectionUseCase()
-
+	
+ fun getCurrentDate(): String {
+        val formatter = SimpleDateFormat("dd.MM.yyyy")
+        return formatter.format(Date())
+    }
 
     fun getDataByDate(mDate: String) {
         viewModelScope.launch {

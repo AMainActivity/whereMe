@@ -29,6 +29,8 @@ interface WmRepository {
     fun getWmJwToken(): String
     fun setWmJwToken(jwt:String)
 
+    suspend fun checkWmJwToken(request : RequestBody):ResponseEntity
+
     suspend fun getLastLocation(): Location?
     suspend fun checkKod(request : RequestBody): ResponseJwtEntity
 }

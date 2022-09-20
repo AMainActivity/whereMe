@@ -43,6 +43,7 @@ class MapFragment : Fragment() {
     private val component by lazy {
         (requireActivity().application as MyApp).component
     }
+    var onDataSizeListener: ((Int) -> Unit)? = null
 
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
@@ -108,25 +109,10 @@ class MapFragment : Fragment() {
             calendar.set(year,monthOfYear,dayOfMonth)
             val s= formatter.format(calendar.getTime())
             viewModel.getDataByDate(s)
-            viewModel.lldByDay?.observe(viewLifecycleOwner) {
-                if (it.size>=1) {
-                    val postData = Gson().toJson(it).toString()
-                    binding.frgmntLocations.evaluateJavascript(
-                        "javascript:fromAndroid(${postData})",
-                        null
-                    )
-                    popupWindow.dismiss()
-                    setActionBarSubTitle(s)
-                }
-                else
-
-                    Toast.makeText(
-                        requireContext(),
-                        "нет данных",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                Log.e("getLocationlldByDay", it.toString())
-            }
+            observeData()
+            onDataSizeListener={
+				if (it>0) popupWindow.dismiss()
+			}
         }
         popupWindow.contentView = binding2.root
         // popupWindow.dismiss()
@@ -246,7 +232,7 @@ class MapFragment : Fragment() {
 
 
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
-        viewModel.ld_days?.observe(viewLifecycleOwner) {
+        viewModel.ld_days.observe(viewLifecycleOwner) {
             listDays = it
         }
 
@@ -269,7 +255,7 @@ class MapFragment : Fragment() {
 
 
         //wv.loadDataWithBaseURL(null,getString(R.string.frgmnt_instructions),"text/html","UTF-8","")
-        /*binding.frgmntLocations.webViewClient = object : WebViewClient() {
+        binding.frgmntLocations.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 view?.getContext()?.startActivity(
                     Intent(Intent.ACTION_VIEW, Uri.parse(url))
@@ -280,11 +266,12 @@ class MapFragment : Fragment() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-               /* viewModel.lld2?.observe(viewLifecycleOwner) {
-
-                }*/
+                try {
+                    observeData()
+                }
+                catch (e:Exception){}
             }
-        }*/
+        }
         binding.frgmntLocations.settings.javaScriptEnabled = true
 
         val url = "https://kol.hhos.ru/map/i.php"
@@ -294,8 +281,33 @@ class MapFragment : Fragment() {
 
     }
 
+
+    private fun observeData()
+    {
+        viewModel.lldByDay?.observe(viewLifecycleOwner) {
+            onDataSizeListener?.invoke(it.size)
+            if (it.size>=1) {
+                val postData = Gson().toJson(it).toString()
+                binding.frgmntLocations.evaluateJavascript(
+                    "javascript:fromAndroid(${postData})",
+                    null
+                )
+                // popupWindow.dismiss()
+                setActionBarSubTitle(viewModel.getCurrentDate())
+            }
+            else
+
+                Toast.makeText(
+                    requireContext(),
+                    "нет данных",
+                    Toast.LENGTH_SHORT
+                ).show()
+            Log.e("getLocationlldByDay", it.toString())
+        }
+    }
     override fun onDestroyView() {
         super.onDestroyView()
+        viewModel.lldByDay?.removeObservers(viewLifecycleOwner)
         _binding = null
     }
 
