@@ -13,13 +13,16 @@ import okhttp3.RequestBody
 import org.json.JSONObject
 import ru.ama.whereme.domain.usecase.CheckJwtTokenUseCase
 import ru.ama.whereme.domain.usecase.CheckKodUseCase
+import ru.ama.whereme.domain.usecase.GetJwtFromSetingsUseCase
 import javax.inject.Inject
 
 class ViewModelSplash @Inject constructor(
-    private val checkJwtTokenUseCase: CheckJwtTokenUseCase
+    private val checkJwtTokenUseCase: CheckJwtTokenUseCase,
+    private val getJwtFromSetingsUseCase: GetJwtFromSetingsUseCase
 ) : ViewModel() {
 
     init {
+        checkJwt()
     }
 
     private val _canStart = MutableLiveData<Unit>()
@@ -28,16 +31,16 @@ class ViewModelSplash @Inject constructor(
 
 
 
-    fun checkJwt(jwt:String)
+    fun checkJwt()
     {val json = JSONObject()
-        json.put("kod", jwt)
+        json.put("kod", getJwtFromSetingsUseCase())
         val requestBody: RequestBody = RequestBody.create(MediaType.parse("application/json"), json.toString())
 
-        Log.e("response1",json.toString())
+        Log.e("checkJwt1",json.toString())
         viewModelScope.launch {
             val response = checkJwtTokenUseCase(requestBody)
-            Log.e("responseCode",response.respCode.toString())
-            Log.e("response",response.toString())
+            Log.e("checkJwtCode",response.respCode.toString())
+            Log.e("checkJwt",response.toString())
             if (response.respIsSuccess) {
                 response.mBody?.let {
                  //   if (it.error==false && it.message.equals("1"))
@@ -49,9 +52,9 @@ class ViewModelSplash @Inject constructor(
                 try {
                     val jObjError = JSONObject(response.respError?.string())
 
-                    Log.e("responseError",jObjError.toString()/*.getJSONObject("error").getString("message")*/)
+                    Log.e("checkJwtError",jObjError.toString()/*.getJSONObject("error").getString("message")*/)
                 } catch (e: Exception) {
-                    Log.e("responseError",e.message.toString())
+                    Log.e("checkJwtError",e.message.toString())
                 }}
 
 

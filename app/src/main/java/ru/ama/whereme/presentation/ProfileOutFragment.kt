@@ -9,16 +9,16 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import ru.ama.whereme.databinding.FragmentProfileBinding
+import ru.ama.whereme.databinding.FragmentOutProfileBinding
 import javax.inject.Inject
 
 
-class ProfileFragment : Fragment() {
+class ProfileOutFragment : Fragment() {
 
-    private var _binding: FragmentProfileBinding? = null
+    private var _binding: FragmentOutProfileBinding? = null
     private val binding
-        get() = _binding ?: throw RuntimeException("FragmentProfileBinding == null")
-    private lateinit var viewModel: ProfileViewModel
+        get() = _binding ?: throw RuntimeException("FragmentOutProfileBinding == null")
+    private lateinit var viewModel: ProfileOutViewModel
     private val component by lazy {
         (requireActivity().application as MyApp).component
     }
@@ -48,9 +48,9 @@ class ProfileFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
 
-        _binding = FragmentProfileBinding.inflate(inflater, container, false)
-        binding.frgmntProButCk.setOnClickListener {
-            viewModel.checkKod(binding.frgmntProEt.text.toString())
+        _binding = FragmentOutProfileBinding.inflate(inflater, container, false)
+        binding.frgmntProButCk1.setOnClickListener {
+           // viewModel.checkKod(binding.frgmntProEt.text.toString())
         }
         return binding.root
 
@@ -62,7 +62,7 @@ class ProfileFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = null
-        viewModel = ViewModelProvider(this, viewModelFactory)[ProfileViewModel::class.java]
+        viewModel = ViewModelProvider(this, viewModelFactory)[ProfileOutViewModel::class.java]
 
 
     }

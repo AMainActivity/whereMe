@@ -5,23 +5,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
-import android.view.Menu
-import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.fragment.findNavController
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.ActivityMainBinding
 import javax.inject.Inject
@@ -55,7 +50,7 @@ class MainActivity : AppCompatActivity() {
         val mapFragment = MapFragment()
         val setFragment = SettingsFragment()
         val aboutFragment = AboutFragment()
-        val profileFragment = ProfileFragment()
+        val profileFragment = ProfileInFragment()
         setCurrentFragment(mapFragment)
         binding.contentMain.bottomNavigationView.setOnItemSelectedListener {
             when (it.itemId) {

@@ -15,17 +15,15 @@ import ru.ama.whereme.domain.usecase.SetJwTokenUseCase
 import javax.inject.Inject
 
 
-class ProfileViewModel @Inject constructor(
-    private val checkKodUseCase: CheckKodUseCase,
-    private val setWmJwTokenUseCase: SetJwTokenUseCase,
-    getJwTokenUseCase: GetJwTokenUseCase
+class ProfileOutViewModel @Inject constructor(
+
 ) : ViewModel() {
 
     init {
 
-        Log.e("getJwTokenUseCase",getJwTokenUseCase().toString())
+       // Log.e("getJwTokenUseCase",getJwTokenUseCase().toString())
     }
-
+/*
 fun checkKod(kod:String)
 {val json = JSONObject()
         json.put("kod", kod)
@@ -52,22 +50,6 @@ fun checkKod(kod:String)
              Log.e("responseError",e.message.toString())
          }}
 
-
-     /* try {.
-          if (response.isSuccessful()) {
-             Log.e("response",response.toString())
-
-
-          } else {
-              Toast.makeText(
-                  this@MainActivity,
-                  response.errorBody().toString(),
-                  Toast.LENGTH_LONG
-              ).show()
-          }
-      }catch (Ex:Exception){
-          Log.e("Error",Ex.localizedMessage)
-      }*/
         }
-}
+}*/
 }

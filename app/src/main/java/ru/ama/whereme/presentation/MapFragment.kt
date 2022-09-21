@@ -87,6 +87,7 @@ class MapFragment : Fragment() {
 
     private fun setActionBarSubTitle(txt: String) {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = txt
+        Log.e("setActionBarSubTitle",txt)
     }
 
     private fun showPopupDatePicker(anchor: View) {
@@ -109,7 +110,7 @@ class MapFragment : Fragment() {
             calendar.set(year,monthOfYear,dayOfMonth)
             val s= formatter.format(calendar.getTime())
             viewModel.getDataByDate(s)
-            observeData()
+            observeData(s)
             onDataSizeListener={
 				if (it>0) popupWindow.dismiss()
 			}
@@ -267,7 +268,7 @@ class MapFragment : Fragment() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 try {
-                    observeData()
+                    observeData(viewModel.getCurrentDate())
                 }
                 catch (e:Exception){}
             }
@@ -282,7 +283,7 @@ class MapFragment : Fragment() {
     }
 
 
-    private fun observeData()
+    private fun observeData(abSuntitle:String)
     {
         viewModel.lldByDay?.observe(viewLifecycleOwner) {
             onDataSizeListener?.invoke(it.size)
@@ -293,7 +294,7 @@ class MapFragment : Fragment() {
                     null
                 )
                 // popupWindow.dismiss()
-                setActionBarSubTitle(viewModel.getCurrentDate())
+                setActionBarSubTitle(abSuntitle)
             }
             else
 

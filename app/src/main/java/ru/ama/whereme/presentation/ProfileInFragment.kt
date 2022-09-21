@@ -9,14 +9,16 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import ru.ama.whereme.databinding.FragmentAboutBinding
+import ru.ama.whereme.databinding.FragmentInProfileBinding
 import javax.inject.Inject
-class AboutFragment : Fragment() {
 
-    private var _binding: FragmentAboutBinding? = null
+
+class ProfileInFragment : Fragment() {
+
+    private var _binding: FragmentInProfileBinding? = null
     private val binding
-        get() = _binding ?: throw RuntimeException("FragmentAboutBinding == null")
-    private lateinit var viewModel: AboutViewModel
+        get() = _binding ?: throw RuntimeException("FragmentInProfileBinding == null")
+    private lateinit var viewModel: ProfileInViewModel
     private val component by lazy {
         (requireActivity().application as MyApp).component
     }
@@ -46,7 +48,10 @@ class AboutFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
 
-        _binding = FragmentAboutBinding.inflate(inflater, container, false)
+        _binding = FragmentInProfileBinding.inflate(inflater, container, false)
+        binding.frgmntProButCk.setOnClickListener {
+            viewModel.checkKod(binding.frgmntProEt.text.toString())
+        }
         return binding.root
 
     }
@@ -57,7 +62,7 @@ class AboutFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = null
-        viewModel = ViewModelProvider(this, viewModelFactory)[AboutViewModel::class.java]
+        viewModel = ViewModelProvider(this, viewModelFactory)[ProfileInViewModel::class.java]
 
 
     }
