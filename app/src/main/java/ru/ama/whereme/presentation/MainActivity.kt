@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -46,24 +47,30 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
 
         startService()
+        val profileInFragment = ProfileInFragment()
+        val profileOutFragment = ProfileOutFragment()
 
         val mapFragment = MapFragment()
         val setFragment = SettingsFragment()
         val aboutFragment = AboutFragment()
-        val profileFragment = ProfileInFragment()
         setCurrentFragment(mapFragment)
         binding.contentMain.bottomNavigationView.setOnItemSelectedListener {
             when (it.itemId) {
                 R.id.page_1 -> setCurrentFragment(mapFragment)
                 R.id.page_2 -> setCurrentFragment(setFragment)
-                R.id.page_3 -> setCurrentFragment(profileFragment)
+                R.id.page_3 -> {
+                    Log.e("checkIsActivate", viewModel.checkIsActivate().toString())
+                   // if (viewModel.checkIsActivate())
+                        setCurrentFragment(if (viewModel.checkIsActivate()) profileOutFragment else profileInFragment)
+
+                }
                 R.id.page_4 -> setCurrentFragment(aboutFragment)
             }
             true
         }
     }
 
-    private fun setCurrentFragment(fragment: Fragment) =
+    fun setCurrentFragment(fragment: Fragment) =
         supportFragmentManager.beginTransaction().apply {
             replace(R.id.nav_host_fragment_content_main, fragment)
             commit()
@@ -81,7 +88,7 @@ class MainActivity : AppCompatActivity() {
             isAccessFineLocationGranted(this) -> {
                 when {
                     isLocationEnabled(this) -> {
-                        viewModel.startLocationService()
+                        //     viewModel.startLocationService()
                     }
                     else -> {
                         showGPSNotEnabledDialog(this)
@@ -108,7 +115,7 @@ class MainActivity : AppCompatActivity() {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     when {
                         isLocationEnabled(this) -> {
-                            viewModel.startLocationService()
+                            //   viewModel.startLocationService()
                         }
                         else -> {
                             showGPSNotEnabledDialog(this)

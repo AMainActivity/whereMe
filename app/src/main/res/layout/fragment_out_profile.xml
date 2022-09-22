@@ -42,25 +42,7 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical"
                     tools:layout_editor_absoluteY="12dp">
-                <com.google.android.material.textfield.TextInputLayout
-
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:minWidth="200dp"
-                    android:textColorHint="#aaa">
-
-                    <com.google.android.material.textfield.TextInputEditText
-						android:id="@+id/frgmnt_pro_et1"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_margin="5dp"
-                        android:layout_gravity="center_vertical"
-                        android:hint="код"
-                        android:background="@color/white"
-                        android:maxLines="1"
-                        android:singleLine="true"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                
 				
 				      <com.google.android.material.button.MaterialButton
                     android:text="проверить"

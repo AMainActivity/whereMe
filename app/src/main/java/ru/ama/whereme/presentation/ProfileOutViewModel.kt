@@ -9,18 +9,18 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
-import ru.ama.whereme.domain.usecase.CheckKodUseCase
-import ru.ama.whereme.domain.usecase.GetJwTokenUseCase
-import ru.ama.whereme.domain.usecase.SetJwTokenUseCase
+import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
 
 class ProfileOutViewModel @Inject constructor(
-
+    private val logOutUseCase: LogOutUseCase,
+    private val setWmJwTokenUseCase: SetJwTokenUseCase,
+    private val getJwTokenUseCase: GetJwTokenUseCase,
+    private val setIsActivateUseCase: SetIsActivateUseCase
 ) : ViewModel() {
 
     init {
-
        // Log.e("getJwTokenUseCase",getJwTokenUseCase().toString())
     }
 /*

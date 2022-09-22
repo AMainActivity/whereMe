@@ -19,6 +19,10 @@ interface WmApiService {
         @Body request: RequestBody
     ): Response<JsonDto>
 
+    @POST("gkk_Logout.php")
+    suspend fun logOut(
+        @Body request: RequestBody
+    ): Response<JsonDto>
     companion object {
     }
 }

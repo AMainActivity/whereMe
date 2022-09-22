@@ -49,9 +49,8 @@ class ProfileInFragment : Fragment() {
     ): View? {
 
         _binding = FragmentInProfileBinding.inflate(inflater, container, false)
-        binding.frgmntProButCk.setOnClickListener {
-            viewModel.checkKod(binding.frgmntProEt.text.toString())
-        }
+
+		
         return binding.root
 
     }
@@ -63,7 +62,16 @@ class ProfileInFragment : Fragment() {
 
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = null
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileInViewModel::class.java]
+        binding.frgmntProButCk.setOnClickListener {
+            viewModel.checkKod(binding.frgmntProEt.text.toString())
+        }
 
+        viewModel.isSuccess.observe(viewLifecycleOwner) {
+
+            (requireActivity() as MainActivity).setCurrentFragment(ProfileOutFragment())
+
+            // Log.e("getLocationlldByDay", postData)
+        }
 
     }
 

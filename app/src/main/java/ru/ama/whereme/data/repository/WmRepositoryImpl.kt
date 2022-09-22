@@ -293,6 +293,18 @@ class WmRepositoryImpl @Inject constructor(
         )
         return res
     }
+    override suspend fun logOut(request : RequestBody) :ResponseEntity{
+        val responc = apiService.logOut(request)
+        val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
+
+        val res = ResponseEntity(
+            mBody,
+            responc.isSuccessful,
+            responc.errorBody(),
+            responc.code()
+        )
+        return res
+    }
 
     override suspend fun GetLocationsFromBd(): LiveData<List<LocationDb>> {
         return Transformations.map(locationDao.getLocations()) {
@@ -503,6 +515,11 @@ class WmRepositoryImpl @Inject constructor(
     override fun setWmJwToken(jwt: String) {
         jwToken = jwt
     }
+    override fun getIsActivate() = isActivate
+
+    override fun setIsActivate(b:Boolean) {
+        isActivate = b
+    }
 
     var worktime: String?
         get() {
@@ -546,10 +563,32 @@ class WmRepositoryImpl @Inject constructor(
             } else
                 editor.commit()
         }
+    var isActivate: Boolean
+        get() {
+            val k: Boolean
+            if (mSettings.contains(APP_PREFERENCES_IS_ACTIVATE)) {
+                k = mSettings.getBoolean(
+                    APP_PREFERENCES_IS_ACTIVATE,
+                    false
+                )
+            } else
+                k = false
+            return k
+        }
+        @SuppressLint("NewApi")
+        set(k) {
+            val editor = mSettings.edit()
+            editor.putBoolean(APP_PREFERENCES_IS_ACTIVATE, k)
+            if (android.os.Build.VERSION.SDK_INT > 9) {
+                editor.apply()
+            } else
+                editor.commit()
+        }
 
     private companion object {
         val APP_PREFERENCES_worktime = "worktime"
         val APP_PREFERENCES_jwt = "jwt"
+        val APP_PREFERENCES_IS_ACTIVATE = "IS_ACTIVATE"
     }
 
 }

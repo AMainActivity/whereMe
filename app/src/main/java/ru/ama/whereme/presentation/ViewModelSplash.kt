@@ -14,11 +14,13 @@ import org.json.JSONObject
 import ru.ama.whereme.domain.usecase.CheckJwtTokenUseCase
 import ru.ama.whereme.domain.usecase.CheckKodUseCase
 import ru.ama.whereme.domain.usecase.GetJwtFromSetingsUseCase
+import ru.ama.whereme.domain.usecase.SetIsActivateUseCase
 import javax.inject.Inject
 
 class ViewModelSplash @Inject constructor(
     private val checkJwtTokenUseCase: CheckJwtTokenUseCase,
-    private val getJwtFromSetingsUseCase: GetJwtFromSetingsUseCase
+    private val getJwtFromSetingsUseCase: GetJwtFromSetingsUseCase,
+    private val setIsActivateUseCase: SetIsActivateUseCase
 ) : ViewModel() {
 
     init {
@@ -42,9 +44,8 @@ class ViewModelSplash @Inject constructor(
             Log.e("checkJwtCode",response.respCode.toString())
             Log.e("checkJwt",response.toString())
             if (response.respIsSuccess) {
-                response.mBody?.let {
-                 //   if (it.error==false && it.message.equals("1"))
-                  //      setWmJwTokenUseCase(it.tokenJwt)
+                response.mBody?.let {					
+		 setIsActivateUseCase(it.message.equals("1"))
                 }
             }
             else

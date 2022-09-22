@@ -8,14 +8,19 @@ import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
 class MaViewModel @Inject constructor(
-    private val runAlarmUseCase: RunAlarmUseCase
+    private val runAlarmUseCase: RunAlarmUseCase,
+    private val getIsActivateUseCase: GetIsActivateUseCase
 ) : ViewModel() {
 
-
-    fun startLocationService() {
-        viewModelScope.launch {
-        //    runAlarmUseCase(10)
-        }
-    }
+private val _isSuccess = MutableLiveData<Boolean>()
+    val isSuccess: LiveData<Boolean>
+        get() = _isSuccess
+		
+		
+init {
+	//_isSuccess.value=getIsActivateUseCase()
+}
+    fun checkIsActivate()=getIsActivateUseCase()
+    
 
 }

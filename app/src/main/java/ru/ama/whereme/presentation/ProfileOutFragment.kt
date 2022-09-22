@@ -49,9 +49,7 @@ class ProfileOutFragment : Fragment() {
     ): View? {
 
         _binding = FragmentOutProfileBinding.inflate(inflater, container, false)
-        binding.frgmntProButCk1.setOnClickListener {
-           // viewModel.checkKod(binding.frgmntProEt.text.toString())
-        }
+
         return binding.root
 
     }
@@ -64,7 +62,9 @@ class ProfileOutFragment : Fragment() {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = null
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileOutViewModel::class.java]
 
-
+        binding.frgmntProButCk1.setOnClickListener {
+            // viewModel.checkKod(binding.frgmntProEt.text.toString())
+        }
     }
 
     override fun onDestroy() {
