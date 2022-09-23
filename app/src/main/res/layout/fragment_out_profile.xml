@@ -45,7 +45,7 @@
                 
 				
 				      <com.google.android.material.button.MaterialButton
-                    android:text="проверить"
+                    android:text="выход"
                     android:id="@+id/frgmnt_pro_but_ck1"
                     android:theme="@style/ButtonStyle"
                     android:foreground="?android:attr/selectableItemBackground"

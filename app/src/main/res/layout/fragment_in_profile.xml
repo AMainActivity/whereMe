@@ -42,6 +42,14 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical"
                     tools:layout_editor_absoluteY="12dp">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/frgmnt_pro_in_tv"
+                        android:gravity="center"
+                        />
+
                 <com.google.android.material.textfield.TextInputLayout
 
                     android:layout_width="match_parent"

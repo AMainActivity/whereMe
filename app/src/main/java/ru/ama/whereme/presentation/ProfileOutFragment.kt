@@ -63,7 +63,13 @@ class ProfileOutFragment : Fragment() {
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileOutViewModel::class.java]
 
         binding.frgmntProButCk1.setOnClickListener {
-            // viewModel.checkKod(binding.frgmntProEt.text.toString())
+             viewModel.logOut()
+        }
+        viewModel.isSuccess.observe(viewLifecycleOwner) {
+
+            (requireActivity() as MainActivity).setCurrentFragment(ProfileInFragment())
+
+            // Log.e("getLocationlldByDay", postData)
         }
     }
 

@@ -3,6 +3,8 @@ package ru.ama.whereme.presentation
 
 import android.util.Log
 import android.widget.Toast
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
@@ -20,24 +22,29 @@ class ProfileOutViewModel @Inject constructor(
     private val setIsActivateUseCase: SetIsActivateUseCase
 ) : ViewModel() {
 
+    private val _isSuccess = MutableLiveData<Unit>()
+    val isSuccess: LiveData<Unit>
+        get() = _isSuccess
     init {
-       // Log.e("getJwTokenUseCase",getJwTokenUseCase().toString())
+        // Log.e("getJwTokenUseCase",getJwTokenUseCase().toString())
     }
-/*
-fun checkKod(kod:String)
+
+fun logOut()
 {val json = JSONObject()
-        json.put("kod", kod)
+        json.put("kod", getJwTokenUseCase())
         val requestBody: RequestBody = RequestBody.create(MediaType.parse("application/json"), json.toString())
 
     Log.e("response1",json.toString())
  viewModelScope.launch {
-     val response = checkKodUseCase(requestBody)
+     val response = logOutUseCase(requestBody)
      Log.e("responseCode",response.respCode.toString())
      Log.e("response",response.toString())
      if (response.respIsSuccess) {
          response.mBody?.let { 
              if (it.error==false && it.message.equals("1"))
-             setWmJwTokenUseCase(it.tokenJwt)
+             {  setWmJwTokenUseCase("")
+             setIsActivateUseCase(false)
+             _isSuccess.value = Unit}
          }
      }
      else
@@ -51,5 +58,5 @@ fun checkKod(kod:String)
          }}
 
         }
-}*/
+}
 }
