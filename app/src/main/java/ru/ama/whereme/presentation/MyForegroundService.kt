@@ -143,6 +143,8 @@ class MyForegroundService : LifecycleService() {
 					
                 {
                     coroutineScope.launch {
+                        val s=repo.getLocations4Net()
+                        Log.e("getLocations4Net", s)
                         repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
                     }
                     cancelTimer(

@@ -15,5 +15,6 @@ data class LocationDb(
     val longitude: Double,
     val sourceId:Int,
     val accuracy: Float,
-    val velocity: Float
+    val velocity: Float,
+    val isWrite:Int
 ) : Parcelable

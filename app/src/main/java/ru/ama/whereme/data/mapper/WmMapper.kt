@@ -20,7 +20,8 @@ class WmMapper @Inject constructor() {
 		longitude=dbModel.longitude,
 		sourceId=dbModel.sourceId,
 		accuracy=dbModel.accuracy,
-		velocity=dbModel.velocity
+		velocity=dbModel.velocity,
+        isWrite = dbModel.isWrite
     )
 
     fun mapEntityToDbModel(db: LocationDb) = LocationDbModel(
@@ -32,7 +33,8 @@ class WmMapper @Inject constructor() {
 		longitude=db.longitude,
 		sourceId=db.sourceId,
 		accuracy=db.accuracy,
-		velocity=db.velocity
+		velocity=db.velocity,
+        isWrite=db.isWrite
     )
 private fun convertDateToLong(date: String): Long {
     val df = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")

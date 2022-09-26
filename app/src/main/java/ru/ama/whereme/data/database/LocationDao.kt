@@ -10,7 +10,7 @@ import androidx.room.Query
 interface LocationDao {
 
     @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
-    fun getLocations2(): List<LocationDbModel>
+    suspend fun getLocations4Net(): List<LocationDbModel>
 
     @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
     fun getLocations(): LiveData<List<LocationDbModel>>

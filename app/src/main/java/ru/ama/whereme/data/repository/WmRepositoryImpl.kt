@@ -24,6 +24,7 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,6 +41,7 @@ import ru.ama.whereme.data.workers.AlarmClockStart
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.*
 import ru.ama.whereme.domain.repository.WmRepository
+import java.lang.reflect.Type
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -281,7 +283,7 @@ class WmRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun checkWmJwToken(request : RequestBody) :ResponseEntity{
+    override suspend fun checkWmJwToken(request: RequestBody): ResponseEntity {
         val responc = apiService.checkToken(request)
         val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
 
@@ -293,7 +295,8 @@ class WmRepositoryImpl @Inject constructor(
         )
         return res
     }
-    override suspend fun logOut(request : RequestBody) :ResponseEntity{
+
+    override suspend fun logOut(request: RequestBody): ResponseEntity {
         val responc = apiService.logOut(request)
         val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
 
@@ -312,6 +315,15 @@ class WmRepositoryImpl @Inject constructor(
                 mapper.mapDbModelToEntity(it)
             }
         }
+    }
+
+    suspend fun getLocations4Net(): String {
+        val res = (locationDao.getLocations4Net()).map { mapper.mapDbModelToEntity(it) }
+        val sd=Gson().toJson(res)
+       // LocationDb::class.java
+        val type: Type = object : TypeToken<List<LocationDb?>?>() {}.type
+        val inpList: List<LocationDb> = Gson().fromJson(sd, type)
+        return sd
     }
 
     override suspend fun loadData(): List<Int> {
@@ -389,7 +401,8 @@ class WmRepositoryImpl @Inject constructor(
             location.longitude,
             1,
             location.accuracy,
-            location.speed
+            location.speed,
+            0
         )
         val itemsCount = locationDao.insertLocation(res)
         _isEnathAccuracy.postValue(true)
@@ -434,7 +447,8 @@ class WmRepositoryImpl @Inject constructor(
                                     it.longitude,
                                     1,
                                     it.accuracy,
-                                    it.speed
+                                    it.speed,
+                                    0
                                 )
                                 val itemsCount = locationDao.insertLocation(res)
                                 _isEnathAccuracy.postValue(true)
@@ -459,7 +473,7 @@ class WmRepositoryImpl @Inject constructor(
                                 it.longitude,
                                 1,
                                 it.accuracy,
-                                it.speed
+                                it.speed, 0
                             )
                             val itemsCount = locationDao.insertLocation(res)
                             _isEnathAccuracy.postValue(true)
@@ -515,9 +529,10 @@ class WmRepositoryImpl @Inject constructor(
     override fun setWmJwToken(jwt: String) {
         jwToken = jwt
     }
+
     override fun getIsActivate() = isActivate
 
-    override fun setIsActivate(b:Boolean) {
+    override fun setIsActivate(b: Boolean) {
         isActivate = b
     }
 
