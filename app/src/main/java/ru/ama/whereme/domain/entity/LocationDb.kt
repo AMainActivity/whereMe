@@ -2,6 +2,7 @@ package ru.ama.whereme.domain.entity
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
+import ru.ama.whereme.data.database.LocationDbModel
 import java.time.OffsetDateTime
 
 @Parcelize
@@ -18,3 +19,9 @@ data class LocationDb(
     val velocity: Float,
     val isWrite:Int
 ) : Parcelable
+
+
+data class DatasToJson (
+    val tokenJWT:String,
+    val mdata:List<LocationDb>
+)

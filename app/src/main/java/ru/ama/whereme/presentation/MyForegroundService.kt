@@ -5,21 +5,18 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.location.Location
 import android.os.*
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import androidx.core.app.TaskStackBuilder
 import androidx.lifecycle.*
 import com.google.gson.Gson
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
 import ru.ama.whereme.R
 import ru.ama.whereme.data.repository.WmRepositoryImpl
+import ru.ama.whereme.domain.entity.DatasToJson
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import java.util.*
 import javax.inject.Inject
@@ -63,23 +60,21 @@ class MyForegroundService : LifecycleService() {
         val isGooglePlayServicesAvailab = lifecycleScope.async(Dispatchers.IO) {
             repo.isGooglePlayServicesAvailable()
         }
-
-       // lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.Main) {
             startTimer()
-           // {
-                val sd = lifecycleScope.async(Dispatchers.IO) {
-                    if (isGooglePlayServicesAvailab.await())
-                    repo.startLocationUpdates()
-                }
-              //  lifecycleScope.launch {
-              //      sd.await()
-              //  }
+            if (isGooglePlayServicesAvailab.await()) {
+                //  lifecycleScope.launch(Dispatchers.Main) {
+                repo.startLocationUpdates()
+                //}
+                //  lifecycleScope.launch {
+                //      sd.await()
+                //  }
                 log(repo.isEnathAccuracy.value.toString() + "")
 
 
-          //  } else
-             //   Log.e("SERVICE_TAG3", "isGooglePlayServicesAvailable false")
-       // }
+            } else
+                Log.e("SERVICE_TAG3", "isGooglePlayServicesAvailable false")
+        }
 
         repo.isEnathAccuracy.observe(this)
         {
@@ -142,21 +137,22 @@ class MyForegroundService : LifecycleService() {
                     lifecycleScope.launch(Dispatchers.IO) {
                         repo.saveLocation(repo.mBestLoc)
                     }
-                if (!repo.isCurTimeBetweenSettings())
+                sendData4Net()
+               /* if (!repo.isCurTimeBetweenSettings())
                     stopSelf()
                 else {
                     lifecycleScope.launch(Dispatchers.IO) {
                         sendData4Net()
-                        // Log.e("getLocations4Net", s)
+                        // Log.e("getLocations4Net", s)*/
                         repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
-                    }
+                  //  }
                     cancelTimer(
                         getString(R.string.app_name),
                         "не было найдено, скоро повтор " + repo.getDate(
                             Calendar.getInstance().getTime().time
                         )
                     )
-                }
+               // }
             }
         }
         timer?.start()
@@ -174,36 +170,42 @@ class MyForegroundService : LifecycleService() {
     private fun sendData4Net() {
         if (repo.isInternetConnected()) {
             var idList: MutableList<Long> = ArrayList()
-            var json = JSONObject()
+            //   var json = JSONObject()
             val d = lifecycleScope.async(Dispatchers.IO) {
                 val res = repo.getLocations4Net()
-              //  Log.e("res", res.toString())
+                //  Log.e("res", res.toString())
                 for (i in res.indices) {
                     idList.add(res[i]._id)
                 }
-                val sd = Gson().toJson(res)
-                //  Log.e("Gson",sd.toString())
-                // LocationDb::class.java
-                // val type: Type = object : TypeToken<List<LocationDb?>?>() {}.type
-                // val inpList: List<LocationDb> = Gson().fromJson(sd, type)
-                json.put("tokenJWT", repo.getWmJwToken())
-                json.put("mdata", sd)
-                /* val requestBody: RequestBody = */RequestBody.create(
-                MediaType.parse("application/json"),
-                json.toString()
-            )
+                /*     val sd = Gson().toJson(res)
+                     //  Log.e("Gson",sd.toString())
+                     // LocationDb::class.java
+                      val type: Type = object : TypeToken<List<LocationDb?>?>() {}.type
+                     // val inpList: List<LocationDb> = Gson().fromJson(sd, type)
+                     json.put("tokenJWT", repo.getWmJwToken())
+                     json.put("mdata",sd)
+                     /* val requestBody: RequestBody = */RequestBody.create(
+                     MediaType.parse("application/json"),
+                     json.toString()
+                 )*/
+                val json1 = Gson().toJson(DatasToJson(repo.getWmJwToken(), res))
+                Log.e("Gson", json1.toString())
+                RequestBody.create(
+                    MediaType.parse("application/json"), json1
+                        .toString()
+                )
             }
             lifecycleScope.launch(Dispatchers.IO) {
                 val sdsd = d.await()
                 Log.e("idList", idList.size.toString())
                 if (idList.size > 0) {
-                    Log.e("Gson2", json.toString())
+                    Log.e("Gson2", sdsd.toString())
                     val response = repo.writeLoc4Net(sdsd)
                     Log.e("responseCode", response.respCode.toString())
                     Log.e("response", response.toString())
                     if (response.respIsSuccess) {
                         response.mBody?.let {
-                            if (it.error == false) {
+                            if (it.error == false && it.message.length > 0) {
                                 repo.updateIsWrite(idList)
                             }
                             reRunGetLocations()
@@ -221,8 +223,7 @@ class MyForegroundService : LifecycleService() {
                         }
                         reRunGetLocations()
                     }
-                }
-                else
+                } else
                     reRunGetLocations()
             }
 
@@ -234,16 +235,6 @@ class MyForegroundService : LifecycleService() {
     private fun reRunGetLocations() {
         if (!repo.isCurTimeBetweenSettings())
             stopSelf()
-        else {
-            repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
-            cancelTimer(
-                getString(R.string.app_name),
-                "успешно получено " + repo.getDate(
-                    Calendar.getInstance().getTime().time
-                )
-            )
-            isEnath = true
-        }
     }
 
     private fun cancelTimer(title: String, txtBody: String) {
@@ -275,9 +266,12 @@ class MyForegroundService : LifecycleService() {
                 repo.stopLocationUpdates()
 
                 sendData4Net()
-                //{
-
-                // }
+                repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
+                cancelTimer(
+                    getString(R.string.app_name),
+                    "успешно получено " + repo.getDate(Calendar.getInstance().getTime().time)
+                )
+                isEnath = true
             }
         }
         startGetLocations()

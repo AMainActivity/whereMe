@@ -329,6 +329,7 @@ fun updateIsWrite(idList: List<Long>) {
 	
 	 suspend fun writeLoc4Net(request: RequestBody): ResponseEntity {
         val responc = apiService.writeLocDatas(request)
+         Log.e("writeLoc4Net", responc.toString())
         val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
 
         val res = ResponseEntity(
