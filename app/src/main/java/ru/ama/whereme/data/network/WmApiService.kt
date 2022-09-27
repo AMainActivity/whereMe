@@ -23,6 +23,14 @@ interface WmApiService {
     suspend fun logOut(
         @Body request: RequestBody
     ): Response<JsonDto>
+
+    @POST("gkk_WriteLocDatas.php")
+    suspend fun writeLocDatas(
+        @Body request: RequestBody
+    ): Response<JsonDto>
+	
+	
+	
     companion object {
     }
 }

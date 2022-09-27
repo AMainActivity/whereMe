@@ -9,8 +9,11 @@ import androidx.room.Query
 @Dao
 interface LocationDao {
 
-    @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
-    suspend fun getLocations4Net(): List<LocationDbModel>
+    @Query("SELECT * FROM tab_locations  where isWrite=0 ORDER BY _id asc ")
+    suspend fun getLocations4Net(): List<LocationDbModel>	
+	
+    @Query("update tab_locations  set isWrite =  1  where _id in (:idList)")
+    fun updateQuery(idList: List<Long>)
 
     @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
     fun getLocations(): LiveData<List<LocationDbModel>>

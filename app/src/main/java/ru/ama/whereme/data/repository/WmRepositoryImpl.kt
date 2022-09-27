@@ -317,14 +317,29 @@ class WmRepositoryImpl @Inject constructor(
         }
     }
 
-    suspend fun getLocations4Net(): String {
-        val res = (locationDao.getLocations4Net()).map { mapper.mapDbModelToEntity(it) }
-        val sd=Gson().toJson(res)
-       // LocationDb::class.java
-        val type: Type = object : TypeToken<List<LocationDb?>?>() {}.type
-        val inpList: List<LocationDb> = Gson().fromJson(sd, type)
-        return sd
+fun updateIsWrite(idList: List<Long>) {
+        return locationDao.updateQuery(idList)
     }
+
+    suspend fun getLocations4Net(): List<LocationDb> {
+        val res = (locationDao.getLocations4Net()).map { mapper.mapDbModelToEntity(it) }	
+        return res
+    }
+	
+	
+	 suspend fun writeLoc4Net(request: RequestBody): ResponseEntity {
+        val responc = apiService.writeLocDatas(request)
+        val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
+
+        val res = ResponseEntity(
+            mBody,
+            responc.isSuccessful,
+            responc.errorBody(),
+            responc.code()
+        )
+        return res
+    }
+	
 
     override suspend fun loadData(): List<Int> {
         var listOfItems: MutableList<Int> = mutableListOf<Int>()
