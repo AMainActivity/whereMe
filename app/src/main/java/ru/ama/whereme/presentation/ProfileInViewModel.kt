@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
+import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
 import ru.ama.whereme.domain.usecase.CheckKodUseCase
 import ru.ama.whereme.domain.usecase.GetJwTokenUseCase
 import ru.ama.whereme.domain.usecase.SetIsActivateUseCase
@@ -49,8 +50,15 @@ class ProfileInViewModel @Inject constructor(
             if (response.respIsSuccess) {
                 response.mBody?.let {
                     if (it.error == false && it.message.equals("1")) {
-                        setWmJwTokenUseCase(it.tokenJwt)
-                        setIsActivateUseCase(it.isActivate == 1)
+                        setWmJwTokenUseCase(SettingsUserInfoDomModel(
+                            it.tokenJwt,
+                            it.posId,
+                            it.famId,
+                            it.name,
+                            it.url,
+                            (it.isActivate)==1
+                        ))
+                      //  setIsActivateUseCase(it.isActivate == 1)
                         _isSuccess.value = Unit
                     } else
                         Toast.makeText(

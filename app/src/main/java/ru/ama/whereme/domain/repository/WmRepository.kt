@@ -26,11 +26,11 @@ interface WmRepository {
     fun getWorkingTime(): SettingsDomModel
     fun setWorkingTime(dm:SettingsDomModel)
 
-    fun getWmJwToken(): String
-    fun setWmJwToken(jwt:String)
+    fun getWmUserInfoSetings(): SettingsUserInfoDomModel
+    fun setWmUserInfoSetings(set:SettingsUserInfoDomModel)
 
-    fun getIsActivate(): Boolean
-    fun setIsActivate(b:Boolean)
+   // fun getIsActivate(): Boolean
+    //fun setIsActivate(b:Boolean)
 
     suspend fun checkWmJwToken(request : RequestBody):ResponseEntity
     suspend fun logOut(request : RequestBody):ResponseEntity

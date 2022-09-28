@@ -15,6 +15,7 @@ data class JsonJwt(
     val posId: Int,
     val famId: Int,
     val name: String? = null,
+    val url: String? = null,
     val isActivate: Int
 ) : Parcelable
 

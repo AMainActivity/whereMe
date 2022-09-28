@@ -16,6 +16,7 @@ class WmMapperJwt @Inject constructor() {
         posId = dto.posId,
         famId = dto.famId,
         name = dto.name,
+        url = dto.url,
         isActivate = dto.isActivate
     )
 
@@ -26,6 +27,7 @@ class WmMapperJwt @Inject constructor() {
         tokenJwt = model.tokenJwt,
         famId = model.famId,
         name = model.name,
+        url = model.url,
         isActivate = model.isActivate
     )
 

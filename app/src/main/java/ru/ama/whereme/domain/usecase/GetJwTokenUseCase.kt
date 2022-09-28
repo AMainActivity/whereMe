@@ -7,5 +7,5 @@ class GetJwTokenUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
 
-    operator fun invoke() = repository.getWmJwToken()
+    operator fun invoke() = repository.getWmUserInfoSetings()
 }

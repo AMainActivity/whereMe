@@ -7,5 +7,5 @@ class GetIsActivateUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
 
-    operator fun invoke() = repository.getIsActivate()
+   // operator fun invoke() = repository.getIsActivate()
 }

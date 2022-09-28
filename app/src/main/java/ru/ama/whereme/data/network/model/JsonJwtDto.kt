@@ -18,6 +18,8 @@ data class JsonJwtDto(
     @Expose
     @SerializedName("name") val name: String?=null,
     @Expose
+    @SerializedName("url") val url: String?=null,
+    @Expose
     @SerializedName("isactivate") val isActivate: Int
 )
 

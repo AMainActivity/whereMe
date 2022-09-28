@@ -36,6 +36,7 @@ import ru.ama.whereme.data.database.*
 import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
 import ru.ama.whereme.data.mapper.WmMapperSettings
+import ru.ama.whereme.data.mapper.WmMapperUserInfoSettings
 import ru.ama.whereme.data.workers.Alarm
 import ru.ama.whereme.data.workers.AlarmClockStart
 import ru.ama.whereme.di.ApplicationScope
@@ -51,6 +52,7 @@ class WmRepositoryImpl @Inject constructor(
     private val mapper: WmMapper,
     private val mapperByDays: WmMapperByDays,
     private val mapperSetTime: WmMapperSettings,
+    private val mapperUserInfoSettings: WmMapperUserInfoSettings,
     private val mapperJwt: WmMapperJwt,
     private val locationDao: LocationDao,
     private val application: Application,
@@ -539,8 +541,29 @@ fun updateIsWrite(idList: List<Long>) {
             false
         )
     )
+    val defaultUserInfo = Gson().toJson(
+        SettingsUserInfoDataModel(
+            "",
+            0,
+            0,
+            "",
+            "",
+            false
+        )
+    )
+    override fun getWmUserInfoSetings(): SettingsUserInfoDomModel {
+        return mapperUserInfoSettings.mapDataModelToDomain(
+            Gson().fromJson(
+                jwToken,
+                SettingsUserInfoDataModel::class.java
+            )
+        )
+    }
 
-    override fun getWmJwToken() = jwToken
+    override fun setWmUserInfoSetings(dm: SettingsUserInfoDomModel) {
+        worktime = Gson().toJson(mapperUserInfoSettings.mapDomainToDataModel(dm))
+    }
+    /*override fun getWmJwToken() = jwToken
 
     override fun setWmJwToken(jwt: String) {
         jwToken = jwt
@@ -550,7 +573,7 @@ fun updateIsWrite(idList: List<Long>) {
 
     override fun setIsActivate(b: Boolean) {
         isActivate = b
-    }
+    }*/
 
     var worktime: String?
         get() {
@@ -579,10 +602,10 @@ fun updateIsWrite(idList: List<Long>) {
             if (mSettings.contains(APP_PREFERENCES_jwt)) {
                 k = mSettings.getString(
                     APP_PREFERENCES_jwt,
-                    ""
+                    defaultUserInfo
                 ).toString()
             } else
-                k = ""
+                k = defaultUserInfo
             return k
         }
         @SuppressLint("NewApi")

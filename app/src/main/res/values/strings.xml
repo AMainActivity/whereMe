@@ -8,4 +8,14 @@
   &lt;center>Регистрация через telegram-бота:&lt;/center>&lt;br>
   &lt;a href=\'https:\/\/t.me\/myTestInfoBot\'>@myTestInfoBot&lt;/a>
     </string>
+
+    <string name="frgmnt_ab_main">
+  &lt;center>Приложение  "Ты где был?!#": хранит историю местоположений как в оффлайн,
+        так и в онлайн режимах. Используя это приложение, Вы полностью соглашаетесь с
+        &lt;a href=\'https://kol.hhos.ru/gkk/user.html\'>Пользовательским соглашением&lt;/a>
+        и &lt;a href=\'https://kol.hhos.ru/gkk/privacy.html\'>Политикой конфиденциальности&lt;/a>
+        .&lt;/center>&lt;br>
+
+
+    </string>
 </resources>
