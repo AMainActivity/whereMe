@@ -56,7 +56,7 @@ class ProfileInViewModel @Inject constructor(
                             it.famId,
                             it.name,
                             it.url,
-                            it.isActivate =i
+                            true
                         ))
                       //  setIsActivateUseCase(it.isActivate == 1)
                         _isSuccess.value = Unit

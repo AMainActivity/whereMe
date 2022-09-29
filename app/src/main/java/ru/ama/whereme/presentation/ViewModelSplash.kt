@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
+import ru.ama.whereme.data.repository.WmRepositoryImpl
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
 import ru.ama.whereme.domain.usecase.*
@@ -22,7 +23,8 @@ class ViewModelSplash @Inject constructor(
     private val getJwtFromSetingsUseCase: GetJwtFromSetingsUseCase,
     private val getWorkingTimeUseCase: GetWorkingTimeUseCase,
     private val setWmJwTokenUseCase: SetJwTokenUseCase,
-    private val getJwTokenUseCase: GetJwTokenUseCase
+    private val getJwTokenUseCase: GetJwTokenUseCase,
+    private val repositoryImpl: WmRepositoryImpl
    // private val setIsActivateUseCase: SetIsActivateUseCase
 ) : ViewModel() {
     private lateinit var wmTokenInfoModel: SettingsUserInfoDomModel
@@ -30,6 +32,7 @@ class ViewModelSplash @Inject constructor(
     init {
         checkJwt()
 		wmTokenInfoModel=getJwTokenUseCase()
+        viewModelScope.launch(Dispatchers.IO) {  Log.e("getLastValue1",repositoryImpl.getLastValue1().toString())}
     }
 
     private val _canStart = MutableLiveData<Unit>()
@@ -40,7 +43,7 @@ class ViewModelSplash @Inject constructor(
 
     fun checkJwt()
     {val json = JSONObject()
-        json.put("kod", getJwtFromSetingsUseCase())
+        json.put("kod", getJwtFromSetingsUseCase().tokenJwt)
         val requestBody: RequestBody = RequestBody.create(MediaType.parse("application/json"), json.toString())
 
         Log.e("checkJwt1",json.toString())
@@ -52,7 +55,7 @@ class ViewModelSplash @Inject constructor(
                 response.mBody?.let {					
 		setWmJwTokenUseCase(
 		wmTokenInfoModel.copy(
-                               isActivate =   isActive
+                               isActivate =   (it.message).equals("1")
                             )
 						)
 		// setIsActivateUseCase(it.message.equals("1"))

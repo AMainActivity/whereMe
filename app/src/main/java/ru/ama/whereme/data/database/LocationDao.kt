@@ -29,6 +29,12 @@ interface LocationDao {
     @Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') =:mDate ORDER BY _id desc limit 1 ")
     fun getLastValue(mDate: String): LocationDbModel
 
+    @Query("SELECT _id,strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') as datetime,datestart,dateend," +
+            "info,latitude,longitude,sourceId,accuracy,velocity,isWrite FROM tab_locations ORDER BY _id desc limit 1 ")
+    fun getLastValu1e(): List<LocationDbModel>
+
+
+
     @Query("update tab_locations  set info =  :newInfo,isWrite =  0 where _id=:id")
     fun updateLocationById(id: Int, newInfo: String): Int
 

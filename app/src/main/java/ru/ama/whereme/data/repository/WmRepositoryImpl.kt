@@ -384,7 +384,9 @@ fun updateIsWrite(idList: List<Long>) {
     private fun updateValueDb(id: Int, newInfo: String): Int {
         return locationDao.updateLocationById(id, newInfo)
     }
-
+    fun getLastValue1(): List<LocationDbModel> {
+        return locationDao.getLastValu1e()
+    }
     private fun getLastValueFromDb(): LocationDbModel {
         return locationDao.getLastValue(getCurrentDate())
     }

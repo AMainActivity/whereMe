@@ -12,7 +12,7 @@
     <string name="frgmnt_out_tv">
   %s&lt;br>
   &lt;center>ссылка для просмотра данных:&lt;/center>&lt;br>
-  &lt;a href=\'https://kol.hhos.ru/map/?wm=%s\'>https://kol.hhos.ru/map&lt;/a>
+  &lt;a href=\'https://kol.hhos.ru/gkk/map.php?wm=%s\'>https://kol.hhos.ru/gkk&lt;/a>
     </string>
 
     <string name="frgmnt_ab_main">
