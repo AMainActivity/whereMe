@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
+import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
 import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
@@ -18,20 +19,26 @@ import javax.inject.Inject
 class ProfileOutViewModel @Inject constructor(
     private val logOutUseCase: LogOutUseCase,
     private val setWmJwTokenUseCase: SetJwTokenUseCase,
-    private val getJwTokenUseCase: GetJwTokenUseCase,
-    private val setIsActivateUseCase: SetIsActivateUseCase
+    private val getJwTokenUseCase: GetJwTokenUseCase
+  //  private val setIsActivateUseCase: SetIsActivateUseCase
 ) : ViewModel() {
 
+    private lateinit var wmTokenInfoModel: SettingsUserInfoDomModel
     private val _isSuccess = MutableLiveData<Unit>()
     val isSuccess: LiveData<Unit>
         get() = _isSuccess
     init {
         // Log.e("getJwTokenUseCase",getJwTokenUseCase().toString())
+		wmTokenInfoModel=getJwTokenUseCase()
     }
+
+
+fun getSetUserInfo() = wmTokenInfoModel
+
 
 fun logOut()
 {val json = JSONObject()
-        json.put("kod", getJwTokenUseCase())
+        json.put("kod", wmTokenInfoModel.tokenJwt)
         val requestBody: RequestBody = RequestBody.create(MediaType.parse("application/json"), json.toString())
 
     Log.e("response1",json.toString())
@@ -42,9 +49,18 @@ fun logOut()
      if (response.respIsSuccess) {
          response.mBody?.let { 
              if (it.error==false && it.message.equals("1"))
-             {  setWmJwTokenUseCase("")
-             setIsActivateUseCase(false)
-             _isSuccess.value = Unit}
+             {
+				 setWmJwTokenUseCase(SettingsUserInfoDomModel(
+                            "",
+                            0,
+                            0,
+                            "",
+                            "",
+                            false
+                        ))
+           //  setIsActivateUseCase(false)
+             _isSuccess.value = Unit
+			 }
          }
      }
      else

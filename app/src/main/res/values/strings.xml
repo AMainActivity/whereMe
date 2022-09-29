@@ -8,6 +8,12 @@
   &lt;center>Регистрация через telegram-бота:&lt;/center>&lt;br>
   &lt;a href=\'https:\/\/t.me\/myTestInfoBot\'>@myTestInfoBot&lt;/a>
     </string>
+	
+    <string name="frgmnt_out_tv">
+  %s&lt;br>
+  &lt;center>ссылка для просмотра данных:&lt;/center>&lt;br>
+  &lt;a href=\'https://kol.hhos.ru/map/?wm=%s\'>https://kol.hhos.ru/map&lt;/a>
+    </string>
 
     <string name="frgmnt_ab_main">
   &lt;center>Приложение  "Ты где был?!#": хранит историю местоположений как в оффлайн,
@@ -18,4 +24,6 @@
 
 
     </string>
+    <string name="frgmnt_menu_share_mail">10ama@mail.ru</string>
+    <string name="frgmnt_menu_share_use">использовать</string>
 </resources>

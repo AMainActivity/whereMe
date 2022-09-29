@@ -24,7 +24,7 @@ class ProfileInViewModel @Inject constructor(
     private val checkKodUseCase: CheckKodUseCase,
     private val setWmJwTokenUseCase: SetJwTokenUseCase,
     private val getJwTokenUseCase: GetJwTokenUseCase,
-    private val setIsActivateUseCase: SetIsActivateUseCase,
+    //private val setIsActivateUseCase: SetIsActivateUseCase,
     private val application: Application
 ) : ViewModel() {
 
@@ -56,7 +56,7 @@ class ProfileInViewModel @Inject constructor(
                             it.famId,
                             it.name,
                             it.url,
-                            (it.isActivate)==1
+                            it.isActivate =i
                         ))
                       //  setIsActivateUseCase(it.isActivate == 1)
                         _isSuccess.value = Unit

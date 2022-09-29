@@ -403,8 +403,11 @@ fun updateIsWrite(idList: List<Long>) {
         return formatter.format(System.currentTimeMillis())
     }
 
-
-    private fun getCurrentDate(): String {
+     fun getCurrentDateMil(): String {
+         val formatter = SimpleDateFormat("dd.MM.yyyy")
+        return formatter.format(System.currentTimeMillis())
+    }
+     fun getCurrentDate(): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy")
         return formatter.format(Date())
     }
@@ -561,7 +564,7 @@ fun updateIsWrite(idList: List<Long>) {
     }
 
     override fun setWmUserInfoSetings(dm: SettingsUserInfoDomModel) {
-        worktime = Gson().toJson(mapperUserInfoSettings.mapDomainToDataModel(dm))
+        jwToken = Gson().toJson(mapperUserInfoSettings.mapDomainToDataModel(dm))
     }
     /*override fun getWmJwToken() = jwToken
 
@@ -596,7 +599,7 @@ fun updateIsWrite(idList: List<Long>) {
             } else
                 editor.commit()
         }
-    var jwToken: String
+   var jwToken: String
         get() {
             val k: String
             if (mSettings.contains(APP_PREFERENCES_jwt)) {
@@ -617,7 +620,7 @@ fun updateIsWrite(idList: List<Long>) {
             } else
                 editor.commit()
         }
-    var isActivate: Boolean
+    /*var isActivate: Boolean
         get() {
             val k: Boolean
             if (mSettings.contains(APP_PREFERENCES_IS_ACTIVATE)) {
@@ -637,7 +640,7 @@ fun updateIsWrite(idList: List<Long>) {
                 editor.apply()
             } else
                 editor.commit()
-        }
+        }*/
 
     private companion object {
         val APP_PREFERENCES_worktime = "worktime"

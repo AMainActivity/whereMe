@@ -9,7 +9,8 @@ import javax.inject.Inject
 
 class MaViewModel @Inject constructor(
     private val runAlarmUseCase: RunAlarmUseCase,
-    private val getIsActivateUseCase: GetIsActivateUseCase
+    private val getIsActivateUseCase: GetIsActivateUseCase,
+    private val getJwTokenUseCase: GetJwTokenUseCase
 ) : ViewModel() {
 
 private val _isSuccess = MutableLiveData<Boolean>()
@@ -20,7 +21,7 @@ private val _isSuccess = MutableLiveData<Boolean>()
 init {
 	//_isSuccess.value=getIsActivateUseCase()
 }
-    fun checkIsActivate()=getIsActivateUseCase()
+    fun checkIsActivate()=getJwTokenUseCase().isActivate
     
 
 }

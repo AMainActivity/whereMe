@@ -144,7 +144,7 @@ class MyForegroundService : LifecycleService() {
                     lifecycleScope.launch(Dispatchers.IO) {
                         sendData4Net()
                         // Log.e("getLocations4Net", s)*/
-                        repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
+                     //   repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
                   //  }
                     cancelTimer(
                         getString(R.string.app_name),
@@ -188,7 +188,7 @@ class MyForegroundService : LifecycleService() {
                      MediaType.parse("application/json"),
                      json.toString()
                  )*/
-                val json1 = Gson().toJson(DatasToJson(repo.getWmJwToken(), res))
+                val json1 = Gson().toJson(DatasToJson(repo.getWmUserInfoSetings().tokenJwt, res))
                 Log.e("Gson", json1.toString())
                 RequestBody.create(
                     MediaType.parse("application/json"), json1
@@ -199,7 +199,9 @@ class MyForegroundService : LifecycleService() {
                 val sdsd = d.await()
                 Log.e("idList", idList.size.toString())
                 if (idList.size > 0) {
-                    Log.e("Gson2", sdsd.toString())
+                    try{
+
+                        Log.e("Gson2", sdsd.toString())
                     val response = repo.writeLoc4Net(sdsd)
                     Log.e("responseCode", response.respCode.toString())
                     Log.e("response", response.toString())
@@ -223,9 +225,17 @@ class MyForegroundService : LifecycleService() {
                         }
                         reRunGetLocations()
                     }
+                }
+                catch (e:Exception)
+                {
+                    reRunGetLocations()
+                }
                 } else
                     reRunGetLocations()
+
             }
+/*java.net.SocketTimeoutException: timeout
+java.net.SocketTimeoutException: failed to connect to*/
 
 
         } else
@@ -235,6 +245,8 @@ class MyForegroundService : LifecycleService() {
     private fun reRunGetLocations() {
         if (!repo.isCurTimeBetweenSettings())
             stopSelf()
+		else
+            repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
     }
 
     private fun cancelTimer(title: String, txtBody: String) {
@@ -252,6 +264,8 @@ class MyForegroundService : LifecycleService() {
         super.onCreate()
         log("onCreate")
         createNotificationChannel()
+        Log.e("getCurrentDateMil",repo.getCurrentDateMil())
+        Log.e("getCurrentDate",repo.getCurrentDate())
         startForeground(NOTIFICATION_ID, notificationBuilder.build())
     }
 
@@ -266,7 +280,7 @@ class MyForegroundService : LifecycleService() {
                 repo.stopLocationUpdates()
 
                 sendData4Net()
-                repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
+               // repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
                 cancelTimer(
                     getString(R.string.app_name),
                     "успешно получено " + repo.getDate(Calendar.getInstance().getTime().time)

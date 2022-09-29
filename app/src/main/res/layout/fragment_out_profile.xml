@@ -43,7 +43,13 @@
                     android:orientation="vertical"
                     tools:layout_editor_absoluteY="12dp">
                 
-				
+				<com.google.android.material.textview.MaterialTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/frgmnt_pro_out_tv"
+                        android:gravity="center"
+                        />
+						
 				      <com.google.android.material.button.MaterialButton
                     android:text="выход"
                     android:id="@+id/frgmnt_pro_but_ck1"

@@ -7,24 +7,29 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
-import ru.ama.whereme.domain.usecase.CheckJwtTokenUseCase
-import ru.ama.whereme.domain.usecase.CheckKodUseCase
-import ru.ama.whereme.domain.usecase.GetJwtFromSetingsUseCase
-import ru.ama.whereme.domain.usecase.SetIsActivateUseCase
+import ru.ama.whereme.domain.entity.SettingsDomModel
+import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
+import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
 class ViewModelSplash @Inject constructor(
     private val checkJwtTokenUseCase: CheckJwtTokenUseCase,
     private val getJwtFromSetingsUseCase: GetJwtFromSetingsUseCase,
-    private val setIsActivateUseCase: SetIsActivateUseCase
+    private val getWorkingTimeUseCase: GetWorkingTimeUseCase,
+    private val setWmJwTokenUseCase: SetJwTokenUseCase,
+    private val getJwTokenUseCase: GetJwTokenUseCase
+   // private val setIsActivateUseCase: SetIsActivateUseCase
 ) : ViewModel() {
+    private lateinit var wmTokenInfoModel: SettingsUserInfoDomModel
 
     init {
         checkJwt()
+		wmTokenInfoModel=getJwTokenUseCase()
     }
 
     private val _canStart = MutableLiveData<Unit>()
@@ -45,7 +50,12 @@ class ViewModelSplash @Inject constructor(
             Log.e("checkJwt",response.toString())
             if (response.respIsSuccess) {
                 response.mBody?.let {					
-		 setIsActivateUseCase(it.message.equals("1"))
+		setWmJwTokenUseCase(
+		wmTokenInfoModel.copy(
+                               isActivate =   isActive
+                            )
+						)
+		// setIsActivateUseCase(it.message.equals("1"))
                 }
             }
             else
