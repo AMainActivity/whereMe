@@ -24,6 +24,13 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    buildTypes.each {
+        it.buildConfigField 'String', "BASE_URL", baseUrl
+        it.buildConfigField 'String', "GKK_CHECK_KOD", gkk_ChechKod
+        it.buildConfigField 'String', "GKK_CHECK_TOKEN", gkk_checkToken
+        it.buildConfigField 'String', "GKK_LOG_OUT", gkk_Logout
+        it.buildConfigField 'String', "GKK_WRITE_LOC_DATAS", gkk_WriteLocDatas
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8

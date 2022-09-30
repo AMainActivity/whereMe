@@ -60,6 +60,16 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     ></com.google.android.material.button.MaterialButton>
+
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        app:srcCompat="@android:drawable/ic_menu_share"
+                        android:id="@+id/frgmnt_pro_but_share"
+                        android:layout_width="wrap_content"
+                        android:clickable="true"
+                        android:layout_margin="3dp"
+                        app:fabSize="mini"
+                        android:layout_height="wrap_content"
+                        />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

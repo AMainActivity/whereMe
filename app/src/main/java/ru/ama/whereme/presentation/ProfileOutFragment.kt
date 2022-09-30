@@ -8,6 +8,7 @@ import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
@@ -70,6 +71,11 @@ class ProfileOutFragment : Fragment() {
             viewModel.logOut()
         }
         val res = viewModel.getSetUserInfo()
+        binding.frgmntProButShare.setOnClickListener{
+           if(res.name!=null&&res.url!=null) sharetext(res.name,"https://kol.hhos.ru/gkk/map.php?wm="+res.url,false)
+            else
+                Toast.makeText(requireContext(),"нет данных",Toast.LENGTH_SHORT).show()
+        }
         binding.frgmntProOutTv.linksClickable = true
         binding.frgmntProOutTv.movementMethod = LinkMovementMethod.getInstance()
         binding.frgmntProOutTv.text =

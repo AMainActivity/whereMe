@@ -414,12 +414,12 @@ fun updateIsWrite(idList: List<Long>) {
         return formatter.format(Date())
     }
 
-    suspend fun saveLocation(location: Location) {
+    suspend fun saveLocation(location: Location,lTime:Long) {
         val res = LocationDbModel(
-            location.time.toString(),
-            location.time,
-            location.time,
-            getDate(location.time),
+            lTime.toString(),
+            lTime,
+            lTime,
+            getDate(lTime),
             location.latitude,
             location.longitude,
             1,
@@ -436,13 +436,13 @@ fun updateIsWrite(idList: List<Long>) {
     private inner class Callback : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
-
+val lTime=System.currentTimeMillis()
             if (mBestLoc.longitude == 0.0 || result.lastLocation.accuracy < mBestLoc.accuracy) {
                 mBestLoc.latitude = result.lastLocation.latitude
                 mBestLoc.longitude = result.lastLocation.longitude
                 mBestLoc.accuracy = result.lastLocation.accuracy
                 mBestLoc.speed = result.lastLocation.speed
-                mBestLoc.time = result.lastLocation.time
+                mBestLoc.time = lTime
             }
 
             if (result.lastLocation != null && result.lastLocation.accuracy < workingTimeModel.accuracy) {
@@ -462,10 +462,10 @@ fun updateIsWrite(idList: List<Long>) {
                             Log.e("distanceLastNew", dist.toString())
                             if (dist > workingTimeModel.minDist) {
                                 val res = LocationDbModel(
-                                    it.time.toString(),
-                                    it.time,
+                                    lTime.toString(),
+                                    lTime,
                                     null,
-                                    getDate(it.time),
+                                    getDate(lTime),
                                     it.latitude,
                                     it.longitude,
                                     1,
@@ -478,20 +478,20 @@ fun updateIsWrite(idList: List<Long>) {
                                 onLocationChangedListener?.invoke(true)
                                 Log.e("insertLocation", res.toString())
                             } else {
-                                updateTimeEndDb(lastDbValue._id.toInt(), it.time)
+                                updateTimeEndDb(lastDbValue._id.toInt(), lTime)
                                 updateValueDb(
                                     lastDbValue._id.toInt(),
-                                    getDate(lastDbValue.datetime.toLong()) + " - " + getDate(it.time)
+                                    getDate(lastDbValue.datetime.toLong()) + " - " + getDate(lTime)
                                 )
                                 _isEnathAccuracy.postValue(true)
                                 onLocationChangedListener?.invoke(true)
                             }
                         } else {
                             val res = LocationDbModel(
-                                it.time.toString(),
-                                it.time,
+                                lTime.toString(),
+                                lTime,
                                 null,
-                                getDate(it.time),
+                                getDate(lTime),
                                 it.latitude,
                                 it.longitude,
                                 1,

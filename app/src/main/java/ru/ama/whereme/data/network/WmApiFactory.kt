@@ -4,11 +4,12 @@ import com.google.gson.GsonBuilder
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import ru.ama.ottest.data.network.WmApiService
+import ru.ama.whereme.BuildConfig
 
 
 object WmApiFactory {
 
-    private const val BASE_URL = "https://kol.hhos.ru/gkk/"
+    private const val BASE_URL = BuildConfig.BASE_URL
     var gson = GsonBuilder()
         .setLenient()
         .create()

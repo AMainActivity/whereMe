@@ -135,7 +135,7 @@ class MyForegroundService : LifecycleService() {
                 repo.stopLocationUpdates()
                 if (repo.mBestLoc.longitude != 0.0)
                     lifecycleScope.launch(Dispatchers.IO) {
-                        repo.saveLocation(repo.mBestLoc)
+                        repo.saveLocation(repo.mBestLoc,repo.mBestLoc.time)
                     }
                 sendData4Net()
                /* if (!repo.isCurTimeBetweenSettings())
