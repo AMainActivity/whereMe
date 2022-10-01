@@ -398,6 +398,17 @@ fun updateIsWrite(idList: List<Long>) {
         return formatter.format(calendar.getTime())
     }
 
+     fun df():String{
+        val curUtc=System.currentTimeMillis()
+        val formatter = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
+        val calendar = java.util.Calendar.getInstance()
+        calendar.setTimeInMillis(curUtc)
+        val curCal= formatter.format(calendar.getTime())
+        val curUtc1=formatter.format(curUtc)
+        // val formatter = SimpleDateFormat("dd.MM.yyyy")
+        return "curUtc:$curUtc # curUtc1:$curUtc1 \n cal:${calendar.timeInMillis} # curCal:$curCal"
+    }
+
     private fun getCurrentTime(): String {
         val formatter = SimpleDateFormat("HH:mm")
         //val calendar: Calendar = Calendar.getInstance()
@@ -541,8 +552,8 @@ val lTime=System.currentTimeMillis()
             "17:00",
             200,
             50,
-            180,
-            180,
+            60,
+            120,
             false
         )
     )

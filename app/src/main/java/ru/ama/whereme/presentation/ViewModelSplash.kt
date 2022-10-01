@@ -32,6 +32,7 @@ class ViewModelSplash @Inject constructor(
     init {
         checkJwt()
 		wmTokenInfoModel=getJwTokenUseCase()
+        Log.e("datetime",repositoryImpl.df())
         viewModelScope.launch(Dispatchers.IO) {  Log.e("getLastValue1",repositoryImpl.getLastValue1().toString())}
     }
 

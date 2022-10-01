@@ -18,19 +18,19 @@ interface LocationDao {
     @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
     fun getLocations(): LiveData<List<LocationDbModel>>
 
-    @Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') =:mDate  ORDER BY _id asc ")
+    @Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch', 'localtime') =:mDate  ORDER BY _id asc ")
     fun getLocationsById(mDate: String): LiveData<List<LocationDbModel>>
 
 
     //CAST(strftime('%Y', datetime(date/1000, 'unixepoch')) AS int) AS year
-    @Query("SELECT _id,datestart,dateend FROM tab_locations GROUP BY strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') ORDER BY _id asc ")
+    @Query("SELECT _id,datestart,dateend FROM tab_locations GROUP BY strftime('%d.%m.%Y', datestart / 1000, 'unixepoch', 'localtime') ORDER BY _id asc ")
     suspend fun getLocationsByDays(): List<LocationDbModelByDays>
 
-    @Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') =:mDate ORDER BY _id desc limit 1 ")
+    @Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch', 'localtime') =:mDate ORDER BY _id desc limit 1 ")
     fun getLastValue(mDate: String): LocationDbModel
 
-    @Query("SELECT _id,strftime('%d.%m.%Y', datestart / 1000, 'unixepoch') as datetime,datestart,dateend," +
-            "info,latitude,longitude,sourceId,accuracy,velocity,isWrite FROM tab_locations ORDER BY _id desc limit 1 ")
+    @Query("SELECT _id,strftime('%d.%m.%Y %H:%M:%S', datestart / 1000, 'unixepoch', 'localtime') as datetime,datestart,dateend," +
+            "strftime('%d.%m.%Y %H:%M:%S', datestart / 1000, 'unixepoch') as info,latitude,longitude,sourceId,accuracy,velocity,isWrite FROM tab_locations ORDER BY _id desc limit 1 ")
     fun getLastValu1e(): List<LocationDbModel>
 
 
