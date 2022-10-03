@@ -4,11 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.text.method.LinkMovementMethod
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
@@ -40,8 +40,64 @@ class ProfileOutFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
     }
 
+    override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.menu_profil_out_fragment, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+
+        return when (item.itemId) {
+            R.id.menu_p_out_share -> {
+                shereUrlAlertDialog()
+                true
+            }
+            R.id.menu_p_out_logout -> {
+                logOutAlertDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun shereUrlAlertDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Важная информация")
+            .setMessage("Вы можете поделиться ссылкой для просмотра своих данных." +
+                    "  \nДелитесь с сылкой с теми лицами, которым Вы доверяете просмотр своих данных. " +
+                    "Перейдя по ссылке, эти лица могут контролировать как и текущие Ваши местоположения," +
+                    "так и видеть Ваши местоположения за определенный день.\n" +
+                    "Для запрета использования ссылки перейдите в telegram-bot и сформируйте новый код.")
+            .setCancelable(true)
+            .setPositiveButton("поделиться") { _, _ ->
+
+                val res = viewModel.getSetUserInfo()
+                if (res.name != null && res.url != null) sharetext(
+                    res.name,
+                    "https://kol.hhos.ru/gkk/map.php?wm=" + res.url,
+                    false
+                )
+                else
+                    Toast.makeText(requireContext(), "нет данных", Toast.LENGTH_SHORT).show()
+            }
+            .show()
+    }
+
+    private fun logOutAlertDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Выход")
+            .setMessage("Выйти из профиля?  \nПосле выхода данные не будут сохранены на серверной части")
+            .setCancelable(true)
+            .setPositiveButton("да") { _, _ ->
+                viewModel.logOut()
+            }
+            .setNegativeButton("нет") { dialogInterface, i ->
+                dialogInterface.dismiss()
+            }
+            .show()
+    }
 
     private fun setActionBarSubTitle(txt: String) {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = txt
@@ -67,15 +123,9 @@ class ProfileOutFragment : Fragment() {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = null
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileOutViewModel::class.java]
 
-        binding.frgmntProButCk1.setOnClickListener {
-            viewModel.logOut()
-        }
+
         val res = viewModel.getSetUserInfo()
-        binding.frgmntProButShare.setOnClickListener{
-           if(res.name!=null&&res.url!=null) sharetext(res.name,"https://kol.hhos.ru/gkk/map.php?wm="+res.url,false)
-            else
-                Toast.makeText(requireContext(),"нет данных",Toast.LENGTH_SHORT).show()
-        }
+
         binding.frgmntProOutTv.linksClickable = true
         binding.frgmntProOutTv.movementMethod = LinkMovementMethod.getInstance()
         binding.frgmntProOutTv.text =
@@ -131,10 +181,11 @@ class ProfileOutFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
-companion object{
 
-    private const val SHARE_MAIL_TYPE = "message/rfc822"
-    private const val SHARE_TEXT_TYPE = "text/plain"
-}
+    companion object {
+
+        private const val SHARE_MAIL_TYPE = "message/rfc822"
+        private const val SHARE_TEXT_TYPE = "text/plain"
+    }
 
 }

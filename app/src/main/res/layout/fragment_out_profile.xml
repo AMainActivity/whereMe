@@ -50,26 +50,7 @@
                         android:gravity="center"
                         />
 						
-				      <com.google.android.material.button.MaterialButton
-                    android:text="выход"
-                    android:id="@+id/frgmnt_pro_but_ck1"
-                    android:theme="@style/ButtonStyle"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:layout_width="match_parent"
-                    android:layout_margin="2dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    ></com.google.android.material.button.MaterialButton>
 
-                    <com.google.android.material.floatingactionbutton.FloatingActionButton
-                        app:srcCompat="@android:drawable/ic_menu_share"
-                        android:id="@+id/frgmnt_pro_but_share"
-                        android:layout_width="wrap_content"
-                        android:clickable="true"
-                        android:layout_margin="3dp"
-                        app:fabSize="mini"
-                        android:layout_height="wrap_content"
-                        />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
