@@ -62,6 +62,7 @@ class ViewModelSplash @Inject constructor(
 						)
 		// setIsActivateUseCase(it.message.equals("1"))
                 }
+                _canStart.value=Unit
             }
             else
             {
@@ -71,7 +72,8 @@ class ViewModelSplash @Inject constructor(
                     Log.e("checkJwtError",jObjError.toString()/*.getJSONObject("error").getString("message")*/)
                 } catch (e: Exception) {
                     Log.e("checkJwtError",e.message.toString())
-                }}
+                }
+                _canStart.value=Unit}
 
 
         }

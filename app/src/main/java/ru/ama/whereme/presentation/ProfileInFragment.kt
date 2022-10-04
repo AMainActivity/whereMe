@@ -65,7 +65,7 @@ class ProfileInFragment : Fragment() {
     private fun logInAlertDialog(res:JsonJwt) {
         AlertDialog.Builder(requireContext())
             .setTitle("Подтверждение")
-            .setMessage("Нажимая 'Да', Вы подтверждаете, что учетная записть telegram '${res.name}' принадлежит Вам.")
+            .setMessage("Нажимая 'Да', Вы подтверждаете, что учетная запись telegram: \n\n'${res.name}'\n\n принадлежит Вам.")
             .setCancelable(true)
             .setPositiveButton("да") { _, _ ->
 viewModel.saveUserInfo(res)

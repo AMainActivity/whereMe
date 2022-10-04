@@ -21,12 +21,12 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         component.inject(this)
         viewModel = ViewModelProvider(this, viewModelFactory)[ViewModelSplash::class.java]
-        startActivity(Intent(this, MainActivity::class.java))
-        finish()
-        /* viewModel.canStart.observe(this) {
+       // startActivity(Intent(this, MainActivity::class.java))
+       // finish()
+         viewModel.canStart.observe(this) {
              startActivity(Intent(this, MainActivity::class.java))
              finish()
-         }*/
+         }
     }
 
 
