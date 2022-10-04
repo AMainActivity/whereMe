@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
+import ru.ama.whereme.domain.entity.JsonJwt
 import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
 import ru.ama.whereme.domain.usecase.CheckKodUseCase
 import ru.ama.whereme.domain.usecase.GetJwTokenUseCase
@@ -28,15 +29,28 @@ class ProfileInViewModel @Inject constructor(
     private val application: Application
 ) : ViewModel() {
 
-    private val _isSuccess = MutableLiveData<Unit>()
-    val isSuccess: LiveData<Unit>
+    private val _isSuccess = MutableLiveData<JsonJwt>()
+    val isSuccess: LiveData<JsonJwt>
         get() = _isSuccess
 
     init {
         Log.e("getJwTokenUseCase", getJwTokenUseCase().toString())
     }
 
+
+    fun saveUserInfo(res:JsonJwt)
+    {
+        setWmJwTokenUseCase(SettingsUserInfoDomModel(
+            res.tokenJwt,
+            res.posId,
+            res.famId,
+            res.name,
+            res.url,
+            true
+        ))
+    }
     fun checkKod(kod: String) {
+       // var resultString:JsonJwt?=null
         val json = JSONObject()
         json.put("kod", kod)
         val requestBody: RequestBody =
@@ -50,26 +64,26 @@ class ProfileInViewModel @Inject constructor(
             if (response.respIsSuccess) {
                 response.mBody?.let {
                     if (it.error == false && it.message.equals("1")) {
-                        setWmJwTokenUseCase(SettingsUserInfoDomModel(
+                        /*setWmJwTokenUseCase(SettingsUserInfoDomModel(
                             it.tokenJwt,
                             it.posId,
                             it.famId,
                             it.name,
                             it.url,
                             true
-                        ))
+                        ))*/
                       //  setIsActivateUseCase(it.isActivate == 1)
-                        _isSuccess.value = Unit
-                    } else
+                        _isSuccess.value = it
+                    } /*else
                         Toast.makeText(
                             application,
                             "неверный код, повторите попытку",
                             Toast.LENGTH_SHORT
-                        ).show()
+                        ).show()*/
                 }
             } else {
-                Toast.makeText(application, "неверный код, повторите попытку", Toast.LENGTH_SHORT)
-                    .show()
+               /* Toast.makeText(application, "неверный код, повторите попытку", Toast.LENGTH_SHORT)
+                    .show()*/
 
                 try {
                     val jObjError = JSONObject(response.respError?.string())

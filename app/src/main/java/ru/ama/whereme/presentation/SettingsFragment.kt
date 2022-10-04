@@ -261,7 +261,7 @@ class SettingsFragment : Fragment() {
             override fun afterTextChanged(s: Editable) {
                 workingTimeModel = viewModel.getWorkingTime()
                 if (s.length > 0) {
-                    if (s.toString().toInt() >= 100) {
+                    if (s.toString().toInt() >= 10) {
                         viewModel.setWorkingTime(
                             workingTimeModel.copy(
                                 minDist = s.toString().toInt()
@@ -269,7 +269,7 @@ class SettingsFragment : Fragment() {
                         )
                         binding.frgmntSetMdEt.error = null
                     } else
-                        binding.frgmntSetMdEt.error = "введите число больше 100"
+                        binding.frgmntSetMdEt.error = "введите число больше 10"
                 } else
                     binding.frgmntSetMdEt.error = "введите"
             }
@@ -281,7 +281,7 @@ class SettingsFragment : Fragment() {
             override fun afterTextChanged(s: Editable) {
                 workingTimeModel = viewModel.getWorkingTime()
                 if (s.length > 0) {
-                    if (s.toString().toInt() >= 10) {
+                    if (s.toString().toInt() >= 50) {
                         viewModel.setWorkingTime(
                             workingTimeModel.copy(
                                 accuracy = s.toString().toInt()
@@ -289,7 +289,7 @@ class SettingsFragment : Fragment() {
                         )
                         binding.frgmntSetAccurEt.error = null
                     } else
-                        binding.frgmntSetAccurEt.error = "введите число больше 10"
+                        binding.frgmntSetAccurEt.error = "введите число больше 50"
                 } else
                     binding.frgmntSetAccurEt.error = "введите"
             }

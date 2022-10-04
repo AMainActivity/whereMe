@@ -5,15 +5,19 @@ import android.content.Context
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentInProfileBinding
+import ru.ama.whereme.domain.entity.JsonJwt
 import javax.inject.Inject
 
 
@@ -58,7 +62,20 @@ class ProfileInFragment : Fragment() {
         return binding.root
 
     }
-
+    private fun logInAlertDialog(res:JsonJwt) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Подтверждение")
+            .setMessage("Нажимая 'Да', Вы подтверждаете, что учетная записть telegram '${res.name}' принадлежит Вам.")
+            .setCancelable(true)
+            .setPositiveButton("да") { _, _ ->
+viewModel.saveUserInfo(res)
+                (requireActivity() as MainActivity).setCurrentFragment(ProfileOutFragment())
+            }
+            .setNegativeButton("нет") { dialogInterface, i ->
+                dialogInterface.dismiss()
+            }
+            .show()
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -68,6 +85,8 @@ class ProfileInFragment : Fragment() {
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileInViewModel::class.java]
         binding.frgmntProButCk.setOnClickListener {
             viewModel.checkKod(binding.frgmntProEt.text.toString())
+
+
         }
 
         binding.frgmntProInTv.linksClickable = true
@@ -76,8 +95,14 @@ class ProfileInFragment : Fragment() {
             HtmlCompat.fromHtml(getString(R.string.ma_menu_help), HtmlCompat.FROM_HTML_MODE_LEGACY)
         viewModel.isSuccess.observe(viewLifecycleOwner) {
 
-            (requireActivity() as MainActivity).setCurrentFragment(ProfileOutFragment())
-
+            if (it!=null)
+                logInAlertDialog(it)
+            else
+                Toast.makeText(
+                    requireContext(),
+                    "неверный код, повторите попытку",
+                    Toast.LENGTH_SHORT
+                ).show()
             // Log.e("getLocationlldByDay", postData)
         }
 

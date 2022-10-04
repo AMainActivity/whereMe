@@ -52,6 +52,7 @@ class ViewModelSplash @Inject constructor(
             val response = checkJwtTokenUseCase(requestBody)
             Log.e("checkJwtCode",response.respCode.toString())
             Log.e("checkJwt",response.toString())
+            Log.e("mBody",response.mBody.toString())
             if (response.respIsSuccess) {
                 response.mBody?.let {					
 		setWmJwTokenUseCase(

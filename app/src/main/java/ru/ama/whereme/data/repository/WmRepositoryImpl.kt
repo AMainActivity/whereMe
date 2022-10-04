@@ -550,8 +550,8 @@ val lTime=System.currentTimeMillis()
             listOf("1", "1", "1", "1", "1", "1", "1"),
             "09:00",
             "17:00",
-            200,
             50,
+            200,
             60,
             120,
             false
