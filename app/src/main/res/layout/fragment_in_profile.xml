@@ -45,6 +45,7 @@
 
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="match_parent"
+                        android:textSize="20dp"
                         android:layout_height="wrap_content"
                         android:id="@+id/frgmnt_pro_in_tv"
                         android:gravity="center"

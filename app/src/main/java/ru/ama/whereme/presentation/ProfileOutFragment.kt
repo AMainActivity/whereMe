@@ -120,7 +120,7 @@ class ProfileOutFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = null
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Профиль"
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileOutViewModel::class.java]
 
 

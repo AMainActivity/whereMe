@@ -85,10 +85,6 @@ class MapFragment : Fragment() {
         }
     }
 
-    private fun setActionBarSubTitle(txt: String) {
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = txt
-        Log.e("setActionBarSubTitle",txt)
-    }
 
     private fun showPopupDatePicker(anchor: View) {
         val popupWindow = PopupWindow(requireContext())
@@ -231,7 +227,7 @@ class MapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle ="Карта"
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
         viewModel.ld_days.observe(viewLifecycleOwner) {
             listDays = it
@@ -294,7 +290,7 @@ class MapFragment : Fragment() {
                     null
                 )
                 // popupWindow.dismiss()
-                setActionBarSubTitle(abSuntitle)
+                (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =abSuntitle
             }
             else
 

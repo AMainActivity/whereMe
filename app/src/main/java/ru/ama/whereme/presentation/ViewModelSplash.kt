@@ -64,6 +64,10 @@ class ViewModelSplash @Inject constructor(
                 }
                 _canStart.value=Unit
             }
+            /*
+checkJwt: ResponseEntity(mBody=JsonEntity(error=false, message=0), respIsSuccess=true, respError=null, respCode=200)
+mBody: JsonEntity(error=false, message=0)
+            * */
             else
             {
                 try {
@@ -73,7 +77,17 @@ class ViewModelSplash @Inject constructor(
                 } catch (e: Exception) {
                     Log.e("checkJwtError",e.message.toString())
                 }
-                _canStart.value=Unit}
+                _canStart.value=Unit
+                setWmJwTokenUseCase(
+                    SettingsUserInfoDomModel(
+                        "",
+                        0,
+                        0,
+                        "",
+                        "",
+                        false
+                    )
+                )}
 
 
         }

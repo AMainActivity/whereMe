@@ -81,7 +81,7 @@ viewModel.saveUserInfo(res)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = null
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Профиль"
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileInViewModel::class.java]
         binding.frgmntProButCk.setOnClickListener {
             viewModel.checkKod(binding.frgmntProEt.text.toString())
@@ -95,17 +95,16 @@ viewModel.saveUserInfo(res)
             HtmlCompat.fromHtml(getString(R.string.ma_menu_help), HtmlCompat.FROM_HTML_MODE_LEGACY)
         viewModel.isSuccess.observe(viewLifecycleOwner) {
 
-            if (it!=null)
-                logInAlertDialog(it)
-            else
-                Toast.makeText(
-                    requireContext(),
-                    "неверный код, повторите попытку",
-                    Toast.LENGTH_SHORT
-                ).show()
+            logInAlertDialog(it)
             // Log.e("getLocationlldByDay", postData)
         }
-
+        viewModel.isError.observe(viewLifecycleOwner) {
+            Toast.makeText(
+                requireContext(),
+                "неверный код, повторите попытку",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     override fun onDestroy() {

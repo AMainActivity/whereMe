@@ -59,7 +59,7 @@ class AboutFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = null
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "О приложении"
         viewModel = ViewModelProvider(this, viewModelFactory)[AboutViewModel::class.java]
 
         binding.frgmntAbTv.linksClickable = true

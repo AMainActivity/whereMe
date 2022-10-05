@@ -41,6 +41,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:id="@+id/frgmnt_ab_tv"
+                    android:textSize="20dp"
                     android:text="о приложении" />
             </androidx.cardview.widget.CardView>
 

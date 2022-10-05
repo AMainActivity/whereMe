@@ -109,7 +109,7 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = null
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Настройки"
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
         setDays()
         binding.frgmntSetSwitchAc.isChecked = workingTimeModel.isEnable

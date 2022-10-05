@@ -32,7 +32,9 @@ class ProfileInViewModel @Inject constructor(
     private val _isSuccess = MutableLiveData<JsonJwt>()
     val isSuccess: LiveData<JsonJwt>
         get() = _isSuccess
-
+    private val _isError = MutableLiveData<Unit>()
+    val isError: LiveData<Unit>
+        get() = _isError
     init {
         Log.e("getJwTokenUseCase", getJwTokenUseCase().toString())
     }
@@ -74,14 +76,16 @@ class ProfileInViewModel @Inject constructor(
                         ))*/
                       //  setIsActivateUseCase(it.isActivate == 1)
                         _isSuccess.value = it
-                    } /*else
-                        Toast.makeText(
+                    } else
+                        _isError.value=Unit
+                        /*Toast.makeText(
                             application,
                             "неверный код, повторите попытку",
                             Toast.LENGTH_SHORT
                         ).show()*/
                 }
             } else {
+                _isError.value=Unit
                /* Toast.makeText(application, "неверный код, повторите попытку", Toast.LENGTH_SHORT)
                     .show()*/
 

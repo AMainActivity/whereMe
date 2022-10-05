@@ -164,6 +164,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+
     fun showGPSNotEnabledDialog(context: Context) {
         AlertDialog.Builder(context)
             .setTitle("Включи GPS")
@@ -174,6 +175,7 @@ class MainActivity : AppCompatActivity() {
             }
             .show()
     }
-
+companion object{
+}
 
 }
