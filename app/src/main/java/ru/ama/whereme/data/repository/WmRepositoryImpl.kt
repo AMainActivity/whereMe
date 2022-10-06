@@ -551,7 +551,7 @@ val lTime=System.currentTimeMillis()
             "09:00",
             "17:00",
             50,
-            200,
+            50,
             60,
             120,
             false
