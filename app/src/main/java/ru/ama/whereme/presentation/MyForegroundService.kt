@@ -84,7 +84,7 @@ class MyForegroundService : LifecycleService() {
     }
 
     private fun createNotificationBuilder(): NotificationCompat.Builder {
-        val resultIntent = Intent(this, MainActivity::class.java).apply {
+        val resultIntent = Intent(this, SplashActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         val resultPendingIntent: PendingIntent? = PendingIntent.getActivity(

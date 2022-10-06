@@ -138,6 +138,7 @@ class MainActivity : AppCompatActivity() {
         ActivityCompat.requestPermissions(
             activity,
             arrayOf(
+                android.Manifest.permission.FOREGROUND_SERVICE,
                 android.Manifest.permission.ACCESS_FINE_LOCATION,
                 android.Manifest.permission.ACCESS_COARSE_LOCATION,
                 android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
