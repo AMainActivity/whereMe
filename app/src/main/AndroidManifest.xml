@@ -40,7 +40,10 @@
         </activity>
         <service android:name=".presentation.MyForegroundService"
             android:exported="false"/>
-
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            tools:node="remove" />
         <receiver android:name=".data.workers.AlarmClockStart" />
         <receiver android:name=".data.workers.Alarm" />
         <receiver android:name=".data.workers.StartServiceReceiver"

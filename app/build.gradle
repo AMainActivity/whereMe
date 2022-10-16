@@ -10,10 +10,11 @@ android {
 
     defaultConfig {
         applicationId "ru.ama.whereme"
-        minSdk 21
+        minSdk 16
         targetSdk 32
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,6 +48,8 @@ android {
 }
 
 dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation "androidx.startup:startup-runtime:1.1.1"
 
     implementation 'androidx.navigation:navigation-fragment-ktx:2.4.2'
     implementation 'androidx.navigation:navigation-ui-ktx:2.4.2'
@@ -78,6 +81,9 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
 
+    implementation ('com.squareup.okhttp3:okhttp:3.12.0') {
+        force = true
+    }
     def room_version = "2.4.0"
 
     implementation("androidx.room:room-runtime:$room_version")

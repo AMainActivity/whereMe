@@ -100,16 +100,18 @@ class MapFragment : Fragment() {
         popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
         popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
         val binding2 = DatePickerDaysBinding.inflate(layoutInflater)
-        binding2.frgmntMapDp.setOnDateChangedListener { datePicker,  year,  monthOfYear,  dayOfMonth ->
-            val formatter = SimpleDateFormat("dd.MM.yyyy")
-            val calendar: Calendar = Calendar.getInstance()
-            calendar.set(year,monthOfYear,dayOfMonth)
-            val s= formatter.format(calendar.getTime())
-            viewModel.getDataByDate(s)
-            observeData(s)
-            onDataSizeListener={
-				if (it>0) popupWindow.dismiss()
-			}
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            binding2.frgmntMapDp.setOnDateChangedListener { datePicker, year, monthOfYear, dayOfMonth ->
+                val formatter = SimpleDateFormat("dd.MM.yyyy")
+                val calendar: Calendar = Calendar.getInstance()
+                calendar.set(year,monthOfYear,dayOfMonth)
+                val s= formatter.format(calendar.getTime())
+                viewModel.getDataByDate(s)
+                observeData(s)
+                onDataSizeListener={
+                    if (it>0) popupWindow.dismiss()
+                }
+            }
         }
         popupWindow.contentView = binding2.root
         // popupWindow.dismiss()
@@ -249,6 +251,7 @@ class MapFragment : Fragment() {
                 callback.invoke(origin, true, false)
             }
         })
+        binding.frgmntLocations.getSettings().setJavaScriptEnabled(true)
 
 
         //wv.loadDataWithBaseURL(null,getString(R.string.frgmnt_instructions),"text/html","UTF-8","")
@@ -285,10 +288,14 @@ class MapFragment : Fragment() {
             onDataSizeListener?.invoke(it.size)
             if (it.size>=1) {
                 val postData = Gson().toJson(it).toString()
-                binding.frgmntLocations.evaluateJavascript(
-                    "javascript:fromAndroid(${postData})",
-                    null
-                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    binding.frgmntLocations.evaluateJavascript(
+                        "javascript:fromAndroid(${postData})",
+                        null
+                    )
+                } else {
+                    binding.frgmntLocations.loadUrl("javascript:fromAndroid(${postData})");
+                }
                 // popupWindow.dismiss()
                 (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =abSuntitle
             }
