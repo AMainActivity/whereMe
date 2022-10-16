@@ -235,32 +235,30 @@ class MapFragment : Fragment() {
             listDays = it
         }
 
-        if (Build.VERSION.SDK_INT >= 11) {
-            val settings: WebSettings = binding.frgmntLocations.settings
-            settings.setBuiltInZoomControls(false)
-            settings.setDisplayZoomControls(false)
-            //settings.setTextZoom(80)
-        }
+        val settings: WebSettings = binding.frgmntLocations.settings
+        settings.builtInZoomControls = false
+        settings.displayZoomControls = false
+        //settings.setTextZoom(80)
         binding.frgmntLocations.setBackgroundColor(0)
-        binding.frgmntLocations.getSettings().setGeolocationEnabled(true)
-        binding.frgmntLocations.setWebChromeClient(object : WebChromeClient() {
+        binding.frgmntLocations.settings.setGeolocationEnabled(true)
+        binding.frgmntLocations.webChromeClient = object : WebChromeClient() {
             override fun onGeolocationPermissionsShowPrompt(
                 origin: String,
                 callback: GeolocationPermissions.Callback
             ) {
                 callback.invoke(origin, true, false)
             }
-        })
-        binding.frgmntLocations.getSettings().setJavaScriptEnabled(true)
+        }
+        binding.frgmntLocations.settings.javaScriptEnabled = true
 
 
         //wv.loadDataWithBaseURL(null,getString(R.string.frgmnt_instructions),"text/html","UTF-8","")
         binding.frgmntLocations.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                view?.getContext()?.startActivity(
+                view?.context?.startActivity(
                     Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 )
-                //view?.loadUrl(url!!)
+               // view?.loadUrl(url!!)
                 return true
             }
 
