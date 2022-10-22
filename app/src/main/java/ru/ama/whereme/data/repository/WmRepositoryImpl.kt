@@ -324,7 +324,7 @@ fun updateIsWrite(idList: List<Long>) {
     }
 
     suspend fun getLocations4Net(): List<LocationDb> {
-        val res = (locationDao.getLocations4Net()).map { mapper.mapDbModelToEntity(it) }	
+        val res = (locationDao.getLocations4Net(getWmUserInfoSetings().posId)).map { mapper.mapDbModelToEntity(it) }
         return res
     }
 	

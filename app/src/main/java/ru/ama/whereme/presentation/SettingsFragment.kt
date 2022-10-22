@@ -52,13 +52,27 @@ class SettingsFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // setHasOptionsMenu(true)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        requireActivity().bindService(
+            MyForegroundService.newIntent(requireContext()),
+            serviceConnection,
+            0
+        )
+        binding.frgmntSetSwitchStart.isChecked = viewModel.сheckService()
+    }
+
+    private fun bindUnbindService()
+    {
+        requireActivity().unbindService(serviceConnection)
         requireActivity().bindService(
             MyForegroundService.newIntent(requireContext()),
             serviceConnection,
             0
         )
     }
-
 
     /* override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
          menuInflater.inflate(R.menu.menu_set_fragment, menu)
@@ -115,6 +129,7 @@ class SettingsFragment : Fragment() {
         binding.frgmntSetSwitchAc.isChecked = workingTimeModel.isEnable
         binding.frgmntSetSwitchStart.isChecked = viewModel.сheckService()
         binding.frgmntSetSwitchStart.setOnClickListener { view ->
+            bindUnbindService()
             if (!viewModel.сheckService()) {
                 //  if (viewModel.isTimeToGetLocaton())
                 ContextCompat.startForegroundService(
@@ -351,7 +366,8 @@ class SettingsFragment : Fragment() {
             val binder = (service as? MyForegroundService.LocalBinder) ?: return
             val foregroundService = binder.getService()
             foregroundService.isServiseAlive = { flag ->
-                binding.frgmntSetSwitchStart.isChecked = flag //viewModel.сheckService()
+               try{ binding.frgmntSetSwitchStart.isChecked = flag} //viewModel.сheckService()
+                catch (e:Exception){}
             }
         }
 

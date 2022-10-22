@@ -137,7 +137,9 @@ class MyForegroundService : LifecycleService() {
                     lifecycleScope.launch(Dispatchers.IO) {
                         repo.saveLocation(repo.mBestLoc,repo.mBestLoc.time)
                     }
-                sendData4Net()
+                if (repo.getWmUserInfoSetings().tokenJwt.length>0)
+                sendData4Net() else
+                    reRunGetLocations()
                /* if (!repo.isCurTimeBetweenSettings())
                     stopSelf()
                 else {
@@ -278,15 +280,18 @@ java.net.SocketTimeoutException: failed to connect to*/
             Log.e("onLocationListener", "$it / $isEnath")
             if (it) {
                 repo.stopLocationUpdates()
-
-                sendData4Net()
                // repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
                 cancelTimer(
                     getString(R.string.app_name),
                     "успешно получено " + repo.getDate(Calendar.getInstance().getTime().time)
                 )
                 isEnath = true
+                if (repo.getWmUserInfoSetings().tokenJwt.length>0)
+                    sendData4Net() else
+                    reRunGetLocations()
             }
+          //  if (!repo.isMyServiceRunning(MyForegroundService::class.java))
+            //    isServiseAlive?.invoke(false)
         }
         startGetLocations()
 
@@ -295,11 +300,12 @@ java.net.SocketTimeoutException: failed to connect to*/
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        notificationManager.cancelAll()
         timer?.cancel()
         isServiseAlive?.invoke(false)
         lifecycleScope.cancel()
         log("onDestroy")
+        super.onDestroy()
     }
 
 
