@@ -3,7 +3,6 @@ package ru.ama.whereme.domain.repository
 import android.location.Location
 import androidx.lifecycle.LiveData
 import okhttp3.RequestBody
-import retrofit2.Response
 import ru.ama.whereme.domain.entity.*
 
 interface WmRepository {
@@ -24,17 +23,14 @@ interface WmRepository {
     fun cancelAlarmClock()
 
     fun getWorkingTime(): SettingsDomModel
-    fun setWorkingTime(dm:SettingsDomModel)
+    fun setWorkingTime(dm: SettingsDomModel)
 
     fun getWmUserInfoSetings(): SettingsUserInfoDomModel
-    fun setWmUserInfoSetings(set:SettingsUserInfoDomModel)
+    fun setWmUserInfoSetings(set: SettingsUserInfoDomModel)
 
-   // fun getIsActivate(): Boolean
-    //fun setIsActivate(b:Boolean)
-
-    suspend fun checkWmJwToken(request : RequestBody):ResponseEntity
-    suspend fun logOut(request : RequestBody):ResponseEntity
+    suspend fun checkWmJwToken(request: RequestBody): ResponseEntity
+    suspend fun logOut(request: RequestBody): ResponseEntity
 
     suspend fun getLastLocation(): Location?
-    suspend fun checkKod(request : RequestBody): ResponseJwtEntity
+    suspend fun checkKod(request: RequestBody): ResponseJwtEntity
 }

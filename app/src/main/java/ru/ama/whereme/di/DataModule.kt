@@ -20,7 +20,6 @@ import ru.ama.whereme.data.repository.WmRepositoryImpl
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.repository.WmRepository
 
-
 @Module
 interface DataModule {
     @Binds
@@ -36,32 +35,24 @@ interface DataModule {
         ): LocationDao {
             return AppDatabase.getInstance(application).locationDao()
         }
- 
 
         @Provides
         @ApplicationScope
         fun provideFusedLocationProviderClient(
             application: Application
-        ) :FusedLocationProviderClient{
+        ): FusedLocationProviderClient {
             return LocationServices.getFusedLocationProviderClient(application)
         }
+
         @Provides
         @ApplicationScope
         fun provideGoogleApiAvailability() = GoogleApiAvailability.getInstance()
 
-		@Provides
+        @Provides
         @ApplicationScope
         fun provideApiService(): WmApiService {
             return WmApiFactory.apiService
         }
-
-    /*@Provides
-    @ApplicationScope
-    fun provideDataStore(application: Application): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create {
-            application.preferencesDataStoreFile("prefs")
-        }
-    }*/
 
         @Provides
         @ApplicationScope
@@ -71,13 +62,7 @@ interface DataModule {
 
         @ApplicationScope
         @Provides
-        fun providesCoroutineScope() = CoroutineScope(SupervisorJob() +  Dispatchers.IO)
-       /* @Provides
-        @ApplicationScope
-        fun provideCoroutineScope(application: Application)= CoroutineScope(application as CoroutineContext)
-*/
+        fun providesCoroutineScope() = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     }
-	
-
 }

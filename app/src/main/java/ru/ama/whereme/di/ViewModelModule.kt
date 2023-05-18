@@ -10,32 +10,32 @@ import ru.ama.whereme.presentationn.ViewModelSplash
 
 @Module
 interface ViewModelModule {
- @Binds
+    @Binds
     @IntoMap
     @ViewModelKey(MaViewModel::class)
     fun bindTestListViewModel(viewModel: MaViewModel): ViewModel
- @Binds
+
+    @Binds
     @IntoMap
     @ViewModelKey(MapViewModel::class)
     fun bindMapViewModel(viewModel: MapViewModel): ViewModel
-	
- @Binds
+
+    @Binds
     @IntoMap
     @ViewModelKey(SettingsViewModel::class)
     fun bindSettingsViewModel(viewModel: SettingsViewModel): ViewModel
- @Binds
+
+    @Binds
     @IntoMap
     @ViewModelKey(ProfileInViewModel::class)
     fun bindProfileViewModel(viewModel: ProfileInViewModel): ViewModel
- @Binds
+
+    @Binds
     @IntoMap
     @ViewModelKey(ProfileOutViewModel::class)
     fun bindProfileOutViewModel(viewModel: ProfileOutViewModel): ViewModel
- @Binds
-    @IntoMap
-    @ViewModelKey(AboutViewModel::class)
-    fun bindAboutViewModel(viewModel: AboutViewModel): ViewModel
- @Binds
+
+    @Binds
     @IntoMap
     @ViewModelKey(ViewModelSplash::class)
     fun bindSplashViewModel(viewModel: ViewModelSplash): ViewModel

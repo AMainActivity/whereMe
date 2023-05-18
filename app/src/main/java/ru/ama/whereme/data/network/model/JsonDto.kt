@@ -10,9 +10,10 @@ data class JsonDto(
     @Expose
     @SerializedName("message") val message: String
 )
+
 data class ResponseDto(
-    val mBody:JsonDto?=null,
+    val mBody: JsonDto? = null,
     val respIsSuccess: Boolean,
-    val respError: ResponseBody?=null,
-    val respCode:Int
+    val respError: ResponseBody? = null,
+    val respCode: Int
 )

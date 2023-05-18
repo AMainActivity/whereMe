@@ -16,16 +16,16 @@ data class JsonJwtDto(
     @Expose
     @SerializedName("famid") val famId: Int,
     @Expose
-    @SerializedName("name") val name: String?=null,
+    @SerializedName("name") val name: String? = null,
     @Expose
-    @SerializedName("url") val url: String?=null,
+    @SerializedName("url") val url: String? = null,
     @Expose
     @SerializedName("isactivate") val isActivate: Int
 )
 
 data class ResponseJwtDto(
-    val mBody:JsonJwtDto?=null,
+    val mBody: JsonJwtDto? = null,
     val respIsSuccess: Boolean,
-    val respError:ResponseBody?=null,
-    val respCode:Int
+    val respError: ResponseBody? = null,
+    val respCode: Int
 )

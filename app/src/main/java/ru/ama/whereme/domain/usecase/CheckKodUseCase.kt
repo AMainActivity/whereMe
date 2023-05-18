@@ -8,5 +8,5 @@ class CheckKodUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
 
-    operator suspend fun invoke(request : RequestBody) = repository.checkKod(request)
+    suspend operator fun invoke(request: RequestBody) = repository.checkKod(request)
 }

@@ -4,8 +4,6 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
-import java.time.OffsetDateTime
 
 @Database(entities = [LocationDbModel::class], version = 3, exportSchema = false)
 //@TypeConverters(OffsetDateTimeConverter::class)
@@ -26,7 +24,7 @@ abstract class AppDatabase : RoomDatabase() {
                         DB_NAME
                     )
                         .fallbackToDestructiveMigration()
-                       // .allowMainThreadQueries()
+                        // .allowMainThreadQueries()
                         .build()
                 db = instance
                 return instance

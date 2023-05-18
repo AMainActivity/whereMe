@@ -4,8 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
-import android.text.util.Linkify
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -41,34 +39,22 @@ class ProfileInFragment : Fragment() {
         super.onAttach(context)
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
-
-
-    private fun setActionBarSubTitle(txt: String) {
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = txt
-    }
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-
+    ): View {
         _binding = FragmentInProfileBinding.inflate(inflater, container, false)
-
-
         return binding.root
-
     }
-    private fun logInAlertDialog(res:JsonJwt) {
+
+    private fun logInAlertDialog(res: JsonJwt) {
         AlertDialog.Builder(requireContext())
             .setTitle("Подтверждение")
             .setMessage("Нажимая 'Да', Вы подтверждаете, что учетная запись telegram: \n\n'${res.name}'\n\n принадлежит Вам.")
             .setCancelable(true)
             .setPositiveButton("да") { _, _ ->
-viewModel.saveUserInfo(res)
+                viewModel.saveUserInfo(res)
                 (requireActivity() as MainActivity).setCurrentFragment(ProfileOutFragment())
             }
             .setNegativeButton("нет") { dialogInterface, i ->
@@ -80,23 +66,17 @@ viewModel.saveUserInfo(res)
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Профиль"
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileInViewModel::class.java]
         binding.frgmntProButCk.setOnClickListener {
             viewModel.checkKod(binding.frgmntProEt.text.toString())
-
-
         }
-
         binding.frgmntProInTv.linksClickable = true
         binding.frgmntProInTv.movementMethod = LinkMovementMethod.getInstance()
         binding.frgmntProInTv.text =
             HtmlCompat.fromHtml(getString(R.string.ma_menu_help), HtmlCompat.FROM_HTML_MODE_LEGACY)
         viewModel.isSuccess.observe(viewLifecycleOwner) {
-
             logInAlertDialog(it)
-            // Log.e("getLocationlldByDay", postData)
         }
         viewModel.isError.observe(viewLifecycleOwner) {
             Toast.makeText(
@@ -106,11 +86,6 @@ viewModel.saveUserInfo(res)
             ).show()
         }
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
 
     override fun onDestroyView() {
         super.onDestroyView()

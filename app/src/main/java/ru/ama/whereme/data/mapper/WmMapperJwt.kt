@@ -20,25 +20,9 @@ class WmMapperJwt @Inject constructor() {
         isActivate = dto.isActivate
     )
 
-    fun mapModelToDto(model: JsonJwt) = JsonJwtDto(
-        error = model.error,
-        message = model.message,
-        posId = model.posId,
-        tokenJwt = model.tokenJwt,
-        famId = model.famId,
-        name = model.name,
-        url = model.url,
-        isActivate = model.isActivate
-    )
-
     fun mapAllDtoToModel(dto: JsonDto) = JsonEntity(
         error = dto.error,
         message = dto.message
-    )
-
-    fun mapAllModelToDto(model: JsonEntity) = JsonDto(
-        error = model.error,
-        message = model.message
     )
 
 }

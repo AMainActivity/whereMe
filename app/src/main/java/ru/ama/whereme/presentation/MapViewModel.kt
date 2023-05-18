@@ -1,10 +1,16 @@
 package ru.ama.whereme.presentation
 
-import android.util.Log
-import androidx.lifecycle.*
-import kotlinx.coroutines.*
-import ru.ama.whereme.domain.entity.*
-import ru.ama.whereme.domain.usecase.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import ru.ama.whereme.domain.entity.LocationDb
+import ru.ama.whereme.domain.entity.LocationDbByDays
+import ru.ama.whereme.domain.usecase.CheckInternetConnectionUseCase
+import ru.ama.whereme.domain.usecase.GetGropingDaysUseCase
+import ru.ama.whereme.domain.usecase.GetLocationsFromBdByIdUseCase
+import ru.ama.whereme.domain.usecase.GetLocationsFromBdUseCase
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -18,7 +24,6 @@ class MapViewModel @Inject constructor(
 
     var lld2: LiveData<List<LocationDb>>? = null
     var lldByDay: LiveData<List<LocationDb>>? = null
-    //var ld_days: LiveData<List<LocationDbByDays>>? = null
 
     private val _ld_days = MutableLiveData<List<LocationDbByDays>>()
     val ld_days: LiveData<List<LocationDbByDays>>
@@ -27,24 +32,15 @@ class MapViewModel @Inject constructor(
     init {
 
         viewModelScope.launch {
-            //  runWorkerUpdateUseCase(10)
-            // Log.e("runWorker1","15")
-            //delay(3*1000)
             lld2 = getLocationsFromBdUseCase()
             _ld_days.value = getGropingDaysUseCase()
-            //  ld_days=getGropingDaysUseCase()
         }
-getDataByDate(getCurrentDate())
+        getDataByDate(getCurrentDate())
     }
 
-    /*fun getListOfDays(): List<LocationDbByDays>? {
-        viewModelScope.async { _ld_days.value = getGropingDaysUseCase() }
-        return _ld_days
-    }*/
-
     fun isInternetConnected() = checkInternetConnectionUseCase()
-	
- fun getCurrentDate(): String {
+
+    fun getCurrentDate(): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy")
         return formatter.format(Date())
     }

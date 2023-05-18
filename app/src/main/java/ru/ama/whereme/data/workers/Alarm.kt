@@ -37,14 +37,14 @@ class Alarm : BroadcastReceiver() {
             if (!b) {
                 if (!isMyServiceRunning(p0!!.applicationContext, MyForegroundService::class.java)) {
                     ContextCompat.startForegroundService(
-                        p0!!.applicationContext,
-                        MyForegroundService.newIntent(p0!!.applicationContext)
+                        p0.applicationContext,
+                        MyForegroundService.newIntent(p0.applicationContext)
                     )
                     Log.e("onStartCommand", "isMyServiceRunning")
                 } else {
                     Log.e("onStartCommand2", "isMyServiceRunning")
-                    p0!!.applicationContext.bindService(
-                        MyForegroundService.newIntent(p0!!.applicationContext),
+                    p0.applicationContext.bindService(
+                        MyForegroundService.newIntent(p0.applicationContext),
                         serviceConnection,
                         0
                     )
@@ -52,7 +52,7 @@ class Alarm : BroadcastReceiver() {
                 }
             } else {
                 if (isMyServiceRunning(p0!!.applicationContext, MyForegroundService::class.java))
-                    p0!!.applicationContext.stopService(MyForegroundService.newIntent(p0!!.applicationContext))
+                    p0.applicationContext.stopService(MyForegroundService.newIntent(p0!!.applicationContext))
             }
 
 

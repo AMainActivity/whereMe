@@ -1,6 +1,5 @@
 package ru.ama.whereme.data.workers
 
-import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -16,10 +15,10 @@ class StartServiceReceiver : BroadcastReceiver() {
 
 
     override fun onReceive(context: Context?, intent: Intent?) {
-         val component =
-             (context!!.applicationContext as MyApp).component
+        val component =
+            (context?.applicationContext as MyApp).component
         component.inject(this)
-        Log.e("StartServiceReceiver","onReceive сработал")
+        Log.e("StartServiceReceiver", "onReceive сработал")
         repo.runAlarm(15)
     }
 }

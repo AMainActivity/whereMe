@@ -8,23 +8,23 @@ import android.location.LocationManager
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
-import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.findNavController
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.navigateUp
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.ActivityMainBinding
 import javax.inject.Inject
 
 class MainActivity : AppCompatActivity() {
 
-    val REQUEST_PERMISSION_LOCATION = 10
+    private val REQUEST_PERMISSION_LOCATION = 10
     private lateinit var viewModel: MaViewModel
 
     @Inject
@@ -60,9 +60,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.page_2 -> setCurrentFragment(setFragment)
                 R.id.page_3 -> {
                     Log.e("checkIsActivate", viewModel.checkIsActivate().toString())
-                   // if (viewModel.checkIsActivate())
-                        setCurrentFragment(if (viewModel.checkIsActivate()) profileOutFragment else profileInFragment)
-
+                    setCurrentFragment(if (viewModel.checkIsActivate()) profileOutFragment else profileInFragment)
                 }
                 R.id.page_4 -> setCurrentFragment(aboutFragment)
             }
@@ -134,21 +132,21 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    fun requestAccessFineLocationPermission(activity: AppCompatActivity, requestId: Int) {
+    private fun requestAccessFineLocationPermission(activity: AppCompatActivity, requestId: Int) {
         ActivityCompat.requestPermissions(
             activity,
             arrayOf(
-                android.Manifest.permission.FOREGROUND_SERVICE,
-                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                android.Manifest.permission.ACCESS_COARSE_LOCATION,
-                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                Manifest.permission.FOREGROUND_SERVICE,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_BACKGROUND_LOCATION
             ),
             requestId
         )
     }
 
 
-    fun isAccessFineLocationGranted(context: Context): Boolean {
+    private fun isAccessFineLocationGranted(context: Context): Boolean {
         return ContextCompat
             .checkSelfPermission(
                 context,
@@ -157,7 +155,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    fun isLocationEnabled(context: Context): Boolean {
+    private fun isLocationEnabled(context: Context): Boolean {
         val locationManager: LocationManager =
             context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
@@ -165,8 +163,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
-    fun showGPSNotEnabledDialog(context: Context) {
+    private fun showGPSNotEnabledDialog(context: Context) {
         AlertDialog.Builder(context)
             .setTitle("Включи GPS")
             .setMessage("да/нет")
@@ -176,7 +173,5 @@ class MainActivity : AppCompatActivity() {
             }
             .show()
     }
-companion object{
-}
 
 }

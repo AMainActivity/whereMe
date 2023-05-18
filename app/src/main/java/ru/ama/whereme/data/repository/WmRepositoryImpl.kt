@@ -24,7 +24,6 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -42,7 +41,6 @@ import ru.ama.whereme.data.workers.AlarmClockStart
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.*
 import ru.ama.whereme.domain.repository.WmRepository
-import java.lang.reflect.Type
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -114,10 +112,6 @@ class WmRepositoryImpl @Inject constructor(
             responc.errorBody(),
             responc.code()
         )
-
-        /* nBody = sd.body()?.let { mapperJwt.mapDtoToModel(it) }
-         nError = sd.errorBody()?.let { it }
-         h: Response<JsonJwt> = sd.raw()*/
         return res
     }
 
@@ -128,25 +122,25 @@ class WmRepositoryImpl @Inject constructor(
         calendar.timeInMillis = System.currentTimeMillis()
         when (calendar[Calendar.DAY_OF_WEEK]) {
             Calendar.MONDAY -> {
-                result = wTime.days[0].equals("1")
+                result = wTime.days[0] == "1"
             }
             Calendar.TUESDAY -> {
-                result = wTime.days[1].equals("1")
+                result = wTime.days[1] == "1"
             }
             Calendar.WEDNESDAY -> {
-                result = wTime.days[2].equals("1")
+                result = wTime.days[2] == "1"
             }
             Calendar.THURSDAY -> {
-                result = wTime.days[3].equals("1")
+                result = wTime.days[3] == "1"
             }
             Calendar.FRIDAY -> {
-                result = wTime.days[4].equals("1")
+                result = wTime.days[4] == "1"
             }
             Calendar.SATURDAY -> {
-                result = wTime.days[5].equals("1")
+                result = wTime.days[5] == "1"
             }
             Calendar.SUNDAY -> {
-                result = wTime.days[6].equals("1")
+                result = wTime.days[6] == "1"
             }
         }
 
@@ -253,13 +247,11 @@ class WmRepositoryImpl @Inject constructor(
         alarmManager.cancel(sender)
     }
 
-
     override suspend fun getGropingDays(): List<LocationDbByDays> {
         return locationDao.getLocationsByDays().map {
             mapperByDays.mapDbModelToEntity(it)
         }
     }
-
 
     override fun getWorkingTime(): SettingsDomModel {
         return mapperSetTime.mapDataModelToDomain(
@@ -270,11 +262,9 @@ class WmRepositoryImpl @Inject constructor(
         )
     }
 
-
     override fun setWorkingTime(dm: SettingsDomModel) {
         worktime = Gson().toJson(mapperSetTime.mapDomainToDataModel(dm))
     }
-
 
     override suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>> {
         Log.e("getLocationById", mDate)
@@ -319,25 +309,25 @@ class WmRepositoryImpl @Inject constructor(
         }
     }
 
-fun updateIsWrite(idList: List<Long>) {
+    fun updateIsWrite(idList: List<Long>) {
         return locationDao.updateQuery(idList)
     }
 
     suspend fun getLocations4Net(): List<LocationDb> {
-        val d=getWmUserInfoSetings().posId
-        val dd=d.toString()
-        val res = (locationDao.getLocations4Net(if (dd.length<=8) d else (dd.substring(0,8).toInt()))).map { mapper.mapDbModelToEntity(it) }
-        Log.e("getLocations4Net","posid=$d")
-        Log.e("getLocations4Net","LocationDb={$res}")
+        val d = getWmUserInfoSetings().posId
+        val dd = d.toString()
+        val res = (locationDao.getLocations4Net(
+            if (dd.length <= 8) d else (dd.substring(0, 8).toInt())
+        )).map { mapper.mapDbModelToEntity(it) }
+        Log.e("getLocations4Net", "posid=$d")
+        Log.e("getLocations4Net", "LocationDb={$res}")
         return res
     }
-	
-	
-	 suspend fun writeLoc4Net(request: RequestBody): ResponseEntity {
-        val responc = apiService.writeLocDatas(request)
-         Log.e("writeLoc4Net", responc.toString())
-        val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
 
+    suspend fun writeLoc4Net(request: RequestBody): ResponseEntity {
+        val responc = apiService.writeLocDatas(request)
+        Log.e("writeLoc4Net", responc.toString())
+        val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
         val res = ResponseEntity(
             mBody,
             responc.isSuccessful,
@@ -346,14 +336,10 @@ fun updateIsWrite(idList: List<Long>) {
         )
         return res
     }
-	
 
     override suspend fun loadData(): List<Int> {
         var listOfItems: MutableList<Int> = mutableListOf<Int>()
-
         return listOfItems
-
-
     }
 
 
@@ -372,7 +358,6 @@ fun updateIsWrite(idList: List<Long>) {
             interval = 10000
             fastestInterval = 10000
         }
-
         fusedLocationProviderClient.requestLocationUpdates(
             request, callback,
             Looper.myLooper()!!
@@ -380,56 +365,49 @@ fun updateIsWrite(idList: List<Long>) {
         Log.e("getLocation00", fusedLocationProviderClient.toString())
     }
 
+    private fun updateTimeEndDb(id: Int, time: Long) = locationDao.updateTime2ById(id, time)
 
-    private fun updateTimeEndDb(id: Int, time: Long): Int {
-        return locationDao.updateTime2ById(id, time)
-    }
+    private fun updateValueDb(id: Int, newInfo: String) =
+        locationDao.updateLocationById(id, newInfo)
 
-    private fun updateValueDb(id: Int, newInfo: String): Int {
-        return locationDao.updateLocationById(id, newInfo)
-    }
-    fun getLastValue1(): List<LocationDbModel> {
-        return locationDao.getLastValu1e()
-    }
-    private fun getLastValueFromDb(): LocationDbModel {
-        return locationDao.getLastValue(getCurrentDate())
-    }
+    fun getLastValue1(): List<LocationDbModel> = locationDao.getLastValu1e()
+
+    private fun getLastValueFromDb() = locationDao.getLastValue(getCurrentDate())
 
     fun getDate(milliSeconds: Long): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
         val calendar: Calendar = Calendar.getInstance()
-        calendar.setTimeInMillis(milliSeconds)
+        calendar.timeInMillis = milliSeconds
         return formatter.format(calendar.getTime())
     }
 
-     fun df():String{
-        val curUtc=System.currentTimeMillis()
-        val formatter = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
-        val calendar = java.util.Calendar.getInstance()
-        calendar.setTimeInMillis(curUtc)
-        val curCal= formatter.format(calendar.getTime())
-        val curUtc1=formatter.format(curUtc)
+    fun df(): String {
+        val curUtc = System.currentTimeMillis()
+        val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = curUtc
+        val curCal = formatter.format(calendar.getTime())
+        val curUtc1 = formatter.format(curUtc)
         // val formatter = SimpleDateFormat("dd.MM.yyyy")
         return "curUtc:$curUtc # curUtc1:$curUtc1 \n cal:${calendar.timeInMillis} # curCal:$curCal"
     }
 
     private fun getCurrentTime(): String {
         val formatter = SimpleDateFormat("HH:mm")
-        //val calendar: Calendar = Calendar.getInstance()
-        // calendar.timeInMillis = System.currentTimeMillis()
         return formatter.format(System.currentTimeMillis())
     }
 
-     fun getCurrentDateMil(): String {
-         val formatter = SimpleDateFormat("dd.MM.yyyy")
+    fun getCurrentDateMil(): String {
+        val formatter = SimpleDateFormat("dd.MM.yyyy")
         return formatter.format(System.currentTimeMillis())
     }
-     fun getCurrentDate(): String {
+
+    fun getCurrentDate(): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy")
         return formatter.format(Date())
     }
 
-    suspend fun saveLocation(location: Location,lTime:Long) {
+    suspend fun saveLocation(location: Location, lTime: Long) {
         val res = LocationDbModel(
             lTime.toString(),
             lTime,
@@ -442,16 +420,15 @@ fun updateIsWrite(idList: List<Long>) {
             location.speed,
             0
         )
-        val itemsCount = locationDao.insertLocation(res)
+        locationDao.insertLocation(res)
         _isEnathAccuracy.postValue(true)
         onLocationChangedListener?.invoke(true)
     }
 
-
     private inner class Callback : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
-val lTime=System.currentTimeMillis()
+            val lTime = System.currentTimeMillis()
             if (mBestLoc.longitude == 0.0 || result.lastLocation.accuracy < mBestLoc.accuracy) {
                 mBestLoc.latitude = result.lastLocation.latitude
                 mBestLoc.longitude = result.lastLocation.longitude
@@ -516,11 +493,9 @@ val lTime=System.currentTimeMillis()
                             val itemsCount = locationDao.insertLocation(res)
                             _isEnathAccuracy.postValue(true)
                             onLocationChangedListener?.invoke(true)
-
                             Log.e("insertLocationNull", res.toString())
                         }
                     }
-
                 }
             }
         }
@@ -530,7 +505,6 @@ val lTime=System.currentTimeMillis()
         Log.e("getLocationStop", fusedLocationProviderClient.toString())
         fusedLocationProviderClient.removeLocationUpdates(callback)
     }
-
 
     @SuppressLint("MissingPermission")
     override suspend fun getLastLocation(): Location? {
@@ -542,12 +516,10 @@ val lTime=System.currentTimeMillis()
         return ddsf
     }
 
-
     override suspend fun stopData(): Int {
         stopLocationUpdates()
         return 1
     }
-
 
     val defaultTime = Gson().toJson(
         SettingsDataModel(
@@ -571,6 +543,7 @@ val lTime=System.currentTimeMillis()
             false
         )
     )
+
     override fun getWmUserInfoSetings(): SettingsUserInfoDomModel {
         return mapperUserInfoSettings.mapDataModelToDomain(
             Gson().fromJson(
@@ -583,17 +556,6 @@ val lTime=System.currentTimeMillis()
     override fun setWmUserInfoSetings(dm: SettingsUserInfoDomModel) {
         jwToken = Gson().toJson(mapperUserInfoSettings.mapDomainToDataModel(dm))
     }
-    /*override fun getWmJwToken() = jwToken
-
-    override fun setWmJwToken(jwt: String) {
-        jwToken = jwt
-    }
-
-    override fun getIsActivate() = isActivate
-
-    override fun setIsActivate(b: Boolean) {
-        isActivate = b
-    }*/
 
     var worktime: String?
         get() {
@@ -601,7 +563,7 @@ val lTime=System.currentTimeMillis()
             if (mSettings.contains(APP_PREFERENCES_worktime)) {
                 k = mSettings.getString(
                     APP_PREFERENCES_worktime,
-                    defaultTime/*"{\"days\":\"1;1;1;1;1;1;1\",\"start\":\"09:00\",\"end\":\"17:00\"}"*/
+                    defaultTime
                 )
             } else
                 k = defaultTime
@@ -611,12 +573,12 @@ val lTime=System.currentTimeMillis()
         set(k) {
             val editor = mSettings.edit()
             editor.putString(APP_PREFERENCES_worktime, k)
-            if (android.os.Build.VERSION.SDK_INT > 9) {
+            if (Build.VERSION.SDK_INT > 9) {
                 editor.apply()
             } else
                 editor.commit()
         }
-   var jwToken: String
+    var jwToken: String
         get() {
             val k: String
             if (mSettings.contains(APP_PREFERENCES_jwt)) {
@@ -632,37 +594,15 @@ val lTime=System.currentTimeMillis()
         set(k) {
             val editor = mSettings.edit()
             editor.putString(APP_PREFERENCES_jwt, k)
-            if (android.os.Build.VERSION.SDK_INT > 9) {
+            if (Build.VERSION.SDK_INT > 9) {
                 editor.apply()
             } else
                 editor.commit()
         }
-    /*var isActivate: Boolean
-        get() {
-            val k: Boolean
-            if (mSettings.contains(APP_PREFERENCES_IS_ACTIVATE)) {
-                k = mSettings.getBoolean(
-                    APP_PREFERENCES_IS_ACTIVATE,
-                    false
-                )
-            } else
-                k = false
-            return k
-        }
-        @SuppressLint("NewApi")
-        set(k) {
-            val editor = mSettings.edit()
-            editor.putBoolean(APP_PREFERENCES_IS_ACTIVATE, k)
-            if (android.os.Build.VERSION.SDK_INT > 9) {
-                editor.apply()
-            } else
-                editor.commit()
-        }*/
 
     private companion object {
         val APP_PREFERENCES_worktime = "worktime"
         val APP_PREFERENCES_jwt = "jwt"
-        val APP_PREFERENCES_IS_ACTIVATE = "IS_ACTIVATE"
     }
 
 }

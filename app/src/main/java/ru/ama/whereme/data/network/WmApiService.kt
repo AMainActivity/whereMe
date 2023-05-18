@@ -29,9 +29,6 @@ interface WmApiService {
     suspend fun writeLocDatas(
         @Body request: RequestBody
     ): Response<JsonDto>
-	
-	
-	
-    companion object {
-    }
+
+
 }
