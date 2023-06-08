@@ -36,13 +36,11 @@ class MapFragment : Fragment() {
         (requireActivity().application as MyApp).component
     }
     var onDataSizeListener: ((Int) -> Unit)? = null
-
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
 
     override fun onAttach(context: Context) {
         component.inject(this)
-
         super.onAttach(context)
     }
 
@@ -51,13 +49,11 @@ class MapFragment : Fragment() {
         setHasOptionsMenu(true)
     }
 
-
     override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
         menuInflater.inflate(R.menu.menu_map_fragment, menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-
         return when (item.itemId) {
             R.id.menu_day_picker -> {
                 showPopupDatePicker(requireActivity().findViewById(R.id.menu_day_picker))
@@ -66,7 +62,6 @@ class MapFragment : Fragment() {
             else -> super.onOptionsItemSelected(item)
         }
     }
-
 
     private fun showPopupDatePicker(anchor: View) {
         val popupWindow = PopupWindow(requireContext())
@@ -100,10 +95,8 @@ class MapFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
         _binding = FragmentFirstBinding.inflate(inflater, container, false)
         return binding.root
-
     }
 
     private fun setUrl(url: String) {
@@ -123,13 +116,11 @@ class MapFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Карта"
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
         viewModel.ld_days.observe(viewLifecycleOwner) {
             listDays = it
         }
-
         if (Build.VERSION.SDK_INT >= 11) {
             val settings: WebSettings = binding.frgmntLocations.settings
             settings.builtInZoomControls = false
@@ -145,18 +136,13 @@ class MapFragment : Fragment() {
                 callback.invoke(origin, true, false)
             }
         }
-
-
-        //wv.loadDataWithBaseURL(null,getString(R.string.frgmnt_instructions),"text/html","UTF-8","")
         binding.frgmntLocations.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 view?.context?.startActivity(
                     Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 )
-                //view?.loadUrl(url!!)
                 return true
             }
-
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 try {
@@ -166,14 +152,11 @@ class MapFragment : Fragment() {
             }
         }
         binding.frgmntLocations.settings.javaScriptEnabled = true
-
         val url = "https://kol.hhos.ru/map/i.php"
         binding.frgmntMapReply.setOnClickListener { setUrl(url) }
         setUrl(url)
         binding.frgmntLocations.addJavascriptInterface(WebAppInterface(requireContext()), "Android")
-
     }
-
 
     private fun observeData(abSuntitle: String) {
         viewModel.lldByDay?.observe(viewLifecycleOwner) {
@@ -184,10 +167,8 @@ class MapFragment : Fragment() {
                     "javascript:fromAndroid(${postData})",
                     null
                 )
-                // popupWindow.dismiss()
                 (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = abSuntitle
             } else
-
                 Toast.makeText(
                     requireContext(),
                     "нет данных",
@@ -203,12 +184,9 @@ class MapFragment : Fragment() {
         _binding = null
     }
 
-
     class WebAppInterface(private val mContext: Context) {
-
         @JavascriptInterface
         fun showToast(toast: String) {
-
             val ar = toast.split('#')
             if (ar.size == 4) {
                 val builder = AlertDialog.Builder(mContext)
@@ -233,14 +211,11 @@ class MapFragment : Fragment() {
                         intent = Intent(Intent.ACTION_VIEW)
                         intent.data = Uri.parse("market://details?id=ru.dublgis.dgismobile")
                         mContext.startActivity(intent)
-
                     }
-
                 }
                 val dialoga = builder.create()
                 dialoga.show()
             } else Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show()
         }
     }
-
 }

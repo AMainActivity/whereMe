@@ -1,4 +1,4 @@
-package ru.ama.whereme.data.workers
+package ru.ama.whereme.data.alarms
 
 import android.app.ActivityManager
 import android.content.*
@@ -9,7 +9,7 @@ import ru.ama.whereme.presentation.MyForegroundService
 import java.text.SimpleDateFormat
 
 
-class Alarm : BroadcastReceiver() {
+class PeriodicAlarm : BroadcastReceiver() {
 
     fun isTime1BolseTime2(time1: String, time2: String): Boolean {
         val sdf = SimpleDateFormat("HH:mm")
@@ -18,7 +18,7 @@ class Alarm : BroadcastReceiver() {
         return tim1.compareTo(tim2) > 0
     }
 
-    fun isMyServiceRunning(ctx: Context, serviceClass: Class<*>): Boolean {
+    private fun isMyServiceRunning(ctx: Context, serviceClass: Class<*>): Boolean {
         val manager =
             ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -54,7 +54,6 @@ class Alarm : BroadcastReceiver() {
                 if (isMyServiceRunning(p0!!.applicationContext, MyForegroundService::class.java))
                     p0.applicationContext.stopService(MyForegroundService.newIntent(p0!!.applicationContext))
             }
-
 
         } catch (e: Exception) {
             Log.d("doAlarm", "Exception getting location -->  ${e.message}")

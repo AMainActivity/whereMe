@@ -6,6 +6,5 @@ import javax.inject.Inject
 class CheckServiceUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
-
     operator fun invoke(serviceClass: Class<*>) = repository.isMyServiceRunning(serviceClass)
 }

@@ -2,7 +2,6 @@ package ru.ama.whereme.data.network.model
 
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
-import okhttp3.ResponseBody
 
 data class JsonJwtDto(
     @Expose
@@ -21,11 +20,4 @@ data class JsonJwtDto(
     @SerializedName("url") val url: String? = null,
     @Expose
     @SerializedName("isactivate") val isActivate: Int
-)
-
-data class ResponseJwtDto(
-    val mBody: JsonJwtDto? = null,
-    val respIsSuccess: Boolean,
-    val respError: ResponseBody? = null,
-    val respCode: Int
 )

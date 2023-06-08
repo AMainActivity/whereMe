@@ -25,10 +25,8 @@ class ProfileInViewModel @Inject constructor(
     private val checkKodUseCase: CheckKodUseCase,
     private val setWmJwTokenUseCase: SetJwTokenUseCase,
     private val getJwTokenUseCase: GetJwTokenUseCase,
-    //private val setIsActivateUseCase: SetIsActivateUseCase,
     private val application: Application
 ) : ViewModel() {
-
     private val _isSuccess = MutableLiveData<JsonJwt>()
     val isSuccess: LiveData<JsonJwt>
         get() = _isSuccess
@@ -38,7 +36,6 @@ class ProfileInViewModel @Inject constructor(
     init {
         Log.e("getJwTokenUseCase", getJwTokenUseCase().toString())
     }
-
 
     fun saveUserInfo(res:JsonJwt)
     {
@@ -52,12 +49,10 @@ class ProfileInViewModel @Inject constructor(
         ))
     }
     fun checkKod(kod: String) {
-       // var resultString:JsonJwt?=null
         val json = JSONObject()
         json.put("kod", kod)
         val requestBody: RequestBody =
             RequestBody.create(MediaType.parse("application/json"), json.toString())
-
         Log.e("response1", json.toString())
         viewModelScope.launch {
             val response = checkKodUseCase(requestBody)
@@ -65,58 +60,23 @@ class ProfileInViewModel @Inject constructor(
             Log.e("response", response.toString())
             if (response.respIsSuccess) {
                 response.mBody?.let {
-                    if (it.error == false && it.message.equals("1")) {
-                        /*setWmJwTokenUseCase(SettingsUserInfoDomModel(
-                            it.tokenJwt,
-                            it.posId,
-                            it.famId,
-                            it.name,
-                            it.url,
-                            true
-                        ))*/
-                      //  setIsActivateUseCase(it.isActivate == 1)
+                    if (!it.error && it.message == "1") {
                         _isSuccess.value = it
                     } else
                         _isError.value=Unit
-                        /*Toast.makeText(
-                            application,
-                            "неверный код, повторите попытку",
-                            Toast.LENGTH_SHORT
-                        ).show()*/
                 }
             } else {
                 _isError.value=Unit
-               /* Toast.makeText(application, "неверный код, повторите попытку", Toast.LENGTH_SHORT)
-                    .show()*/
-
                 try {
-                    val jObjError = JSONObject(response.respError?.string())
-
+                    val jObjError = response.respError?.string()?.let { JSONObject(it) }
                     Log.e(
                         "responseError",
-                        jObjError.toString()/*.getJSONObject("error").getString("message")*/
+                        jObjError.toString()
                     )
                 } catch (e: Exception) {
                     Log.e("responseError", e.message.toString())
                 }
             }
-
-
-            /* try {.
-                 if (response.isSuccessful()) {
-                    Log.e("response",response.toString())
-
-
-                 } else {
-                     Toast.makeText(
-                         this@MainActivity,
-                         response.errorBody().toString(),
-                         Toast.LENGTH_LONG
-                     ).show()
-                 }
-             }catch (Ex:Exception){
-                 Log.e("Error",Ex.localizedMessage)
-             }*/
         }
     }
 }

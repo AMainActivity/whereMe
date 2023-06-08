@@ -8,6 +8,5 @@ import javax.inject.Inject
 class SetJwTokenUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
-
     operator fun invoke(set: SettingsUserInfoDomModel) = repository.setWmUserInfoSetings(set)
 }

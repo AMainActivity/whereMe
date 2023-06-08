@@ -28,13 +28,11 @@ class ProfileOutFragment : Fragment() {
         (requireActivity().application as MyApp).component
     }
 
-
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
 
     override fun onAttach(context: Context) {
         component.inject(this)
-
         super.onAttach(context)
     }
 
@@ -48,7 +46,6 @@ class ProfileOutFragment : Fragment() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-
         return when (item.itemId) {
             R.id.menu_p_out_share -> {
                 shereUrlAlertDialog()
@@ -65,14 +62,15 @@ class ProfileOutFragment : Fragment() {
     private fun shereUrlAlertDialog() {
         AlertDialog.Builder(requireContext())
             .setTitle("Важная информация")
-            .setMessage("Вы можете поделиться ссылкой для просмотра своих данных." +
-                    "  \nДелитесь с сылкой с теми лицами, которым Вы доверяете просмотр своих данных. " +
-                    "Перейдя по ссылке, эти лица могут контролировать как и текущие Ваши местоположения," +
-                    "так и видеть Ваши местоположения за определенный день.\n" +
-                    "Для запрета использования ссылки перейдите в telegram-bot и сформируйте новый код.")
+            .setMessage(
+                "Вы можете поделиться ссылкой для просмотра своих данных." +
+                        "  \nДелитесь с сылкой с теми лицами, которым Вы доверяете просмотр своих данных. " +
+                        "Перейдя по ссылке, эти лица могут контролировать как и текущие Ваши местоположения," +
+                        "так и видеть Ваши местоположения за определенный день.\n" +
+                        "Для запрета использования ссылки перейдите в telegram-bot и сформируйте новый код."
+            )
             .setCancelable(true)
             .setPositiveButton("поделиться") { _, _ ->
-
                 val res = viewModel.getSetUserInfo()
                 if (res.name != null && res.url != null) sharetext(
                     res.name,
@@ -99,33 +97,20 @@ class ProfileOutFragment : Fragment() {
             .show()
     }
 
-    private fun setActionBarSubTitle(txt: String) {
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = txt
-    }
-
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-
+    ): View {
         _binding = FragmentOutProfileBinding.inflate(inflater, container, false)
-
         return binding.root
-
     }
-
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Профиль"
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileOutViewModel::class.java]
-
-
         val res = viewModel.getSetUserInfo()
-
         binding.frgmntProOutTv.linksClickable = true
         binding.frgmntProOutTv.movementMethod = LinkMovementMethod.getInstance()
         binding.frgmntProOutTv.text =
@@ -134,13 +119,9 @@ class ProfileOutFragment : Fragment() {
                 HtmlCompat.FROM_HTML_MODE_LEGACY
             )
         viewModel.isSuccess.observe(viewLifecycleOwner) {
-
             (requireActivity() as MainActivity).setCurrentFragment(ProfileInFragment())
-
-            // Log.e("getLocationlldByDay", postData)
         }
     }
-
 
     private fun sharetext(
         textZagol: String,
@@ -148,7 +129,6 @@ class ProfileOutFragment : Fragment() {
         isEmail: Boolean
     ) {
         val sharingIntent = Intent(Intent.ACTION_SEND)
-
         if (isEmail) {
             sharingIntent.putExtra(
                 Intent.EXTRA_EMAIL,
@@ -172,20 +152,13 @@ class ProfileOutFragment : Fragment() {
         requireActivity().startActivity(d)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
 
     companion object {
-
         private const val SHARE_MAIL_TYPE = "message/rfc822"
         private const val SHARE_TEXT_TYPE = "text/plain"
     }
-
 }

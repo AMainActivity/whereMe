@@ -92,7 +92,6 @@ class MyForegroundService : LifecycleService() {
     }
 
     private fun getFormattedLeftTime(millisUntilFinished: Long): String {
-
         val seconds = (millisUntilFinished / MILLIS_IN_SECONDS % SECONDS_IN_MINUTE).toInt()
         val minutes = millisUntilFinished / MILLIS_IN_SECONDS / SECONDS_IN_MINUTE
         return String.format(FORMATTED_STRING_MINUTE_SECOND, minutes, seconds)
@@ -227,7 +226,6 @@ class MyForegroundService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         log("onStartCommand")
-
         isServiseAlive?.invoke(true)
         repo.onLocationChangedListener = {
             Log.e("onLocationListener", "$it / $isEnath")
@@ -272,14 +270,12 @@ class MyForegroundService : LifecycleService() {
     }
 
     companion object {
-
         private const val CHANNEL_ID = "channel_id"
         private const val CHANNEL_NAME = "channel_name"
         private const val NOTIFICATION_ID = 1
         private const val MILLIS_IN_SECONDS = 1000L
         private const val SECONDS_IN_MINUTE = 60
         private const val FORMATTED_STRING_MINUTE_SECOND = "%02d:%02d"
-
         fun newIntent(context: Context): Intent {
             return Intent(context, MyForegroundService::class.java)
         }

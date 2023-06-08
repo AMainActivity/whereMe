@@ -21,63 +21,60 @@ import javax.inject.Inject
 class ViewModelSplash @Inject constructor(
     private val checkJwtTokenUseCase: CheckJwtTokenUseCase,
     private val getJwtFromSetingsUseCase: GetJwtFromSetingsUseCase,
-    private val getWorkingTimeUseCase: GetWorkingTimeUseCase,
     private val setWmJwTokenUseCase: SetJwTokenUseCase,
     private val getJwTokenUseCase: GetJwTokenUseCase,
     private val repositoryImpl: WmRepositoryImpl
-   // private val setIsActivateUseCase: SetIsActivateUseCase
 ) : ViewModel() {
     private lateinit var wmTokenInfoModel: SettingsUserInfoDomModel
 
     init {
         checkJwt()
-		wmTokenInfoModel=getJwTokenUseCase()
-        Log.e("datetime",repositoryImpl.df())
-        viewModelScope.launch(Dispatchers.IO) {  Log.e("getLastValue1",repositoryImpl.getLastValue1().toString())}
+        wmTokenInfoModel = getJwTokenUseCase()
+        Log.e("datetime", repositoryImpl.df())
+        viewModelScope.launch(Dispatchers.IO) {
+            Log.e(
+                "getLastValue1",
+                repositoryImpl.getLastValue1().toString()
+            )
+        }
     }
 
     private val _canStart = MutableLiveData<Unit>()
     val canStart: LiveData<Unit>
         get() = _canStart
 
-
-
-    fun checkJwt()
-    {val json = JSONObject()
+    fun checkJwt() {
+        val json = JSONObject()
         json.put("kod", getJwtFromSetingsUseCase().tokenJwt)
-        val requestBody: RequestBody = RequestBody.create(MediaType.parse("application/json"), json.toString())
+        val requestBody: RequestBody =
+            RequestBody.create(MediaType.parse("application/json"), json.toString())
 
-        Log.e("checkJwt1",json.toString())
+        Log.e("checkJwt1", json.toString())
         viewModelScope.launch {
             val response = checkJwtTokenUseCase(requestBody)
-            Log.e("checkJwtCode",response.respCode.toString())
-            Log.e("checkJwt",response.toString())
-            Log.e("mBody",response.mBody.toString())
+            Log.e("checkJwtCode", response.respCode.toString())
+            Log.e("checkJwt", response.toString())
+            Log.e("mBody", response.mBody.toString())
             if (response.respIsSuccess) {
-                response.mBody?.let {					
-		setWmJwTokenUseCase(
-		wmTokenInfoModel.copy(
-                               isActivate =   (it.message).equals("1")
-                            )
-						)
-		// setIsActivateUseCase(it.message.equals("1"))
+                response.mBody?.let {
+                    setWmJwTokenUseCase(
+                        wmTokenInfoModel.copy(
+                            isActivate = (it.message).equals("1")
+                        )
+                    )
                 }
-                _canStart.value=Unit
-            }
-            /*
-checkJwt: ResponseEntity(mBody=JsonEntity(error=false, message=0), respIsSuccess=true, respError=null, respCode=200)
-mBody: JsonEntity(error=false, message=0)
-            * */
-            else
-            {
+                _canStart.value = Unit
+            } else {
                 try {
-                    val jObjError = JSONObject(response.respError?.string())
-
-                    Log.e("checkJwtError",jObjError.toString()/*.getJSONObject("error").getString("message")*/)
+                    val jObjError = response.respError?.string()?.let { JSONObject(it) }
+                    Log.e(
+                        "checkJwtError",
+                        jObjError.toString()/*.getJSONObject("error").getString("message")*/
+                    )
                 } catch (e: Exception) {
-                    Log.e("checkJwtError",e.message.toString())
+                    Log.e("checkJwtError", e.message.toString())
                 }
-                _canStart.value=Unit
+                _canStart.value = Unit
                 setWmJwTokenUseCase(
                     SettingsUserInfoDomModel(
                         "",
@@ -87,11 +84,8 @@ mBody: JsonEntity(error=false, message=0)
                         "",
                         false
                     )
-                )}
-
-
+                )
+            }
         }
     }
-
-    companion object {}
 }

@@ -1,8 +1,5 @@
 package ru.ama.whereme.presentation
 
-import android.content.ComponentName
-import android.content.ServiceConnection
-import android.os.IBinder
 import android.util.Log
 import androidx.lifecycle.*
 import ru.ama.whereme.domain.entity.SettingsDomModel
@@ -11,12 +8,11 @@ import javax.inject.Inject
 
 class SettingsViewModel @Inject constructor(
     private val getWorkingTimeUseCase: GetWorkingTimeUseCase,
-    private val сheckServiceUseCase: CheckServiceUseCase,
+    private val checkServiceUseCase: CheckServiceUseCase,
     private val setWorkingTimeUseCase: SetWorkingTimeUseCase,
     private val runAlarmClockUseCase: RunAlarmClockUseCase,
     private val cancalAlarmClockUseCase: CancalAlarmClockUseCase,
-    private val cancalAlarmServiceUseCase: CancalAlarmServiceUseCase,
-    private val isTimeToGetLocatonUseCase: IsTimeToGetLocatonUseCase
+    private val cancalAlarmServiceUseCase: CancalAlarmServiceUseCase
 
 ) : ViewModel() {
 
@@ -28,35 +24,24 @@ class SettingsViewModel @Inject constructor(
         return getWorkingTimeUseCase()
     }
 
-
-fun runAlarmClock()
-{
-	runAlarmClockUseCase()
-}
-fun cancelAlarmClock()
-{
-    cancalAlarmClockUseCase()
-}
-fun cancelAlarmService()
-{
-    cancalAlarmServiceUseCase()
-}
-
-    fun сheckService(): Boolean {
-        Log.e("fromSet", сheckServiceUseCase(MyForegroundService::class.java).toString())
-        return сheckServiceUseCase(MyForegroundService::class.java)
+    fun runAlarmClock() {
+        runAlarmClockUseCase()
     }
 
-    fun isTimeToGetLocaton():Boolean{
-        return isTimeToGetLocatonUseCase()
+    fun cancelAlarmClock() {
+        cancalAlarmClockUseCase()
+    }
+
+    fun cancelAlarmService() {
+        cancalAlarmServiceUseCase()
+    }
+
+    fun checkService(): Boolean {
+        Log.e("fromSet", checkServiceUseCase(MyForegroundService::class.java).toString())
+        return checkServiceUseCase(MyForegroundService::class.java)
     }
 
     fun setWorkingTime(dm: SettingsDomModel) {
         setWorkingTimeUseCase(dm)
     }
-
-
-
-
-
 }

@@ -6,6 +6,5 @@ import javax.inject.Inject
 class GetLastLocationUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
-
-    operator  suspend fun invoke() = repository.getLastLocation()
+    suspend operator fun invoke() = repository.getLastLocation()
 }

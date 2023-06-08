@@ -6,6 +6,5 @@ import javax.inject.Inject
 class StopLocationsUpdateUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
-
-    operator suspend fun invoke() = repository.stopData()
+    suspend operator fun invoke() = repository.stopData()
 }

@@ -6,6 +6,5 @@ import javax.inject.Inject
 class GetWorkingTimeUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
-
     operator fun invoke() = repository.getWorkingTime()
 }

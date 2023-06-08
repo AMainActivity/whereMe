@@ -36,8 +36,8 @@ import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
 import ru.ama.whereme.data.mapper.WmMapperSettings
 import ru.ama.whereme.data.mapper.WmMapperUserInfoSettings
-import ru.ama.whereme.data.workers.Alarm
-import ru.ama.whereme.data.workers.AlarmClockStart
+import ru.ama.whereme.data.alarms.PeriodicAlarm
+import ru.ama.whereme.data.alarms.AlarmClockStart
 import ru.ama.whereme.di.ApplicationScope
 import ru.ama.whereme.domain.entity.*
 import ru.ama.whereme.domain.repository.WmRepository
@@ -174,7 +174,6 @@ class WmRepositoryImpl @Inject constructor(
         }
     }
 
-
     override fun runAlarmClock() {
         Log.e("runAlarmClock", "AlarmClock")
         val wTime = getWorkingTime()
@@ -213,7 +212,7 @@ class WmRepositoryImpl @Inject constructor(
 
         Log.e("runAlarm", "" + timeInterval)
         val am = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val i = Intent(application, Alarm::class.java)
+        val i = Intent(application, PeriodicAlarm::class.java)
         val pi = PendingIntent.getBroadcast(application, 0, i, 0)
         val alarmTimeAtUTC = System.currentTimeMillis() + timeInterval * 1_000L
         am.cancel(pi)
@@ -223,14 +222,13 @@ class WmRepositoryImpl @Inject constructor(
             val alarmClockInfo: AlarmManager.AlarmClockInfo =
                 AlarmManager.AlarmClockInfo(alarmTimeAtUTC, pi)
             am.setAlarmClock(alarmClockInfo, pi)
-        }//KITKAT 19 OR ABOVE
+        }
         else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             am.setExact(
                 AlarmManager.RTC_WAKEUP,
                 alarmTimeAtUTC, pi
             )
         }
-        //FOR BELOW KITKAT ALL DEVICES
         else {
             am.set(
                 AlarmManager.RTC_WAKEUP,
@@ -241,7 +239,7 @@ class WmRepositoryImpl @Inject constructor(
 
     override fun cancelAlarm() {
         Log.e("runAlarm", "cancelAlarm")
-        val intent = Intent(application, Alarm::class.java)
+        val intent = Intent(application, PeriodicAlarm::class.java)
         val sender = PendingIntent.getBroadcast(application, 0, intent, 0)
         val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(sender)
@@ -301,7 +299,7 @@ class WmRepositoryImpl @Inject constructor(
         return res
     }
 
-    override suspend fun GetLocationsFromBd(): LiveData<List<LocationDb>> {
+    override suspend fun getLocationsFromBd(): LiveData<List<LocationDb>> {
         return Transformations.map(locationDao.getLocations()) {
             it.map {
                 mapper.mapDbModelToEntity(it)
@@ -338,7 +336,7 @@ class WmRepositoryImpl @Inject constructor(
     }
 
     override suspend fun loadData(): List<Int> {
-        var listOfItems: MutableList<Int> = mutableListOf<Int>()
+        val listOfItems: MutableList<Int> = mutableListOf<Int>()
         return listOfItems
     }
 

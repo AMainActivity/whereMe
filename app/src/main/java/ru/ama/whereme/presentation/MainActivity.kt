@@ -26,7 +26,6 @@ class MainActivity : AppCompatActivity() {
 
     private val REQUEST_PERMISSION_LOCATION = 10
     private lateinit var viewModel: MaViewModel
-
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
     private lateinit var appBarConfiguration: AppBarConfiguration
@@ -37,19 +36,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         component.inject(this)
-
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this, viewModelFactory)[MaViewModel::class.java]
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         setSupportActionBar(binding.toolbar)
-
         startService()
         val profileInFragment = ProfileInFragment()
         val profileOutFragment = ProfileOutFragment()
-
         val mapFragment = MapFragment()
         val setFragment = SettingsFragment()
         val aboutFragment = AboutFragment()
@@ -79,7 +73,6 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
     }
-
 
     private fun startService() {
         when {
@@ -145,7 +138,6 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-
     private fun isAccessFineLocationGranted(context: Context): Boolean {
         return ContextCompat
             .checkSelfPermission(
@@ -154,14 +146,12 @@ class MainActivity : AppCompatActivity() {
             ) == PackageManager.PERMISSION_GRANTED
     }
 
-
     private fun isLocationEnabled(context: Context): Boolean {
         val locationManager: LocationManager =
             context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
                 || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
-
 
     private fun showGPSNotEnabledDialog(context: Context) {
         AlertDialog.Builder(context)

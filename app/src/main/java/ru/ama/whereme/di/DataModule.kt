@@ -57,12 +57,13 @@ interface DataModule {
         @Provides
         @ApplicationScope
         fun provideSharedPreferences(application: Application): SharedPreferences {
-            return application.getSharedPreferences("mysettings", Context.MODE_PRIVATE)
+            return application.getSharedPreferences(sharedPrefName, Context.MODE_PRIVATE)
         }
 
         @ApplicationScope
         @Provides
         fun providesCoroutineScope() = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+        const val sharedPrefName = "mysettings"
     }
 }

@@ -7,8 +7,5 @@ import javax.inject.Inject
 class MaViewModel @Inject constructor(
     private val getJwTokenUseCase: GetJwTokenUseCase
 ) : ViewModel() {
-
     fun checkIsActivate() = getJwTokenUseCase().isActivate
-
-
 }

@@ -6,6 +6,5 @@ import javax.inject.Inject
 class RunAlarmClockUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
-
     operator fun invoke() = repository.runAlarmClock()
 }

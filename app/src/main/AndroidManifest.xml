@@ -41,9 +41,9 @@
         <service android:name=".presentation.MyForegroundService"
             android:exported="false"/>
 
-        <receiver android:name=".data.workers.AlarmClockStart" />
-        <receiver android:name=".data.workers.Alarm" />
-        <receiver android:name=".data.workers.StartServiceReceiver"
+        <receiver android:name=".data.alarms.AlarmClockStart" />
+        <receiver android:name=".data.alarms.PeriodicAlarm" />
+        <receiver android:name=".data.alarms.AfterBootReceiver"
             android:exported="true"
             android:enabled="true">
             <intent-filter>

@@ -7,6 +7,5 @@ import javax.inject.Inject
 class LogOutUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
-
-    operator suspend fun invoke(request : RequestBody) = repository.logOut(request)
+    suspend operator fun invoke(request : RequestBody) = repository.logOut(request)
 }

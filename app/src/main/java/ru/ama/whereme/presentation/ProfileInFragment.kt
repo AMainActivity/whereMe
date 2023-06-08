@@ -29,16 +29,13 @@ class ProfileInFragment : Fragment() {
         (requireActivity().application as MyApp).component
     }
 
-
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
-
     override fun onAttach(context: Context) {
         component.inject(this)
 
         super.onAttach(context)
     }
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -91,6 +88,4 @@ class ProfileInFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
-
-
 }

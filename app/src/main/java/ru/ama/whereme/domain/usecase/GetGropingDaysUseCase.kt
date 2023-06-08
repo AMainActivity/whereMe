@@ -6,6 +6,5 @@ import javax.inject.Inject
 class GetGropingDaysUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
-
     suspend operator fun invoke() = repository.getGropingDays()
 }

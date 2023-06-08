@@ -1,4 +1,4 @@
-package ru.ama.whereme.data.workers
+package ru.ama.whereme.data.alarms
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -13,10 +13,8 @@ import javax.inject.Inject
 
 
 class AlarmClockStart : BroadcastReceiver() {
-
     @Inject
     lateinit var repo: WmRepositoryImpl
-
     override fun onReceive(ctx: Context?, intent: Intent?) {
         Log.e("onReceiveAlarmClock", "doAlarm")
         val component =
@@ -34,6 +32,4 @@ class AlarmClockStart : BroadcastReceiver() {
             Log.e("onStartFromSet", "isMyServiceRunning")
         }
     }
-
-
 }

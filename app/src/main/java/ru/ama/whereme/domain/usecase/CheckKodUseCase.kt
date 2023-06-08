@@ -7,6 +7,5 @@ import javax.inject.Inject
 class CheckKodUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
-
     suspend operator fun invoke(request: RequestBody) = repository.checkKod(request)
 }

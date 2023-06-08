@@ -6,6 +6,5 @@ import javax.inject.Inject
 class GetLocationsFromBdUseCase @Inject constructor(
     private val repository: WmRepository
 ) {
-
-    operator  suspend fun invoke() = repository.GetLocationsFromBd()
+    suspend operator fun invoke() = repository.getLocationsFromBd()
 }
