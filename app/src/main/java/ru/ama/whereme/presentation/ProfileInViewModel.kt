@@ -3,7 +3,6 @@ package ru.ama.whereme.presentation
 
 import android.app.Application
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -16,7 +15,6 @@ import ru.ama.whereme.domain.entity.JsonJwt
 import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
 import ru.ama.whereme.domain.usecase.CheckKodUseCase
 import ru.ama.whereme.domain.usecase.GetJwTokenUseCase
-import ru.ama.whereme.domain.usecase.SetIsActivateUseCase
 import ru.ama.whereme.domain.usecase.SetJwTokenUseCase
 import javax.inject.Inject
 

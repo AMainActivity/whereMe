@@ -524,10 +524,10 @@ class WmRepositoryImpl @Inject constructor(
             listOf("1", "1", "1", "1", "1", "1", "1"),
             "09:00",
             "17:00",
+            20,
             50,
-            50,
-            60,
-            120,
+            55,
+            100,
             false
         )
     )
