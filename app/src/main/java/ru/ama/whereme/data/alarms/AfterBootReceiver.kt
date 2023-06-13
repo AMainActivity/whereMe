@@ -18,6 +18,9 @@ class AfterBootReceiver : BroadcastReceiver() {
             (context?.applicationContext as MyApp).component
         component.inject(this)
         Log.e("StartServiceReceiver", "onReceive сработал")
-        repo.runAlarm(15)
+        repo.runAlarm(TIME_INTERVAL)
+    }
+    companion object {
+        const val TIME_INTERVAL = 15L
     }
 }

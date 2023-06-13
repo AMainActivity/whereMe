@@ -29,30 +29,30 @@ class PeriodicAlarm : BroadcastReceiver() {
         return false
     }
 
-    override fun onReceive(p0: Context?, p1: Intent?) {
+    override fun onReceive(context: Context, p1: Intent?) {
         Log.e("onReceiveAlarm", "doAlarm")
         try {
             val b = false//isTime1BolseTime2(SimpleDateFormat("HH:mm").format(Date()), "18:00")
             Log.e("isTime1BolseTime3", b.toString())
             if (!b) {
-                if (!isMyServiceRunning(p0!!.applicationContext, MyForegroundService::class.java)) {
+                if (!isMyServiceRunning(context.applicationContext, MyForegroundService::class.java)) {
                     ContextCompat.startForegroundService(
-                        p0.applicationContext,
-                        MyForegroundService.newIntent(p0.applicationContext)
+                        context.applicationContext,
+                        MyForegroundService.newIntent(context.applicationContext)
                     )
                     Log.e("onStartCommand", "isMyServiceRunning")
                 } else {
                     Log.e("onStartCommand2", "isMyServiceRunning")
-                    p0.applicationContext.bindService(
-                        MyForegroundService.newIntent(p0.applicationContext),
+                    context.applicationContext.bindService(
+                        MyForegroundService.newIntent(context.applicationContext),
                         serviceConnection,
                         0
                     )
 
                 }
             } else {
-                if (isMyServiceRunning(p0!!.applicationContext, MyForegroundService::class.java))
-                    p0.applicationContext.stopService(MyForegroundService.newIntent(p0!!.applicationContext))
+                if (isMyServiceRunning(context.applicationContext, MyForegroundService::class.java))
+                    context.applicationContext.stopService(MyForegroundService.newIntent(context.applicationContext))
             }
 
         } catch (e: Exception) {

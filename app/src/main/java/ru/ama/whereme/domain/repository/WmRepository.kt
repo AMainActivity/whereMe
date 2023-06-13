@@ -8,7 +8,7 @@ import ru.ama.whereme.domain.entity.*
 interface WmRepository {
 
 
-    suspend fun loadData(): List<Int>
+    //suspend fun loadData(): List<Int>
     suspend fun getLocationsFromBd(): LiveData<List<LocationDb>>
     suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>>
     suspend fun getGropingDays(): List<LocationDbByDays>
@@ -16,7 +16,7 @@ interface WmRepository {
 
     suspend fun stopData(): Int
     fun isMyServiceRunning(serviceClass: Class<*>): Boolean
-    fun IsTimeToGetLocaton(): Boolean
+    fun isTimeToGetLocaton(): Boolean
     fun runAlarm(timeInterval: Long)
     fun runAlarmClock()
     fun cancelAlarm()

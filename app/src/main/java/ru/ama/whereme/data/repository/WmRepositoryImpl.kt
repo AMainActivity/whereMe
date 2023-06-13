@@ -7,7 +7,6 @@ import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.location.Location
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -58,12 +57,12 @@ class WmRepositoryImpl @Inject constructor(
     @ApplicationScope private val externalScope: CoroutineScope,
     private val googleApiAvailability: GoogleApiAvailability,
     private val apiService: WmApiService,
-    private val mSettings: SharedPreferences
+    private val wmSettings: WmSettings
 ) : WmRepository {
 
 
     private lateinit var workingTimeModel: SettingsDomModel
-    var mBestLoc = Location("bestLocationOfBadAccuracy")
+    var mBestLoc = Location(BEST_LOCATION_PROVIDER)
     var onLocationChangedListener: ((Boolean) -> Unit)? = null
 
     private val callback = Callback()
@@ -83,15 +82,14 @@ class WmRepositoryImpl @Inject constructor(
     private fun compare2Times(start: String, end: String): Boolean {
         var res = false
         val sdf = SimpleDateFormat("HH:mm")
-        val strDate = sdf.parse(start)
-        val endDate = sdf.parse(end)
+        val strDate = sdf.parse(start) as Date
+        val endDate = sdf.parse(end) as Date
         if (endDate.time >= strDate.time) {
             res = true
         }
         Log.e("compare2Times", "$strDate ### $endDate %%% $res")
         return res
     }
-
 
     fun isCurTimeBetweenSettings(): Boolean {
         val wTime = getWorkingTime()
@@ -101,49 +99,45 @@ class WmRepositoryImpl @Inject constructor(
         ))
     }
 
-
     override suspend fun checkKod(request: RequestBody): ResponseJwtEntity {
         val responc = apiService.chekcKod(request)
         val mBody = responc.body()?.let { mapperJwt.mapDtoToModel(it) }
-
-        val res = ResponseJwtEntity(
+        return ResponseJwtEntity(
             mBody,
             responc.isSuccessful,
             responc.errorBody(),
             responc.code()
         )
-        return res
     }
 
-    override fun IsTimeToGetLocaton(): Boolean {
+    override fun isTimeToGetLocaton(): Boolean {
         var result = false
         val wTime = getWorkingTime()
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = System.currentTimeMillis()
         when (calendar[Calendar.DAY_OF_WEEK]) {
             Calendar.MONDAY -> {
-                result = wTime.days[0] == "1"
+                result = wTime.days[0] == DEFAULT_SETTINGS_DAY
             }
             Calendar.TUESDAY -> {
-                result = wTime.days[1] == "1"
+                result = wTime.days[1] == DEFAULT_SETTINGS_DAY
             }
             Calendar.WEDNESDAY -> {
-                result = wTime.days[2] == "1"
+                result = wTime.days[2] == DEFAULT_SETTINGS_DAY
             }
             Calendar.THURSDAY -> {
-                result = wTime.days[3] == "1"
+                result = wTime.days[3] == DEFAULT_SETTINGS_DAY
             }
             Calendar.FRIDAY -> {
-                result = wTime.days[4] == "1"
+                result = wTime.days[4] == DEFAULT_SETTINGS_DAY
             }
             Calendar.SATURDAY -> {
-                result = wTime.days[5] == "1"
+                result = wTime.days[5] == DEFAULT_SETTINGS_DAY
             }
             Calendar.SUNDAY -> {
-                result = wTime.days[6] == "1"
+                result = wTime.days[6] == DEFAULT_SETTINGS_DAY
             }
         }
-
         result = result && isCurTimeBetweenSettings()
         Log.e("IsTimeToGetLocaton", result.toString())
         return result
@@ -155,10 +149,8 @@ class WmRepositoryImpl @Inject constructor(
             .any { it.service.className == serviceClass.name }
     }
 
-
     override fun isInternetConnected(): Boolean {
         val cm = application.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val n = cm.activeNetwork
             if (n != null) {
@@ -179,11 +171,11 @@ class WmRepositoryImpl @Inject constructor(
         val wTime = getWorkingTime()
         val am = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val i = Intent(application, AlarmClockStart::class.java)
-        val pi = PendingIntent.getBroadcast(application, 0, i, 0)
+        val pi = PendingIntent.getBroadcast(application, EMPTY_INT, i, EMPTY_INT)
         val calendar: Calendar = Calendar.getInstance().apply {
             timeInMillis = System.currentTimeMillis()
-            set(Calendar.HOUR_OF_DAY, wTime.start.split(":")[0].toInt())
-            set(Calendar.MINUTE, wTime.start.split(":")[1].toInt())
+            set(Calendar.HOUR_OF_DAY, wTime.start.split(SPLIT_DELIMITER)[0].toInt())
+            set(Calendar.MINUTE, wTime.start.split(SPLIT_DELIMITER)[1].toInt())
         }
         if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
             calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1)
@@ -192,7 +184,7 @@ class WmRepositoryImpl @Inject constructor(
         am.setRepeating(
             AlarmManager.RTC_WAKEUP,
             calendar.timeInMillis,
-            24 * 60 * 60 * 1000,
+            DEFAULT_INTERVAL_ALARM,
             pi
         )
         setWorkingTime(wTime.copy(isEnable = true))
@@ -201,7 +193,7 @@ class WmRepositoryImpl @Inject constructor(
     override fun cancelAlarmClock() {
         Log.e("runAlarmClock", "cancelAlarmClock")
         val intent = Intent(application, AlarmClockStart::class.java)
-        val sender = PendingIntent.getBroadcast(application, 0, intent, 0)
+        val sender = PendingIntent.getBroadcast(application, EMPTY_INT, intent, EMPTY_INT)
         val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(sender)
         setWorkingTime(getWorkingTime().copy(isEnable = false))
@@ -209,12 +201,11 @@ class WmRepositoryImpl @Inject constructor(
     }
 
     override fun runAlarm(timeInterval: Long) {
-
         Log.e("runAlarm", "" + timeInterval)
         val am = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val i = Intent(application, PeriodicAlarm::class.java)
-        val pi = PendingIntent.getBroadcast(application, 0, i, 0)
-        val alarmTimeAtUTC = System.currentTimeMillis() + timeInterval * 1_000L
+        val pi = PendingIntent.getBroadcast(application, EMPTY_INT, i, EMPTY_INT)
+        val alarmTimeAtUTC = System.currentTimeMillis() + timeInterval * ONE_SECOND
         am.cancel(pi)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, alarmTimeAtUTC, pi)
@@ -222,14 +213,12 @@ class WmRepositoryImpl @Inject constructor(
             val alarmClockInfo: AlarmManager.AlarmClockInfo =
                 AlarmManager.AlarmClockInfo(alarmTimeAtUTC, pi)
             am.setAlarmClock(alarmClockInfo, pi)
-        }
-        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             am.setExact(
                 AlarmManager.RTC_WAKEUP,
                 alarmTimeAtUTC, pi
             )
-        }
-        else {
+        } else {
             am.set(
                 AlarmManager.RTC_WAKEUP,
                 alarmTimeAtUTC, pi
@@ -240,7 +229,7 @@ class WmRepositoryImpl @Inject constructor(
     override fun cancelAlarm() {
         Log.e("runAlarm", "cancelAlarm")
         val intent = Intent(application, PeriodicAlarm::class.java)
-        val sender = PendingIntent.getBroadcast(application, 0, intent, 0)
+        val sender = PendingIntent.getBroadcast(application, EMPTY_INT, intent, EMPTY_INT)
         val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(sender)
     }
@@ -254,14 +243,14 @@ class WmRepositoryImpl @Inject constructor(
     override fun getWorkingTime(): SettingsDomModel {
         return mapperSetTime.mapDataModelToDomain(
             Gson().fromJson(
-                worktime,
+                wmSettings.worktime,
                 SettingsDataModel::class.java
             )
         )
     }
 
     override fun setWorkingTime(dm: SettingsDomModel) {
-        worktime = Gson().toJson(mapperSetTime.mapDomainToDataModel(dm))
+        wmSettings.worktime = Gson().toJson(mapperSetTime.mapDomainToDataModel(dm))
     }
 
     override suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>> {
@@ -276,27 +265,23 @@ class WmRepositoryImpl @Inject constructor(
     override suspend fun checkWmJwToken(request: RequestBody): ResponseEntity {
         val responc = apiService.checkToken(request)
         val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
-
-        val res = ResponseEntity(
+        return ResponseEntity(
             mBody,
             responc.isSuccessful,
             responc.errorBody(),
             responc.code()
         )
-        return res
     }
 
     override suspend fun logOut(request: RequestBody): ResponseEntity {
         val responc = apiService.logOut(request)
         val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
-
-        val res = ResponseEntity(
+        return ResponseEntity(
             mBody,
             responc.isSuccessful,
             responc.errorBody(),
             responc.code()
         )
-        return res
     }
 
     override suspend fun getLocationsFromBd(): LiveData<List<LocationDb>> {
@@ -326,35 +311,30 @@ class WmRepositoryImpl @Inject constructor(
         val responc = apiService.writeLocDatas(request)
         Log.e("writeLoc4Net", responc.toString())
         val mBody = responc.body()?.let { mapperJwt.mapAllDtoToModel(it) }
-        val res = ResponseEntity(
+        return ResponseEntity(
             mBody,
             responc.isSuccessful,
             responc.errorBody(),
             responc.code()
         )
-        return res
     }
 
-    override suspend fun loadData(): List<Int> {
-        val listOfItems: MutableList<Int> = mutableListOf<Int>()
-        return listOfItems
-    }
-
+    //override suspend fun loadData(): List<Int> = mutableListOf()
 
     @SuppressLint("MissingPermission")
     fun startLocationUpdates() {
         workingTimeModel = getWorkingTime()
-        mBestLoc.latitude = 0.0
-        mBestLoc.longitude = 0.0
-        mBestLoc.accuracy = 1500f
-        mBestLoc.speed = 0f
-        mBestLoc.time = 0
+        mBestLoc.latitude = EMPTY_DOUBLE
+        mBestLoc.longitude = EMPTY_DOUBLE
+        mBestLoc.accuracy = DEFAULT_ACCURACY
+        mBestLoc.speed = EMPTY_FLOAT
+        mBestLoc.time = EMPTY_LONG
         _isEnathAccuracy.value = false
         onLocationChangedListener?.invoke(false)
         val request = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            interval = 10000
-            fastestInterval = 10000
+            interval = FASTEST_INTERVAL
+            fastestInterval = FASTEST_INTERVAL
         }
         fusedLocationProviderClient.requestLocationUpdates(
             request, callback,
@@ -368,15 +348,13 @@ class WmRepositoryImpl @Inject constructor(
     private fun updateValueDb(id: Int, newInfo: String) =
         locationDao.updateLocationById(id, newInfo)
 
-    fun getLastValue1(): List<LocationDbModel> = locationDao.getLastValu1e()
-
     private fun getLastValueFromDb() = locationDao.getLastValue(getCurrentDate())
 
     fun getDate(milliSeconds: Long): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
         val calendar: Calendar = Calendar.getInstance()
         calendar.timeInMillis = milliSeconds
-        return formatter.format(calendar.getTime())
+        return formatter.format(calendar.time)
     }
 
     fun df(): String {
@@ -384,9 +362,8 @@ class WmRepositoryImpl @Inject constructor(
         val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
         val calendar = Calendar.getInstance()
         calendar.timeInMillis = curUtc
-        val curCal = formatter.format(calendar.getTime())
+        val curCal = formatter.format(calendar.time)
         val curUtc1 = formatter.format(curUtc)
-        // val formatter = SimpleDateFormat("dd.MM.yyyy")
         return "curUtc:$curUtc # curUtc1:$curUtc1 \n cal:${calendar.timeInMillis} # curCal:$curCal"
     }
 
@@ -416,7 +393,7 @@ class WmRepositoryImpl @Inject constructor(
             1,
             location.accuracy,
             location.speed,
-            0
+            EMPTY_INT
         )
         locationDao.insertLocation(res)
         _isEnathAccuracy.postValue(true)
@@ -427,14 +404,13 @@ class WmRepositoryImpl @Inject constructor(
         override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
             val lTime = System.currentTimeMillis()
-            if (mBestLoc.longitude == 0.0 || result.lastLocation.accuracy < mBestLoc.accuracy) {
+            if (mBestLoc.longitude == EMPTY_DOUBLE || result.lastLocation.accuracy < mBestLoc.accuracy) {
                 mBestLoc.latitude = result.lastLocation.latitude
                 mBestLoc.longitude = result.lastLocation.longitude
                 mBestLoc.accuracy = result.lastLocation.accuracy
                 mBestLoc.speed = result.lastLocation.speed
                 mBestLoc.time = lTime
             }
-
             if (result.lastLocation != null && result.lastLocation.accuracy < workingTimeModel.accuracy) {
                 /*ProcessLifecycleOwner.get().lifecycleScope*/
                 externalScope.launch(Dispatchers.IO) {
@@ -442,10 +418,10 @@ class WmRepositoryImpl @Inject constructor(
 
                     result.lastLocation.let {
                         if (lastDbValue != null) {
-                            val locA = Location("lastValue")
+                            val locA = Location(LOCATION_A)
                             locA.latitude = lastDbValue.latitude
                             locA.longitude = lastDbValue.longitude
-                            val locB = Location("newValue")
+                            val locB = Location(LOCATION_B)
                             locB.latitude = it.latitude
                             locB.longitude = it.longitude
                             val dist = locA.distanceTo(locB)
@@ -461,7 +437,7 @@ class WmRepositoryImpl @Inject constructor(
                                     1,
                                     it.accuracy,
                                     it.speed,
-                                    0
+                                    EMPTY_INT
                                 )
                                 val itemsCount = locationDao.insertLocation(res)
                                 _isEnathAccuracy.postValue(true)
@@ -486,7 +462,7 @@ class WmRepositoryImpl @Inject constructor(
                                 it.longitude,
                                 1,
                                 it.accuracy,
-                                it.speed, 0
+                                it.speed, EMPTY_INT
                             )
                             val itemsCount = locationDao.insertLocation(res)
                             _isEnathAccuracy.postValue(true)
@@ -519,88 +495,32 @@ class WmRepositoryImpl @Inject constructor(
         return 1
     }
 
-    val defaultTime = Gson().toJson(
-        SettingsDataModel(
-            listOf("1", "1", "1", "1", "1", "1", "1"),
-            "09:00",
-            "17:00",
-            20,
-            50,
-            55,
-            100,
-            false
-        )
-    )
-    val defaultUserInfo = Gson().toJson(
-        SettingsUserInfoDataModel(
-            "",
-            0,
-            0,
-            "",
-            "",
-            false
-        )
-    )
-
     override fun getWmUserInfoSetings(): SettingsUserInfoDomModel {
         return mapperUserInfoSettings.mapDataModelToDomain(
             Gson().fromJson(
-                jwToken,
+                wmSettings.jwToken,
                 SettingsUserInfoDataModel::class.java
             )
         )
     }
 
     override fun setWmUserInfoSetings(dm: SettingsUserInfoDomModel) {
-        jwToken = Gson().toJson(mapperUserInfoSettings.mapDomainToDataModel(dm))
+        wmSettings.jwToken = Gson().toJson(mapperUserInfoSettings.mapDomainToDataModel(dm))
     }
-
-    var worktime: String?
-        get() {
-            val k: String?
-            if (mSettings.contains(APP_PREFERENCES_worktime)) {
-                k = mSettings.getString(
-                    APP_PREFERENCES_worktime,
-                    defaultTime
-                )
-            } else
-                k = defaultTime
-            return k
-        }
-        @SuppressLint("NewApi")
-        set(k) {
-            val editor = mSettings.edit()
-            editor.putString(APP_PREFERENCES_worktime, k)
-            if (Build.VERSION.SDK_INT > 9) {
-                editor.apply()
-            } else
-                editor.commit()
-        }
-    var jwToken: String
-        get() {
-            val k: String
-            if (mSettings.contains(APP_PREFERENCES_jwt)) {
-                k = mSettings.getString(
-                    APP_PREFERENCES_jwt,
-                    defaultUserInfo
-                ).toString()
-            } else
-                k = defaultUserInfo
-            return k
-        }
-        @SuppressLint("NewApi")
-        set(k) {
-            val editor = mSettings.edit()
-            editor.putString(APP_PREFERENCES_jwt, k)
-            if (Build.VERSION.SDK_INT > 9) {
-                editor.apply()
-            } else
-                editor.commit()
-        }
 
     private companion object {
-        val APP_PREFERENCES_worktime = "worktime"
-        val APP_PREFERENCES_jwt = "jwt"
+        const val BEST_LOCATION_PROVIDER = "bestLocationOfBadAccuracy"
+        const val LOCATION_A = "lastValue"
+        const val LOCATION_B = "newValue"
+        const val DEFAULT_SETTINGS_DAY = "1"
+        const val SPLIT_DELIMITER = ":"
+        const val ONE_SECOND = 1000L
+        const val DEFAULT_INTERVAL_ALARM = 24 * 60 * 60 * ONE_SECOND
+        const val EMPTY_INT = 0
+        const val EMPTY_LONG = 0L
+        const val EMPTY_FLOAT = 0f
+        const val EMPTY_DOUBLE = 0.0
+        const val FASTEST_INTERVAL = 10 * ONE_SECOND
+        const val DEFAULT_ACCURACY = 1500f
     }
-
 }

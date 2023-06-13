@@ -8,7 +8,6 @@ import javax.inject.Inject
 
 class WmMapperByDays @Inject constructor() {
 
-
     fun mapDbModelToEntity(dbModel: LocationDbModelByDays) = LocationDbByDays(
         _id = dbModel._id,
         datestart = convertLongToTime(dbModel.datestart),

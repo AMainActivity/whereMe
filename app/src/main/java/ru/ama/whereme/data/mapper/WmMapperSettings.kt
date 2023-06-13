@@ -28,6 +28,4 @@ class WmMapperSettings @Inject constructor() {
         timeOfWorkingWM = domainModel.timeOfWorkingWM,
         isEnable = domainModel.isEnable
     )
-
-
 }

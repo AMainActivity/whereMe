@@ -2,9 +2,9 @@ package ru.ama.whereme.data.database
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import ru.ama.whereme.data.database.LocationDbModel.Companion.tabTestInfo
+import ru.ama.whereme.data.database.LocationDbModel.Companion.tabLocations
 
-@Entity(tableName = tabTestInfo)
+@Entity(tableName = tabLocations)
 data class LocationDbModel(
     val datetime: String,
     val datestart: Long,
@@ -21,6 +21,6 @@ data class LocationDbModel(
     var _id: Long = 0
 
     companion object {
-        const val tabTestInfo = "tab_locations"
+        const val tabLocations = "tab_locations"
     }
 }

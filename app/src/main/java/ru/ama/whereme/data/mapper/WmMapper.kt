@@ -8,7 +8,6 @@ import javax.inject.Inject
 
 class WmMapper @Inject constructor() {
 
-
     fun mapDbModelToEntity(dbModel: LocationDbModel) = LocationDb(
         _id = dbModel._id,
         datetime = dbModel.datetime,
