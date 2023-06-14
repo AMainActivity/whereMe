@@ -177,7 +177,7 @@ class WmRepositoryImpl @Inject constructor(
             set(Calendar.HOUR_OF_DAY, wTime.start.split(SPLIT_DELIMITER)[0].toInt())
             set(Calendar.MINUTE, wTime.start.split(SPLIT_DELIMITER)[1].toInt())
         }
-        if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
+        if (calendar.timeInMillis <= System.currentTimeMillis()) {
             calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1)
         }
         am.cancel(pi)
@@ -197,7 +197,6 @@ class WmRepositoryImpl @Inject constructor(
         val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(sender)
         setWorkingTime(getWorkingTime().copy(isEnable = false))
-        //cancelAlarm()
     }
 
     override fun runAlarm(timeInterval: Long) {
@@ -319,8 +318,6 @@ class WmRepositoryImpl @Inject constructor(
         )
     }
 
-    //override suspend fun loadData(): List<Int> = mutableListOf()
-
     @SuppressLint("MissingPermission")
     fun startLocationUpdates() {
         workingTimeModel = getWorkingTime()
@@ -336,10 +333,12 @@ class WmRepositoryImpl @Inject constructor(
             interval = FASTEST_INTERVAL
             fastestInterval = FASTEST_INTERVAL
         }
-        fusedLocationProviderClient.requestLocationUpdates(
-            request, callback,
-            Looper.myLooper()!!
-        )
+        Looper.myLooper()?.let {
+            fusedLocationProviderClient.requestLocationUpdates(
+                request, callback,
+                it
+            )
+        }
         Log.e("getLocation00", fusedLocationProviderClient.toString())
     }
 
@@ -390,7 +389,7 @@ class WmRepositoryImpl @Inject constructor(
             getDate(lTime),
             location.latitude,
             location.longitude,
-            1,
+            ONE_INT,
             location.accuracy,
             location.speed,
             EMPTY_INT
@@ -434,7 +433,7 @@ class WmRepositoryImpl @Inject constructor(
                                     getDate(lTime),
                                     it.latitude,
                                     it.longitude,
-                                    1,
+                                    ONE_INT,
                                     it.accuracy,
                                     it.speed,
                                     EMPTY_INT
@@ -460,7 +459,7 @@ class WmRepositoryImpl @Inject constructor(
                                 getDate(lTime),
                                 it.latitude,
                                 it.longitude,
-                                1,
+                                ONE_INT,
                                 it.accuracy,
                                 it.speed, EMPTY_INT
                             )
@@ -517,6 +516,7 @@ class WmRepositoryImpl @Inject constructor(
         const val ONE_SECOND = 1000L
         const val DEFAULT_INTERVAL_ALARM = 24 * 60 * 60 * ONE_SECOND
         const val EMPTY_INT = 0
+        const val ONE_INT = 1
         const val EMPTY_LONG = 0L
         const val EMPTY_FLOAT = 0f
         const val EMPTY_DOUBLE = 0.0

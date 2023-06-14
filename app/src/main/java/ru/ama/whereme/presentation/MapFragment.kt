@@ -19,7 +19,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.gson.Gson
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.DatePickerDaysBinding
-import ru.ama.whereme.databinding.FragmentFirstBinding
+import ru.ama.whereme.databinding.FragmentMapBinding
 import ru.ama.whereme.domain.entity.LocationDbByDays
 import java.text.SimpleDateFormat
 import java.util.*
@@ -28,7 +28,7 @@ import javax.inject.Inject
 
 class MapFragment : Fragment() {
 
-    private var _binding: FragmentFirstBinding? = null
+    private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding ?: throw RuntimeException("FragmentFirstBinding == null")
     private lateinit var viewModel: MapViewModel
     lateinit var listDays: List<LocationDbByDays>
@@ -36,6 +36,7 @@ class MapFragment : Fragment() {
         (requireActivity().application as MyApp).component
     }
     var onDataSizeListener: ((Int) -> Unit)? = null
+
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
 
@@ -95,7 +96,7 @@ class MapFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentFirstBinding.inflate(inflater, container, false)
+        _binding = FragmentMapBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -106,7 +107,7 @@ class MapFragment : Fragment() {
         } else {
             binding.frgmntMapReply.visibility = View.VISIBLE
             binding.frgmntLocations.loadData(
-                "Нет подключения, нет возможноти показать карту. Функционал получения местоположений доступен без наличия интернета",
+                getString(R.string.map_no_net),
                 "text/html; charset=utf-8",
                 "UTF-8"
             );
@@ -116,7 +117,7 @@ class MapFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Карта"
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = getString(R.string.menu_map)
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
         viewModel.ld_days.observe(viewLifecycleOwner) {
             listDays = it
@@ -143,6 +144,7 @@ class MapFragment : Fragment() {
                 )
                 return true
             }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 try {
@@ -152,10 +154,11 @@ class MapFragment : Fragment() {
             }
         }
         binding.frgmntLocations.settings.javaScriptEnabled = true
-        val url = "https://kol.hhos.ru/map/i.php"
+        val url = getString(R.string.map_url)
         binding.frgmntMapReply.setOnClickListener { setUrl(url) }
         setUrl(url)
-        binding.frgmntLocations.addJavascriptInterface(WebAppInterface(requireContext()), "Android")
+        binding.frgmntLocations.addJavascriptInterface(WebAppInterface(requireContext()), getString(
+                    R.string.map_android))
     }
 
     private fun observeData(abSuntitle: String) {
@@ -171,7 +174,7 @@ class MapFragment : Fragment() {
             } else
                 Toast.makeText(
                     requireContext(),
-                    "нет данных",
+                    getString(R.string.map_nodata),
                     Toast.LENGTH_SHORT
                 ).show()
             Log.e("getLocationlldByDay", it.toString())
@@ -190,11 +193,11 @@ class MapFragment : Fragment() {
             val ar = toast.split('#')
             if (ar.size == 4) {
                 val builder = AlertDialog.Builder(mContext)
-                builder.setTitle("маршрут")
+                builder.setTitle(mContext.getString(R.string.map_route))
                 builder.setCancelable(false)
                 //builder.setIcon(R.drawable.search);
                 builder.setMessage("построить маршрут?\n $toast")
-                builder.setNegativeButton("Отмена") { dialog, which ->
+                builder.setNegativeButton(mContext.getString(R.string.map_cancel)) { dialog, which ->
                     dialog.cancel()
                 }
                 builder.setPositiveButton("Ок") { dialog, which ->

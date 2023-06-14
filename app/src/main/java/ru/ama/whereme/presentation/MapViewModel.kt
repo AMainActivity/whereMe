@@ -27,6 +27,7 @@ class MapViewModel @Inject constructor(
     private val _ld_days = MutableLiveData<List<LocationDbByDays>>()
     val ld_days: LiveData<List<LocationDbByDays>>
         get() = _ld_days
+
     init {
         viewModelScope.launch {
             lld2 = getLocationsFromBdUseCase()

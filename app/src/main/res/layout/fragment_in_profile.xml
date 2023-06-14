@@ -9,14 +9,15 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="2"
         android:background="@android:color/transparent"
-        android:scrollbars="none">
+        android:scrollbars="none"
+        tools:ignore="UselessParent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             tools:layout_editor_absoluteY="12dp">
 
             <androidx.cardview.widget.CardView
@@ -44,43 +45,41 @@
                     tools:layout_editor_absoluteY="12dp">
 
                     <com.google.android.material.textview.MaterialTextView
-                        android:layout_width="match_parent"
-                        android:textSize="15dp"
-                        android:layout_height="wrap_content"
                         android:id="@+id/frgmnt_pro_in_tv"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:gravity="center"
-                        />
+                        android:textSize="15dp" />
 
-                <com.google.android.material.textfield.TextInputLayout
+                    <com.google.android.material.textfield.TextInputLayout
 
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:minWidth="200dp"
-                    android:textColorHint="#aaa">
-
-                    <com.google.android.material.textfield.TextInputEditText
-						android:id="@+id/frgmnt_pro_et"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_margin="5dp"
-                        android:layout_gravity="center_vertical"
-                        android:hint="код"
-                        android:background="@color/white"
-                        android:maxLines="1"
-                        android:singleLine="true"/>
-                </com.google.android.material.textfield.TextInputLayout>
-				
-				      <com.google.android.material.button.MaterialButton
-                    android:text="проверить"
-                    android:id="@+id/frgmnt_pro_but_ck"
-                    android:theme="@style/ButtonStyle"
-                    android:foreground="?android:attr/selectableItemBackground"
-                    android:layout_width="match_parent"
-                    android:layout_margin="2dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    ></com.google.android.material.button.MaterialButton>
+                        android:minWidth="200dp"
+                        android:textColorHint="#aaa">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/frgmnt_pro_et"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_margin="5dp"
+                            android:background="@color/white"
+                            android:hint="@string/profile_kod"
+                            android:maxLines="1"
+                            android:singleLine="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/frgmnt_pro_but_ck"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_margin="2dp"
+                        android:layout_weight="1"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        android:text="@string/profile_check"
+                        android:theme="@style/ButtonStyle" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

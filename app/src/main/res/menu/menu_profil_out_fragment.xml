@@ -6,12 +6,12 @@
     <item
         android:id="@+id/menu_p_out_share"
         android:icon="@drawable/ic_baseline_share_24"
-        android:title="поделиться"
+        android:title="@string/menu_profil_share"
         app:showAsAction="always" />
     <item
         android:id="@+id/menu_p_out_logout"
         android:icon="@drawable/ic_baseline_exit_to_app_24"
-        android:title="выход"
+        android:title="@string/menu_profile_logout"
         app:showAsAction="always" />
-    
+
 </menu>

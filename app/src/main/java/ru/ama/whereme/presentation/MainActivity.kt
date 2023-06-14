@@ -25,7 +25,8 @@ import javax.inject.Inject
 class MainActivity : AppCompatActivity() {
 
     private val REQUEST_PERMISSION_LOCATION = 10
-    private lateinit var viewModel: MaViewModel
+    private lateinit var viewModel: MainViewModel
+
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
     private lateinit var appBarConfiguration: AppBarConfiguration
@@ -37,7 +38,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         component.inject(this)
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(this, viewModelFactory)[MaViewModel::class.java]
+        viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
@@ -49,15 +50,18 @@ class MainActivity : AppCompatActivity() {
         val aboutFragment = AboutFragment()
         setCurrentFragment(mapFragment)
         binding.contentMain.bottomNavigationView.setOnItemSelectedListener {
-            when (it.itemId) {
-                R.id.page_1 -> setCurrentFragment(mapFragment)
-                R.id.page_2 -> setCurrentFragment(setFragment)
-                R.id.page_3 -> {
-                    Log.e("checkIsActivate", viewModel.checkIsActivate().toString())
-                    setCurrentFragment(if (viewModel.checkIsActivate()) profileOutFragment else profileInFragment)
+            setCurrentFragment(
+                when (it.itemId) {
+                    R.id.page_1 -> mapFragment
+                    R.id.page_2 -> setFragment
+                    R.id.page_3 -> {
+                        Log.e("checkIsActivate", viewModel.checkIsActivate().toString())
+                        if (viewModel.checkIsActivate()) profileOutFragment else profileInFragment
+                    }
+                    R.id.page_4 -> aboutFragment
+                    else -> mapFragment
                 }
-                R.id.page_4 -> setCurrentFragment(aboutFragment)
-            }
+            )
             true
         }
     }
@@ -77,13 +81,8 @@ class MainActivity : AppCompatActivity() {
     private fun startService() {
         when {
             isAccessFineLocationGranted(this) -> {
-                when {
-                    isLocationEnabled(this) -> {
-                        //     viewModel.startLocationService()
-                    }
-                    else -> {
-                        showGPSNotEnabledDialog(this)
-                    }
+                if (!isLocationEnabled(this)) {
+                    showGPSNotEnabledDialog(this)
                 }
             }
             else -> {
@@ -104,18 +103,13 @@ class MainActivity : AppCompatActivity() {
         when (requestCode) {
             REQUEST_PERMISSION_LOCATION -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    when {
-                        isLocationEnabled(this) -> {
-                            //   viewModel.startLocationService()
-                        }
-                        else -> {
-                            showGPSNotEnabledDialog(this)
-                        }
+                    if (!isLocationEnabled(this)) {
+                        showGPSNotEnabledDialog(this)
                     }
                 } else {
                     Toast.makeText(
                         this,
-                        "нет доступа ",
+                        getString(R.string.ma_no_access),
                         Toast.LENGTH_LONG
                     ).show()
                     finish()
@@ -155,13 +149,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun showGPSNotEnabledDialog(context: Context) {
         AlertDialog.Builder(context)
-            .setTitle("Включи GPS")
-            .setMessage("да/нет")
+            .setTitle(getString(R.string.ma_turn_on_gps))
+            .setMessage(getString(R.string.ma_yes_no))
             .setCancelable(false)
-            .setPositiveButton("да") { _, _ ->
+            .setPositiveButton(getString(R.string.ma_yes)) { _, _ ->
                 context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
             }
             .show()
     }
-
 }

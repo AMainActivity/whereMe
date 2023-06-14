@@ -43,7 +43,8 @@ class AboutFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "О приложении"
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =
+            getString(R.string.about_title)
         binding.frgmntAbTv.linksClickable = true
         binding.frgmntAbTv.movementMethod = LinkMovementMethod.getInstance()
         binding.frgmntAbTv.text =

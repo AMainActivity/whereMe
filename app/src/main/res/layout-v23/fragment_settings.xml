@@ -242,7 +242,7 @@
                                 android:layout_margin="2dp"
                                 android:layout_weight="1"
                                 android:foreground="?android:attr/selectableItemBackground"
-                                android:text="@string/set_start_time"
+                                android:text="Время старта"
                                 android:theme="@style/ButtonStyle" />
 
 
@@ -253,7 +253,7 @@
                                 android:layout_margin="2dp"
                                 android:layout_weight="1"
                                 android:foreground="?android:attr/selectableItemBackground"
-                                android:text="@string/set_end_time"
+                                android:text="Время окончания"
                                 android:theme="@style/ButtonStyle" />
 
                         </LinearLayout>
@@ -275,7 +275,7 @@
                                 android:layout_gravity="center_vertical"
                                 android:layout_margin="5dp"
                                 android:background="@color/white"
-                                android:hint="@string/set_min_dist"
+                                android:hint="Минимальное расстояние, м"
                                 android:inputType="number"
                                 android:maxLines="1"
                                 android:singleLine="true" />
@@ -298,7 +298,7 @@
                                 android:layout_gravity="center_vertical"
                                 android:layout_margin="5dp"
                                 android:background="@color/white"
-                                android:hint="@string/set_accuracy"
+                                android:hint="Точность, м"
                                 android:inputType="number"
                                 android:maxLines="1"
                                 android:singleLine="true" />
@@ -321,7 +321,7 @@
                                 android:layout_gravity="center_vertical"
                                 android:layout_margin="5dp"
                                 android:background="@color/white"
-                                android:hint="@string/set_wait_accuracy_time"
+                                android:hint="Время ожидания точности, с"
                                 android:inputType="number"
                                 android:maxLines="1"
                                 android:singleLine="true" />
@@ -344,7 +344,7 @@
                                 android:layout_gravity="center_vertical"
                                 android:layout_margin="5dp"
                                 android:background="@color/white"
-                                android:hint="@string/set_periodic_time"
+                                android:hint="Периодичность контроля, с"
                                 android:inputType="number"
                                 android:maxLines="1"
                                 android:singleLine="true" />

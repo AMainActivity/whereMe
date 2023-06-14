@@ -6,9 +6,6 @@ import okhttp3.RequestBody
 import ru.ama.whereme.domain.entity.*
 
 interface WmRepository {
-
-
-    //suspend fun loadData(): List<Int>
     suspend fun getLocationsFromBd(): LiveData<List<LocationDb>>
     suspend fun getLocationById(mDate: String): LiveData<List<LocationDb>>
     suspend fun getGropingDays(): List<LocationDbByDays>

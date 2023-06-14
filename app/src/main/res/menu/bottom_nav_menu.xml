@@ -3,22 +3,20 @@
         android:id="@+id/page_1"
         android:enabled="true"
         android:icon="@drawable/ic_baseline_map_24"
-        android:title="label_1"/>
+        android:title="@string/menu_map" />
     <item
         android:id="@+id/page_2"
         android:enabled="true"
         android:icon="@drawable/ic_baseline_settings_24"
-        android:title="label_2"
-        />
+        android:title="@string/menu_settings" />
     <item
-    android:id="@+id/page_3"
-    android:enabled="true"
-    android:icon="@drawable/ic_baseline_person_24"
-    android:title="label_1"/>
+        android:id="@+id/page_3"
+        android:enabled="true"
+        android:icon="@drawable/ic_baseline_person_24"
+        android:title="@string/menu_profile" />
     <item
         android:id="@+id/page_4"
         android:enabled="true"
         android:icon="@drawable/ic_baseline_info_24"
-        android:title="label_2"
-        />
+        android:title="@string/menu_about" />
 </menu>

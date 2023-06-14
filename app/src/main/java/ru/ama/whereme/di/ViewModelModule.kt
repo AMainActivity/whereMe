@@ -12,8 +12,8 @@ import ru.ama.whereme.presentationn.ViewModelSplash
 interface ViewModelModule {
     @Binds
     @IntoMap
-    @ViewModelKey(MaViewModel::class)
-    fun bindTestListViewModel(viewModel: MaViewModel): ViewModel
+    @ViewModelKey(MainViewModel::class)
+    fun bindTestListViewModel(viewModel: MainViewModel): ViewModel
 
     @Binds
     @IntoMap
