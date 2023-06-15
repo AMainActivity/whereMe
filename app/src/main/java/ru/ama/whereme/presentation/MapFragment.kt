@@ -108,8 +108,8 @@ class MapFragment : Fragment() {
             binding.frgmntMapReply.visibility = View.VISIBLE
             binding.frgmntLocations.loadData(
                 getString(R.string.map_no_net),
-                "text/html; charset=utf-8",
-                "UTF-8"
+                MIME_TYPE,
+                ENCODING
             );
         }
     }
@@ -117,7 +117,8 @@ class MapFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = getString(R.string.menu_map)
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =
+            getString(R.string.menu_map)
         viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
         viewModel.ld_days.observe(viewLifecycleOwner) {
             listDays = it
@@ -157,8 +158,11 @@ class MapFragment : Fragment() {
         val url = getString(R.string.map_url)
         binding.frgmntMapReply.setOnClickListener { setUrl(url) }
         setUrl(url)
-        binding.frgmntLocations.addJavascriptInterface(WebAppInterface(requireContext()), getString(
-                    R.string.map_android))
+        binding.frgmntLocations.addJavascriptInterface(
+            WebAppInterface(requireContext()), getString(
+                R.string.map_android
+            )
+        )
     }
 
     private fun observeData(abSuntitle: String) {
@@ -167,7 +171,9 @@ class MapFragment : Fragment() {
             if (it.isNotEmpty()) {
                 val postData = Gson().toJson(it).toString()
                 binding.frgmntLocations.evaluateJavascript(
-                    "javascript:fromAndroid(${postData})",
+                    String.format(
+                        getString(R.string.map_js), postData
+                    ),
                     null
                 )
                 (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = abSuntitle
@@ -190,29 +196,37 @@ class MapFragment : Fragment() {
     class WebAppInterface(private val mContext: Context) {
         @JavascriptInterface
         fun showToast(toast: String) {
-            val ar = toast.split('#')
+            val ar = toast.split(DELIMITER)
             if (ar.size == 4) {
                 val builder = AlertDialog.Builder(mContext)
                 builder.setTitle(mContext.getString(R.string.map_route))
                 builder.setCancelable(false)
                 //builder.setIcon(R.drawable.search);
-                builder.setMessage("построить маршрут?\n $toast")
+                builder.setMessage(String.format(mContext.getString(R.string.map_get_route, toast)))
                 builder.setNegativeButton(mContext.getString(R.string.map_cancel)) { dialog, which ->
                     dialog.cancel()
                 }
-                builder.setPositiveButton("Ок") { dialog, which ->
-                    val mar =
-                        "dgis://2gis.ru/routeSearch/rsType/car/from/${ar[1]},${ar[0]}/to/${ar[3]},${ar[2]}"
+                builder.setPositiveButton(mContext.getString(R.string.string_ok)) { dialog, which ->
+                    val mar = String.format(
+                        mContext.getString(
+                            R.string.map_route_url,
+                            ar[1],
+                            ar[0],
+                            ar[3],
+                            ar[2]
+                        )
+                    )
+                    //"dgis://2gis.ru/routeSearch/rsType/car/from/${ar[1]},${ar[0]}/to/${ar[3]},${ar[2]}"
                     val uri = Uri.parse(mar)//"dgis://")
                     var intent = Intent(Intent.ACTION_VIEW, uri)
-                    val packageManager = (mContext).packageManager!!
+                    val packageManager = (mContext).packageManager
                     val activities = packageManager.queryIntentActivities(intent, 0)
                     val isIntentSafe = activities.size > 0
                     if (isIntentSafe) {
                         (mContext).startActivity(intent)
                     } else {
                         intent = Intent(Intent.ACTION_VIEW)
-                        intent.data = Uri.parse("market://details?id=ru.dublgis.dgismobile")
+                        intent.data = Uri.parse(mContext.getString(R.string.map_2gisapp))
                         mContext.startActivity(intent)
                     }
                 }
@@ -220,5 +234,11 @@ class MapFragment : Fragment() {
                 dialoga.show()
             } else Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private companion object {
+        const val DELIMITER = '#'
+        const val ENCODING = "UTF-8"
+        const val MIME_TYPE = "text/html; charset=utf-8"
     }
 }

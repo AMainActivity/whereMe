@@ -46,7 +46,6 @@ class MyForegroundService : LifecycleService() {
 
     override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
-        log("onBind")
         return LocalBinder()
     }
 
@@ -68,7 +67,7 @@ class MyForegroundService : LifecycleService() {
             startTimer()
             if (isGooglePlayServicesAvailab.await()) {
                 repo.startLocationUpdates()
-                log(repo.isEnathAccuracy.value.toString() + "")
+                Log.e("SERVICE_TAG3", repo.isEnathAccuracy.value.toString() + "")
             } else
                 Log.e("SERVICE_TAG3", "isGooglePlayServicesAvailable false")
         }
@@ -83,8 +82,8 @@ class MyForegroundService : LifecycleService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val b = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("служба")
-            .setContentText("определения местоположения")
+            .setContentTitle(getString(R.string.service_notify_title))
+            .setContentText(getString(R.string.service_notify_text))
             .setSmallIcon(R.drawable.ic_launcher_background)
             .setOnlyAlertOnce(true)
             .setContentIntent(resultPendingIntent)
@@ -99,18 +98,20 @@ class MyForegroundService : LifecycleService() {
 
     private fun startTimer() {
         timer = object : CountDownTimer(
-            workingTimeModel.timeOfWaitAccuracy.toLong() * 1000,
-            1000
+            workingTimeModel.timeOfWaitAccuracy.toLong() * MILLIS_IN_SECONDS,
+            MILLIS_IN_SECONDS
         ) {
             override fun onTick(millisUntilFinished: Long) {
                 val notification = notificationBuilder
-                    .setContentText("")
                     .setContentTitle(
-                        "служба: ${
-                            if (millisUntilFinished < 1000L) "скоро повтор" else getFormattedLeftTime(
-                                millisUntilFinished
+                        buildString {
+                            append(getString(R.string.service_notify_title))
+                            append(
+                                if (millisUntilFinished < MILLIS_IN_SECONDS) getString(R.string.service_povtor) else getFormattedLeftTime(
+                                    millisUntilFinished
+                                )
                             )
-                        }"
+                        }
                     )
                     .setProgress(
                         workingTimeModel.timeOfWaitAccuracy,
@@ -132,7 +133,7 @@ class MyForegroundService : LifecycleService() {
                     reRunGetLocations()
                 cancelTimer(
                     getString(R.string.app_name),
-                    "не было найдено, скоро повтор " + repo.getDate(
+                    getString(R.string.service_timer_povtor) + repo.getDate(
                         Calendar.getInstance().getTime().time
                     )
                 )
@@ -152,7 +153,7 @@ class MyForegroundService : LifecycleService() {
                 val json1 = Gson().toJson(DatasToJson(repo.getWmUserInfoSetings().tokenJwt, res))
                 Log.e("Gson", json1.toString())
                 RequestBody.create(
-                    MediaType.parse("application/json"), json1
+                    MediaType.parse(APPLICATION_JSON), json1
                         .toString()
                 )
             }
@@ -168,14 +169,22 @@ class MyForegroundService : LifecycleService() {
                         if (response.respIsSuccess) {
                             response.mBody?.let {
                                 if (!it.error && it.message.isNotEmpty()) {
-                                    repo.updateIsWrite(idList)
+                                    var mSize = idList.size
+                                    while (mSize > 0) {
+                                        val sSize = if (mSize > 500) 500 else mSize
+                                        val tempList = idList.subList(0, sSize)
+                                        val r = repo.updateIsWrite(tempList)
+                                        if (r > 0) {
+                                            idList.subList(0, sSize).clear()
+                                            mSize = idList.size
+                                        }
+                                    }
                                 }
                                 reRunGetLocations()
                             }
                         } else {
                             try {
                                 val jObjError = response.respError?.string()?.let { JSONObject(it) }
-
                                 Log.e(
                                     "responseError",
                                     jObjError.toString()
@@ -216,7 +225,6 @@ class MyForegroundService : LifecycleService() {
     override fun onCreate() {
         component.inject(this)
         super.onCreate()
-        log("onCreate")
         createNotificationChannel()
         Log.e("getCurrentDateMil", repo.getCurrentDateMil())
         Log.e("getCurrentDate", repo.getCurrentDate())
@@ -225,7 +233,6 @@ class MyForegroundService : LifecycleService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        log("onStartCommand")
         isServiseAlive?.invoke(true)
         repo.onLocationChangedListener = {
             Log.e("onLocationListener", "$it / $isEnath")
@@ -233,7 +240,9 @@ class MyForegroundService : LifecycleService() {
                 repo.stopLocationUpdates()
                 cancelTimer(
                     getString(R.string.app_name),
-                    "успешно получено " + repo.getDate(Calendar.getInstance().getTime().time)
+                    getString(R.string.service_timer_success) + repo.getDate(
+                        Calendar.getInstance().getTime().time
+                    )
                 )
                 isEnath = true
                 if (repo.getWmUserInfoSetings().tokenJwt.isNotEmpty())
@@ -250,12 +259,7 @@ class MyForegroundService : LifecycleService() {
         timer?.cancel()
         isServiseAlive?.invoke(false)
         lifecycleScope.cancel()
-        log("onDestroy")
         super.onDestroy()
-    }
-
-    private fun log(message: String) {
-        Log.e("SERVICE_TAG", "MyForegroundService: $message")
     }
 
     private fun createNotificationChannel() {
@@ -276,6 +280,7 @@ class MyForegroundService : LifecycleService() {
         private const val MILLIS_IN_SECONDS = 1000L
         private const val SECONDS_IN_MINUTE = 60
         private const val FORMATTED_STRING_MINUTE_SECOND = "%02d:%02d"
+        private const val APPLICATION_JSON = "application/json"
         fun newIntent(context: Context): Intent {
             return Intent(context, MyForegroundService::class.java)
         }

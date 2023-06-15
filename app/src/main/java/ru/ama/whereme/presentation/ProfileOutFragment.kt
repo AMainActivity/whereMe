@@ -61,37 +61,37 @@ class ProfileOutFragment : Fragment() {
 
     private fun shereUrlAlertDialog() {
         AlertDialog.Builder(requireContext())
-            .setTitle("Важная информация")
+            .setTitle(getString(R.string.profile_out_alert_title))
             .setMessage(
-                "Вы можете поделиться ссылкой для просмотра своих данных." +
-                        "  \nДелитесь с сылкой с теми лицами, которым Вы доверяете просмотр своих данных. " +
-                        "Перейдя по ссылке, эти лица могут контролировать как и текущие Ваши местоположения," +
-                        "так и видеть Ваши местоположения за определенный день.\n" +
-                        "Для запрета использования ссылки перейдите в telegram-bot и сформируйте новый код."
+                getString(R.string.profile_out_alert_text)
             )
             .setCancelable(true)
-            .setPositiveButton("поделиться") { _, _ ->
+            .setPositiveButton(getString(R.string.menu_profil_share)) { _, _ ->
                 val res = viewModel.getSetUserInfo()
                 if (res.name != null && res.url != null) sharetext(
                     res.name,
-                    "https://kol.hhos.ru/gkk/map.php?wm=" + res.url,
+                    getString(R.string.profile_out_urd_body) + res.url,
                     false
                 )
                 else
-                    Toast.makeText(requireContext(), "нет данных", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.map_nodata),
+                        Toast.LENGTH_SHORT
+                    ).show()
             }
             .show()
     }
 
     private fun logOutAlertDialog() {
         AlertDialog.Builder(requireContext())
-            .setTitle("Выход")
-            .setMessage("Выйти из профиля?  \nПосле выхода данные не будут сохранены на серверной части")
+            .setTitle(getString(R.string.profile_logout_title))
+            .setMessage(getString(R.string.profile_logout_text))
             .setCancelable(true)
-            .setPositiveButton("да") { _, _ ->
+            .setPositiveButton(getString(R.string.ma_yes)) { _, _ ->
                 viewModel.logOut()
             }
-            .setNegativeButton("нет") { dialogInterface, i ->
+            .setNegativeButton(getString(R.string.profile_in_no)) { dialogInterface, i ->
                 dialogInterface.dismiss()
             }
             .show()
@@ -108,7 +108,8 @@ class ProfileOutFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Профиль"
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =
+            getString(R.string.profile_in_title)
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileOutViewModel::class.java]
         val res = viewModel.getSetUserInfo()
         binding.frgmntProOutTv.linksClickable = true
@@ -138,11 +139,11 @@ class ProfileOutFragment : Fragment() {
         } else
             sharingIntent.type = SHARE_TEXT_TYPE
         sharingIntent.putExtra(
-            android.content.Intent.EXTRA_SUBJECT,
+            Intent.EXTRA_SUBJECT,
             textZagol
         )
         sharingIntent.putExtra(
-            android.content.Intent.EXTRA_TEXT,
+            Intent.EXTRA_TEXT,
             textBody
         )
         val d = Intent.createChooser(

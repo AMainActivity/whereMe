@@ -1,5 +1,6 @@
 package ru.ama.whereme.presentationn
 
+import android.app.Application
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
+import ru.ama.whereme.R
 import ru.ama.whereme.data.repository.WmRepositoryImpl
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
@@ -22,7 +24,8 @@ class ViewModelSplash @Inject constructor(
     private val checkInternetConnectionUseCase: CheckInternetConnectionUseCase,
     private val checkJwtTokenUseCase: CheckJwtTokenUseCase,
     private val setWmJwTokenUseCase: SetJwTokenUseCase,
-    private val getJwTokenUseCase: GetJwTokenUseCase
+    private val getJwTokenUseCase: GetJwTokenUseCase,
+    private val application: Application
 ) : ViewModel() {
     private lateinit var wmTokenInfoModel: SettingsUserInfoDomModel
 
@@ -38,9 +41,9 @@ class ViewModelSplash @Inject constructor(
 
     private fun checkJwt(kod: String) {
         val json = JSONObject()
-        json.put("kod", kod)
+        json.put(application.getString(R.string.profile_in_json_param), kod)
         val requestBody: RequestBody =
-            RequestBody.create(MediaType.parse("application/json"), json.toString())
+            RequestBody.create(MediaType.parse(APPLICATION_JSON), json.toString())
         Log.e("checkJwt1", json.toString())
         viewModelScope.launch {
             val response = checkJwtTokenUseCase(requestBody)
@@ -52,7 +55,7 @@ class ViewModelSplash @Inject constructor(
                 response.mBody?.let {
                     setWmJwTokenUseCase(
                         wmTokenInfoModel.copy(
-                            isActivate = (it.message) == "1"
+                            isActivate = (it.message) == ONE_UNIT
                         )
                     )
                 }
@@ -70,10 +73,17 @@ class ViewModelSplash @Inject constructor(
                 _canStart.value = Unit
                 setWmJwTokenUseCase(
                     SettingsUserInfoDomModel(
-                        "", 0, 0, "", "", false
+                        EMPTY_STRING, ZERO_INT, ZERO_INT, EMPTY_STRING, EMPTY_STRING, false
                     )
                 )
             }
         }
+    }
+
+    private companion object {
+        private const val APPLICATION_JSON = "application/json"
+        private const val ONE_UNIT = "1"
+        private const val ZERO_INT = 0
+        private const val EMPTY_STRING = ""
     }
 }

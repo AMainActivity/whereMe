@@ -233,20 +233,17 @@ class WmRepositoryImpl @Inject constructor(
         alarmManager.cancel(sender)
     }
 
-    override suspend fun getGropingDays(): List<LocationDbByDays> {
-        return locationDao.getLocationsByDays().map {
+    override suspend fun getGropingDays() =
+        locationDao.getLocationsByDays().map {
             mapperByDays.mapDbModelToEntity(it)
         }
-    }
 
-    override fun getWorkingTime(): SettingsDomModel {
-        return mapperSetTime.mapDataModelToDomain(
-            Gson().fromJson(
-                wmSettings.worktime,
-                SettingsDataModel::class.java
-            )
+    override fun getWorkingTime() = mapperSetTime.mapDataModelToDomain(
+        Gson().fromJson(
+            wmSettings.worktime,
+            SettingsDataModel::class.java
         )
-    }
+    )
 
     override fun setWorkingTime(dm: SettingsDomModel) {
         wmSettings.worktime = Gson().toJson(mapperSetTime.mapDomainToDataModel(dm))
@@ -283,17 +280,15 @@ class WmRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getLocationsFromBd(): LiveData<List<LocationDb>> {
-        return Transformations.map(locationDao.getLocations()) {
+    override suspend fun getLocationsFromBd(): LiveData<List<LocationDb>> =
+        Transformations.map(locationDao.getLocations()) {
             it.map {
                 mapper.mapDbModelToEntity(it)
             }
         }
-    }
 
-    fun updateIsWrite(idList: List<Long>) {
-        return locationDao.updateQuery(idList)
-    }
+
+    fun updateIsWrite(idList: List<Long>) = locationDao.updateQuery(idList)
 
     suspend fun getLocations4Net(): List<LocationDb> {
         val d = getWmUserInfoSetings().posId
@@ -494,14 +489,14 @@ class WmRepositoryImpl @Inject constructor(
         return 1
     }
 
-    override fun getWmUserInfoSetings(): SettingsUserInfoDomModel {
-        return mapperUserInfoSettings.mapDataModelToDomain(
-            Gson().fromJson(
-                wmSettings.jwToken,
-                SettingsUserInfoDataModel::class.java
-            )
+    override fun getWmUserInfoSetings() = mapperUserInfoSettings.mapDataModelToDomain(
+        Gson().fromJson(
+            wmSettings.jwToken,
+            SettingsUserInfoDataModel::
+            class.java
         )
-    }
+    )
+
 
     override fun setWmUserInfoSetings(dm: SettingsUserInfoDomModel) {
         wmSettings.jwToken = Gson().toJson(mapperUserInfoSettings.mapDomainToDataModel(dm))

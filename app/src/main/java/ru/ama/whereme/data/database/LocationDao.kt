@@ -18,7 +18,7 @@ interface LocationDao {
     suspend fun getLocations4Net(param: Int): List<LocationDbModel>
 
     @Query("update tab_locations  set isWrite =  1  where _id in (:idList)")
-    fun updateQuery(idList: List<Long>)
+    fun updateQuery(idList: List<Long>): Int
 
     @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
     fun getLocations(): LiveData<List<LocationDbModel>>

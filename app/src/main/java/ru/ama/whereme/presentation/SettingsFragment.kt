@@ -46,21 +46,21 @@ class SettingsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        bindMyService()
+        binding.frgmntSetSwitchStart.isChecked = viewModel.checkService()
+    }
+
+    private fun bindMyService() {
         requireActivity().bindService(
             MyForegroundService.newIntent(requireContext()),
             serviceConnection,
             0
         )
-        binding.frgmntSetSwitchStart.isChecked = viewModel.checkService()
     }
 
     private fun bindUnbindService() {
         requireActivity().unbindService(serviceConnection)
-        requireActivity().bindService(
-            MyForegroundService.newIntent(requireContext()),
-            serviceConnection,
-            0
-        )
+        bindMyService()
     }
 
     override fun onCreateView(
@@ -73,8 +73,8 @@ class SettingsFragment : Fragment() {
 
     fun getHourFromSet(id: Int): String {
         workingTimeModel = viewModel.getWorkingTime()
-        val start = workingTimeModel.start.split(":")
-        val end = workingTimeModel.end.split(":")
+        val start = workingTimeModel.start.split(DELIMITER)
+        val end = workingTimeModel.end.split(DELIMITER)
         var res = ""
         when (id) {
             1 -> res = start[0]
@@ -353,10 +353,18 @@ class SettingsFragment : Fragment() {
         requireActivity().unbindService(serviceConnection)
     }
 
-    private fun Boolean.toIntTxt() = if (this) "1" else "0"
+    private fun Boolean.toIntTxt() = if (this) ONE_UNIT else ZERO_STRING
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private companion object {
+        private const val DELIMITER = ":"
+        private const val ONE_UNIT = "1"
+        private const val ZERO_STRING = "0"
+        private const val ZERO_INT = 0
+        private const val EMPTY_STRING = ""
     }
 }

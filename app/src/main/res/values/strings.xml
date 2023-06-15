@@ -80,5 +80,30 @@
     <string name="map_android">Android</string>
     <string name="map_nodata">нет данных</string>
     <string name="map_route">маршрут</string>
+    <string name="map_js">javascript:fromAndroid(%s)</string>
+    <string name="map_get_route">построить маршрут?\n %s</string>
+    <string name="map_route_url">dgis://2gis.ru/routeSearch/rsType/car/from/%s,%s/to/%s,%s</string>
     <string name="map_cancel">Отмена</string>
+    <string name="string_ok">Ок</string>
+    <string name="map_2gisapp">market://details?id=ru.dublgis.dgismobile</string>
+    <string name="service_notify_title">служба</string>
+    <string name="service_notify_text">определения местоположения</string>
+    <string name="service_povtor">скоро повтор</string>
+    <string name="service_timer_povtor">\"не было найдено, скоро повтор \"</string>
+    <string name="service_timer_success">\"успешно получено \"</string>
+    <string name="profile_in_alert_title">Подтверждение</string>
+    <string name="profile_in_alert_text">Нажимая \"Да\", Вы подтверждаете, что учетная запись telegram: \n\n "%s"\n\n принадлежит Вам.</string>
+    <string name="profile_in_no">нет</string>
+    <string name="profile_in_title">Профиль</string>
+    <string name="profile_in_error_kod">неверный код, повторите попытку</string>
+    <string name="profile_in_json_param">kod</string>
+    <string name="profile_out_alert_title">Важная информация</string>
+    <string name="profile_out_alert_text">Вы можете поделиться ссылкой для просмотра своих данных.
+                          \nДелитесь с сылкой с теми лицами, которым Вы доверяете просмотр своих данных.
+                        Перейдя по ссылке, эти лица могут контролировать как и текущие Ваши местоположения,
+                        так и видеть Ваши местоположения за определенный день.\n
+                        Для запрета использования ссылки перейдите в telegram-bot и сформируйте новый код."</string>
+    <string name="profile_out_urd_body">https://kol.hhos.ru/gkk/map.php?wm=</string>
+    <string name="profile_logout_title">Выход</string>
+    <string name="profile_logout_text">"Выйти из профиля?  \nПосле выхода данные не будут сохранены на серверной части"</string>
 </resources>

@@ -47,14 +47,14 @@ class ProfileInFragment : Fragment() {
 
     private fun logInAlertDialog(res: JsonJwt) {
         AlertDialog.Builder(requireContext())
-            .setTitle("Подтверждение")
-            .setMessage("Нажимая 'Да', Вы подтверждаете, что учетная запись telegram: \n\n'${res.name}'\n\n принадлежит Вам.")
+            .setTitle(getString(R.string.profile_in_alert_title))
+            .setMessage(String.format(getString(R.string.profile_in_alert_text), res.name))
             .setCancelable(true)
-            .setPositiveButton("да") { _, _ ->
+            .setPositiveButton(getString(R.string.ma_yes)) { _, _ ->
                 viewModel.saveUserInfo(res)
                 (requireActivity() as MainActivity).setCurrentFragment(ProfileOutFragment())
             }
-            .setNegativeButton("нет") { dialogInterface, i ->
+            .setNegativeButton(getString(R.string.profile_in_no)) { dialogInterface, i ->
                 dialogInterface.dismiss()
             }
             .show()
@@ -63,7 +63,8 @@ class ProfileInFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Профиль"
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =
+            getString(R.string.profile_in_title)
         viewModel = ViewModelProvider(this, viewModelFactory)[ProfileInViewModel::class.java]
         binding.frgmntProButCk.setOnClickListener {
             viewModel.checkKod(binding.frgmntProEt.text.toString())
@@ -78,7 +79,7 @@ class ProfileInFragment : Fragment() {
         viewModel.isError.observe(viewLifecycleOwner) {
             Toast.makeText(
                 requireContext(),
-                "неверный код, повторите попытку",
+                getString(R.string.profile_in_error_kod),
                 Toast.LENGTH_SHORT
             ).show()
         }
