@@ -62,6 +62,9 @@
     <string name="set_end_time">Время окончания</string>
     <string name="set_min_dist">Минимальное расстояние, м</string>
     <string name="set_accuracy">Точность, м</string>
+    <string name="set_format">введите число больше %s</string>
+    <string name="set_format_end">время должо быть раньше времени конца: %s</string>
+    <string name="set_format_start">время должо быть позже времени старта: %s</string>
     <string name="set_wait_accuracy_time">Время ожидания точности, с</string>
     <string name="set_periodic_time">Периодичность контроля, с</string>
     <string name="profile_kod">код</string>
@@ -106,4 +109,5 @@
     <string name="profile_out_urd_body">https://kol.hhos.ru/gkk/map.php?wm=</string>
     <string name="profile_logout_title">Выход</string>
     <string name="profile_logout_text">"Выйти из профиля?  \nПосле выхода данные не будут сохранены на серверной части"</string>
+    <string name="set_alarm_clock_set">будильник установлен</string>
 </resources>

@@ -18,6 +18,7 @@ import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentSettingsBinding
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import java.text.SimpleDateFormat
@@ -63,6 +64,41 @@ class SettingsFragment : Fragment() {
         bindMyService()
     }
 
+    private fun observeViewModel() {
+        viewModel.errorMinDistance.observe(viewLifecycleOwner) {
+            val message = if (it) {
+                String.format(getString(R.string.set_format), MIN_DIST_LENGTH)
+            } else {
+                null
+            }
+            binding.frgmntSetMdEt.error = message
+        }
+        viewModel.errorAccuracy.observe(viewLifecycleOwner) {
+            val message = if (it) {
+                String.format(getString(R.string.set_format), ACCURACY_LENGTH)
+            } else {
+                null
+            }
+            binding.frgmntSetAccurEt.error = message
+        }
+        viewModel.errorTimeAccuracy.observe(viewLifecycleOwner) {
+            val message = if (it) {
+                String.format(getString(R.string.set_format), TIME_ACCURACY_LENGTH)
+            } else {
+                null
+            }
+            binding.frgmntSetTimeAcEt.error = message
+        }
+        viewModel.errorTimePeriod.observe(viewLifecycleOwner) {
+            val message = if (it) {
+                String.format(getString(R.string.set_format), TIME_PERIODIC_LENGTH)
+            } else {
+                null
+            }
+            binding.frgmntSetTimePovtorEt.error = message
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -91,9 +127,28 @@ class SettingsFragment : Fragment() {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Настройки"
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
         setDays()
+        workingTimeModel = viewModel.getWorkingTime()
+        observeViewModel()
         binding.frgmntSetSwitchAc.isChecked = workingTimeModel.isEnable
         binding.frgmntSetSwitchStart.isChecked = viewModel.checkService()
-        binding.frgmntSetSwitchStart.setOnClickListener { view ->
+        binding.frgmntSetSwitchStart.setOnCheckedChangeListener { view, isChecked ->
+            if (isChecked) {
+                if (!viewModel.checkService()) {
+                    ContextCompat.startForegroundService(
+                        requireContext(),
+                        MyForegroundService.newIntent(requireContext())
+                    )
+                    Log.e("frgmntSetSwitchStart", "isMyServiceRunning")
+                }
+            } else {
+                if (viewModel.checkService()) {
+                    Log.e("frgmntSetSwitchStart", "isMyServiceRunningFalse")
+                    requireContext().stopService(MyForegroundService.newIntent(requireContext()))
+                    viewModel.cancelAlarmService()
+                }
+            }
+        }
+        /*binding.frgmntSetSwitchStart.setOnClickListener { view ->
             bindUnbindService()
             if (!viewModel.checkService()) {
                 ContextCompat.startForegroundService(
@@ -106,10 +161,14 @@ class SettingsFragment : Fragment() {
                 requireContext().stopService(MyForegroundService.newIntent(requireContext()))
                 viewModel.cancelAlarmService()
             }
-        }
+        }*/
         binding.frgmntSetSwitchAc.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
             if (isChecked) {
-                Toast.makeText(requireContext(), "будильник установлен", Toast.LENGTH_SHORT)
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.set_alarm_clock_set),
+                    Toast.LENGTH_SHORT
+                )
                     .show()
                 viewModel.runAlarmClock()
                 Log.e("frgmntSetSwitchAc", "будильник установлен")
@@ -131,14 +190,14 @@ class SettingsFragment : Fragment() {
             val timePickerDialog =
                 TimePickerDialog(requireContext(), { view, hourOfDay, minute ->
                     h =
-                        if (hourOfDay.toString().length == 1) "0" + (hourOfDay).toString() else (hourOfDay).toString()
+                        if (hourOfDay.toString().length == 1) ZERO_STRING + (hourOfDay).toString() else (hourOfDay).toString()
                     m =
-                        if (minute.toString().length == 1) "0" + minute.toString() else minute.toString()
+                        if (minute.toString().length == 1) ZERO_STRING + minute.toString() else minute.toString()
                     Log.e("Time", "$h:$m")
                     if (!compare2Times("$h:$m", workingTimeModel.end))
                         Toast.makeText(
                             requireContext(),
-                            "время должо быть раньше времени конца: ${workingTimeModel.end}",
+                            String.format(getString(R.string.set_format_end, workingTimeModel.end)),
                             Toast.LENGTH_SHORT
                         ).show()
                     else {
@@ -167,14 +226,19 @@ class SettingsFragment : Fragment() {
                     requireContext(),
                     { view, hourOfDay, minute ->
                         h =
-                            if (hourOfDay.toString().length == 1) "0" + (hourOfDay).toString() else (hourOfDay).toString()
+                            if (hourOfDay.toString().length == 1) ZERO_STRING + (hourOfDay).toString() else (hourOfDay).toString()
                         m =
-                            if (minute.toString().length == 1) "0" + minute.toString() else minute.toString()
+                            if (minute.toString().length == 1) ZERO_STRING + minute.toString() else minute.toString()
                         Log.e("endTime", "$h:$m")
                         if (!compare2Times(workingTimeModel.start, "$h:$m"))
                             Toast.makeText(
                                 requireContext(),
-                                "время должо быть позже времени старта: ${workingTimeModel.start}",
+                                String.format(
+                                    getString(
+                                        R.string.set_format_start,
+                                        workingTimeModel.start
+                                    )
+                                ),
                                 Toast.LENGTH_SHORT
                             ).show()
                         else {
@@ -202,80 +266,41 @@ class SettingsFragment : Fragment() {
         binding.frgmntSetMdEt.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                workingTimeModel = viewModel.getWorkingTime()
+                viewModel.resetError(SettingsViewNames.MIN_DISTANCE)
             }
 
             override fun afterTextChanged(s: Editable) {
-                workingTimeModel = viewModel.getWorkingTime()
-                if (s.length > 0) {
-                    if (s.toString().toInt() >= 10) {
-                        viewModel.setWorkingTime(
-                            workingTimeModel.copy(
-                                minDist = s.toString().toInt()
-                            )
-                        )
-                        binding.frgmntSetMdEt.error = null
-                    } else
-                        binding.frgmntSetMdEt.error = "введите число больше 10"
-                } else
-                    binding.frgmntSetMdEt.error = "введите"
+                viewModel.validateInputData(s.toString(), SettingsViewNames.MIN_DISTANCE)
             }
         })
         binding.frgmntSetAccurEt.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                viewModel.resetError(SettingsViewNames.ACCURACY)
+            }
+
             override fun afterTextChanged(s: Editable) {
-                workingTimeModel = viewModel.getWorkingTime()
-                if (s.length > 0) {
-                    if (s.toString().toInt() >= 50) {
-                        viewModel.setWorkingTime(
-                            workingTimeModel.copy(
-                                accuracy = s.toString().toInt()
-                            )
-                        )
-                        binding.frgmntSetAccurEt.error = null
-                    } else
-                        binding.frgmntSetAccurEt.error = "введите число больше 50"
-                } else
-                    binding.frgmntSetAccurEt.error = "введите"
+                viewModel.validateInputData(s.toString(), SettingsViewNames.ACCURACY)
             }
         })
         binding.frgmntSetTimeAcEt.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                viewModel.resetError(SettingsViewNames.TIME_ACCURACY)
+            }
+
             override fun afterTextChanged(s: Editable) {
-                workingTimeModel = viewModel.getWorkingTime()
-                if (s.length > 0) {
-                    if (s.toString().toInt() >= 50) {
-                        viewModel.setWorkingTime(
-                            workingTimeModel.copy(
-                                timeOfWaitAccuracy = s.toString().toInt()
-                            )
-                        )
-                        binding.frgmntSetTimeAcEt.error = null
-                    } else
-                        binding.frgmntSetTimeAcEt.error = "введите число больше 50"
-                } else
-                    binding.frgmntSetTimeAcEt.error = "введите"
+                viewModel.validateInputData(s.toString(), SettingsViewNames.TIME_ACCURACY)
             }
         })
         binding.frgmntSetTimePovtorEt.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                viewModel.resetError(SettingsViewNames.TIME_PERIOD)
+            }
+
             override fun afterTextChanged(s: Editable) {
-                workingTimeModel = viewModel.getWorkingTime()
-                if (s.length > 0) {
-                    if (s.toString().toInt() >= 20) {
-                        viewModel.setWorkingTime(
-                            workingTimeModel.copy(
-                                timeOfWorkingWM = s.toString().toInt()
-                            )
-                        )
-                        binding.frgmntSetTimePovtorEt.error = null
-                    } else
-                        binding.frgmntSetTimePovtorEt.error = "введите число больше 20"
-                } else
-                    binding.frgmntSetTimePovtorEt.error = "введите"
+                viewModel.validateInputData(s.toString(), SettingsViewNames.TIME_PERIOD)
             }
         })
     }
@@ -334,7 +359,7 @@ class SettingsFragment : Fragment() {
         }
         if (listOfDays.size == listOfCheckBox.size) {
             for (i in listOfDays.indices) {
-                listOfCheckBox[i].isChecked = listOfDays[i].equals("1")
+                listOfCheckBox[i].isChecked = listOfDays[i] == ONE_UNIT
             }
         }
     }
@@ -361,6 +386,10 @@ class SettingsFragment : Fragment() {
     }
 
     private companion object {
+        private const val MIN_DIST_LENGTH = 10
+        private const val ACCURACY_LENGTH = 50
+        private const val TIME_ACCURACY_LENGTH = 20
+        private const val TIME_PERIODIC_LENGTH = 15
         private const val DELIMITER = ":"
         private const val ONE_UNIT = "1"
         private const val ZERO_STRING = "0"
