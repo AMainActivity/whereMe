@@ -107,11 +107,11 @@ class SettingsFragment : Fragment() {
         return binding.root
     }
 
-    fun getHourFromSet(id: Int): String {
+    private fun getHourFromSet(id: Int): String {
         workingTimeModel = viewModel.getWorkingTime()
         val start = workingTimeModel.start.split(DELIMITER)
         val end = workingTimeModel.end.split(DELIMITER)
-        var res = ""
+        var res = EMPTY_STRING
         when (id) {
             1 -> res = start[0]
             2 -> res = start[1]
@@ -124,7 +124,7 @@ class SettingsFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = "Настройки"
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = getString(R.string.menu_settings)
         viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
         setDays()
         workingTimeModel = viewModel.getWorkingTime()
@@ -162,7 +162,7 @@ class SettingsFragment : Fragment() {
                 viewModel.cancelAlarmService()
             }
         }*/
-        binding.frgmntSetSwitchAc.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
+        binding.frgmntSetSwitchAc.setOnCheckedChangeListener { buttonView, isChecked ->
             if (isChecked) {
                 Toast.makeText(
                     requireContext(),
@@ -176,7 +176,7 @@ class SettingsFragment : Fragment() {
                 Log.e("frgmntSetSwitchAc", "будильник отключен")
                 viewModel.cancelAlarmClock()
             }
-        })
+        }
         binding.frgmntSetButStart.setText(
             "${getHourFromSet(1)}:${getHourFromSet(2)}", null
         )
@@ -185,8 +185,8 @@ class SettingsFragment : Fragment() {
         )
         binding.frgmntSetButStart.setOnClickListener {
             workingTimeModel = viewModel.getWorkingTime()
-            var h = ""
-            var m = ""
+            var h = EMPTY_STRING
+            var m = EMPTY_STRING
             val timePickerDialog =
                 TimePickerDialog(requireContext(), { view, hourOfDay, minute ->
                     h =
@@ -219,8 +219,8 @@ class SettingsFragment : Fragment() {
         }
         binding.frgmntSetButEnd.setOnClickListener {
             workingTimeModel = viewModel.getWorkingTime()
-            var h = ""
-            var m = ""
+            var h = EMPTY_STRING
+            var m = EMPTY_STRING
             val timePickerDialog =
                 TimePickerDialog(
                     requireContext(),

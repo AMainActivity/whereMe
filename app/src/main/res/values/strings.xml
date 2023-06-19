@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name"> Ты где был?!#</string>
     <string name="action_settings">Settings</string>
-    <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
     <string name="frgmnt_set_label">настройки</string>
     <string name="ma_menu_help">
