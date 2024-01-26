@@ -15,7 +15,3 @@
 Подробное описание - https://kol.hhos.ru/2022/12/07/%d0%bf%d1%80%d0%b8%d0%bb%d0%be%d0%b6%d0%b5%d0%bd%d0%b8%d0%b5-%d1%82%d1%8b-%d0%b3%d0%b4%d0%b5-%d0%b1%d1%8b%d0%bb/.
 
 Скачать можно с telegram-бота — https://t.me/myTestInfoBot
-
-//## Внешний вид:
-
-<!--img src="screenshots/1.png" width="250"> <img src="screenshots/2.png" width="250"> <img src="screenshots/3.png" width="250"> <img src="screenshots/4.png" width="250"> <img src="screenshots/5.png" width="250"-->
