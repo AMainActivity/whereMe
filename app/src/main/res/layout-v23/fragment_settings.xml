@@ -84,7 +84,6 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_margin="5dp"
-                                android:background="@android:color/white"
                                 android:orientation="horizontal">
 
                                 <LinearLayout
@@ -274,7 +273,6 @@
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center_vertical"
                                 android:layout_margin="5dp"
-                                android:background="@color/white"
                                 android:hint="Минимальное расстояние, м"
                                 android:inputType="number"
                                 android:maxLines="1"
@@ -297,7 +295,6 @@
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center_vertical"
                                 android:layout_margin="5dp"
-                                android:background="@color/white"
                                 android:hint="Точность, м"
                                 android:inputType="number"
                                 android:maxLines="1"
@@ -320,7 +317,6 @@
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center_vertical"
                                 android:layout_margin="5dp"
-                                android:background="@color/white"
                                 android:hint="Время ожидания точности, с"
                                 android:inputType="number"
                                 android:maxLines="1"
@@ -343,7 +339,6 @@
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center_vertical"
                                 android:layout_margin="5dp"
-                                android:background="@color/white"
                                 android:hint="Периодичность контроля, с"
                                 android:inputType="number"
                                 android:maxLines="1"

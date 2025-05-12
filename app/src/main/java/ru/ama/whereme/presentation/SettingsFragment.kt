@@ -375,7 +375,11 @@ class SettingsFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        requireActivity().unbindService(serviceConnection)
+        try {
+            requireActivity().unbindService(serviceConnection)
+        } catch (e: Exception) {
+
+        }
     }
 
     private fun Boolean.toIntTxt() = if (this) ONE_UNIT else ZERO_STRING

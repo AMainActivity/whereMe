@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
@@ -25,6 +26,7 @@ import javax.inject.Inject
 class MainActivity : AppCompatActivity() {
 
     private val REQUEST_PERMISSION_LOCATION = 10
+    private val REQUEST_PERMISSION_LOCATION_BACK = 11
     private lateinit var viewModel: MainViewModel
 
     @Inject
@@ -58,6 +60,7 @@ class MainActivity : AppCompatActivity() {
                         Log.e("checkIsActivate", viewModel.checkIsActivate().toString())
                         if (viewModel.checkIsActivate()) profileOutFragment else profileInFragment
                     }
+
                     R.id.page_4 -> aboutFragment
                     else -> mapFragment
                 }
@@ -85,6 +88,7 @@ class MainActivity : AppCompatActivity() {
                     showGPSNotEnabledDialog(this)
                 }
             }
+
             else -> {
                 requestAccessFineLocationPermission(
                     this,
@@ -100,7 +104,10 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        Log.e(javaClass.simpleName, "onRequestPermissionsResult: $requestCode")
         when (requestCode) {
+
+
             REQUEST_PERMISSION_LOCATION -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     if (!isLocationEnabled(this)) {
@@ -114,23 +121,62 @@ class MainActivity : AppCompatActivity() {
                     ).show()
                     finish()
                 }
+                requestNotificationPermission(this, 111)
+                requestBackLocationPermission(this, REQUEST_PERMISSION_LOCATION_BACK)
             }
         }
     }
 
-
     private fun requestAccessFineLocationPermission(activity: AppCompatActivity, requestId: Int) {
-        ActivityCompat.requestPermissions(
+        val permissions = mutableListOf<String>()
+        permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+
+       /* if (
+            (ActivityCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+                    || ActivityCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED) &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+        ) {
+            permissions.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        }*/
+
+        ActivityCompat.requestPermissions(activity, permissions.toTypedArray(), requestId)
+    }
+
+    private fun requestBackLocationPermission(activity: AppCompatActivity, requestId: Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ActivityCompat.requestPermissions(
             activity,
-            arrayOf(
-                Manifest.permission.FOREGROUND_SERVICE,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-                Manifest.permission.ACCESS_BACKGROUND_LOCATION
-            ),
+            arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
             requestId
         )
     }
+
+    private fun requestNotificationPermission(activity: AppCompatActivity, requestId: Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) ActivityCompat.requestPermissions(
+            activity,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            requestId
+        )
+    }
+    /*private fun requestAccessFineLocationPermission(activity: AppCompatActivity, requestId: Int) {
+        Log.e(javaClass.simpleName, "requestAccessFineLocationPermission: ", )
+        ActivityCompat.requestPermissions(
+            activity,
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ),
+            requestId
+        )
+    }*/
 
     private fun isAccessFineLocationGranted(context: Context): Boolean {
         return ContextCompat

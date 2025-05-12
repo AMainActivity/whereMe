@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
 import android.os.CountDownTimer
@@ -25,7 +26,7 @@ import ru.ama.whereme.R
 import ru.ama.whereme.data.repository.WmRepositoryImpl
 import ru.ama.whereme.domain.entity.DatasToJson
 import ru.ama.whereme.domain.entity.SettingsDomModel
-import java.util.*
+import java.util.Calendar
 import javax.inject.Inject
 
 class MyForegroundService : LifecycleService() {
@@ -86,6 +87,7 @@ class MyForegroundService : LifecycleService() {
             .setContentText(getString(R.string.service_notify_text))
             .setSmallIcon(R.drawable.ic_launcher_background)
             .setOnlyAlertOnce(true)
+            .setOngoing(true)
             .setContentIntent(resultPendingIntent)
         return b
     }
@@ -228,7 +230,15 @@ class MyForegroundService : LifecycleService() {
         createNotificationChannel()
         Log.e("getCurrentDateMil", repo.getCurrentDateMil())
         Log.e("getCurrentDate", repo.getCurrentDate())
-        startForeground(NOTIFICATION_ID, notificationBuilder.build())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID, notificationBuilder.build(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notificationBuilder.build())
+        }
+        //startForeground(NOTIFICATION_ID, notificationBuilder.build())
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

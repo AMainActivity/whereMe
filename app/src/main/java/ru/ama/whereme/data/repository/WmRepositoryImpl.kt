@@ -30,18 +30,26 @@ import kotlinx.coroutines.withContext
 import okhttp3.RequestBody
 import ru.ama.ottest.data.mapper.WmMapperJwt
 import ru.ama.ottest.data.network.WmApiService
-import ru.ama.whereme.data.database.*
+import ru.ama.whereme.data.alarms.AlarmClockStart
+import ru.ama.whereme.data.alarms.PeriodicAlarm
+import ru.ama.whereme.data.database.LocationDao
+import ru.ama.whereme.data.database.LocationDbModel
+import ru.ama.whereme.data.database.SettingsDataModel
+import ru.ama.whereme.data.database.SettingsUserInfoDataModel
 import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.data.mapper.WmMapperByDays
 import ru.ama.whereme.data.mapper.WmMapperSettings
 import ru.ama.whereme.data.mapper.WmMapperUserInfoSettings
-import ru.ama.whereme.data.alarms.PeriodicAlarm
-import ru.ama.whereme.data.alarms.AlarmClockStart
 import ru.ama.whereme.di.ApplicationScope
-import ru.ama.whereme.domain.entity.*
+import ru.ama.whereme.domain.entity.LocationDb
+import ru.ama.whereme.domain.entity.ResponseEntity
+import ru.ama.whereme.domain.entity.ResponseJwtEntity
+import ru.ama.whereme.domain.entity.SettingsDomModel
+import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
 import ru.ama.whereme.domain.repository.WmRepository
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
 import javax.inject.Inject
 
 
@@ -119,21 +127,27 @@ class WmRepositoryImpl @Inject constructor(
             Calendar.MONDAY -> {
                 result = wTime.days[0] == DEFAULT_SETTINGS_DAY
             }
+
             Calendar.TUESDAY -> {
                 result = wTime.days[1] == DEFAULT_SETTINGS_DAY
             }
+
             Calendar.WEDNESDAY -> {
                 result = wTime.days[2] == DEFAULT_SETTINGS_DAY
             }
+
             Calendar.THURSDAY -> {
                 result = wTime.days[3] == DEFAULT_SETTINGS_DAY
             }
+
             Calendar.FRIDAY -> {
                 result = wTime.days[4] == DEFAULT_SETTINGS_DAY
             }
+
             Calendar.SATURDAY -> {
                 result = wTime.days[5] == DEFAULT_SETTINGS_DAY
             }
+
             Calendar.SUNDAY -> {
                 result = wTime.days[6] == DEFAULT_SETTINGS_DAY
             }
@@ -171,7 +185,12 @@ class WmRepositoryImpl @Inject constructor(
         val wTime = getWorkingTime()
         val am = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val i = Intent(application, AlarmClockStart::class.java)
-        val pi = PendingIntent.getBroadcast(application, EMPTY_INT, i, EMPTY_INT)
+        val pi = PendingIntent.getBroadcast(
+            application,
+            EMPTY_INT,
+            i,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val calendar: Calendar = Calendar.getInstance().apply {
             timeInMillis = System.currentTimeMillis()
             set(Calendar.HOUR_OF_DAY, wTime.start.split(SPLIT_DELIMITER)[0].toInt())
@@ -193,7 +212,12 @@ class WmRepositoryImpl @Inject constructor(
     override fun cancelAlarmClock() {
         Log.e("runAlarmClock", "cancelAlarmClock")
         val intent = Intent(application, AlarmClockStart::class.java)
-        val sender = PendingIntent.getBroadcast(application, EMPTY_INT, intent, EMPTY_INT)
+        val sender = PendingIntent.getBroadcast(
+            application,
+            EMPTY_INT,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(sender)
         setWorkingTime(getWorkingTime().copy(isEnable = false))
@@ -203,7 +227,12 @@ class WmRepositoryImpl @Inject constructor(
         Log.e("runAlarm", "" + timeInterval)
         val am = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val i = Intent(application, PeriodicAlarm::class.java)
-        val pi = PendingIntent.getBroadcast(application, EMPTY_INT, i, EMPTY_INT)
+        val pi = PendingIntent.getBroadcast(
+            application,
+            EMPTY_INT,
+            i,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val alarmTimeAtUTC = System.currentTimeMillis() + timeInterval * ONE_SECOND
         am.cancel(pi)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -228,7 +257,12 @@ class WmRepositoryImpl @Inject constructor(
     override fun cancelAlarm() {
         Log.e("runAlarm", "cancelAlarm")
         val intent = Intent(application, PeriodicAlarm::class.java)
-        val sender = PendingIntent.getBroadcast(application, EMPTY_INT, intent, EMPTY_INT)
+        val sender = PendingIntent.getBroadcast(
+            application,
+            EMPTY_INT,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(sender)
     }
