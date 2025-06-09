@@ -200,12 +200,19 @@ class WmRepositoryImpl @Inject constructor(
             calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1)
         }
         am.cancel(pi)
-        am.setRepeating(
-            AlarmManager.RTC_WAKEUP,
-            calendar.timeInMillis,
-            DEFAULT_INTERVAL_ALARM,
+        am.setAlarmClock(
+            AlarmManager.AlarmClockInfo(
+                calendar.timeInMillis,
+                pi
+            ),
             pi
         )
+        /* am.setRepeating(
+             AlarmManager.RTC_WAKEUP,
+             calendar.timeInMillis,
+             DEFAULT_INTERVAL_ALARM,
+             pi
+         )*/
         setWorkingTime(wTime.copy(isEnable = true))
     }
 

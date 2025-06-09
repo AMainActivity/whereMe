@@ -260,6 +260,7 @@ class MyForegroundService : LifecycleService() {
                     reRunGetLocations()
             }
         }
+        repo.runAlarmClock()
         startGetLocations()
         return START_STICKY
     }
