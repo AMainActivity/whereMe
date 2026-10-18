@@ -27,10 +27,29 @@ Kotlin 2.2.21, KSP 2.2.21-2.0.4 и Hilt 2.58 согласованы с этой 
 Открывать корень проекта и использовать Gradle wrapper. Для проверки из терминала:
 
 ```sh
-./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+./gradlew :domain:test :data:testDebugUnitTest :app:testDebugUnitTest :app:assembleDebug :app:lintDebug :data:lintDebug
 ```
 
 На Windows используется `gradlew.bat`. Путь к установленному Android SDK задаётся
 локально через Android Studio/`local.properties`. Обновление AGP требует проверки
 поддержки в используемой Android Studio, а также согласования Gradle, Kotlin,
 KSP, Hilt и требований AAR к compileSdk; успешная CLI-сборка не подтверждает IDE Sync.
+
+## Структура проекта
+
+- `:domain` — Kotlin/JVM: модели, отдельные контракты истории, настроек, сессии,
+  авторизации и доступности сети; сценарии использования. Android, LiveData,
+  Room и HTTP-типы в этот модуль не входят.
+- `:data` — Android library: Room, сетевой API, сохранение настроек и сессии,
+  сбор координат, синхронизация и Hilt-привязки реализаций. Зависит от `:domain`.
+- `:app` — приложение: экраны, ViewModel, foreground service, receivers и
+  планировщик в `tracking`. Зависит от `:domain` и `:data`.
+
+История и доступные дни передаются из Room через Flow. Преобразование в LiveData
+сохранено только на границе существующего XML-интерфейса. Для настроек пока используется
+адаптер SharedPreferences; DataStore, LocationManager, Compose, Decompose и MVI
+остаются следующими этапами миграции. Текущая версия БД — 3, экспорт схемы находится
+в `data/schemas`; выделение модулей не требует удаления данных или переустановки.
+
+Тестовые APK для проверок Room собираются командой
+`./gradlew :data:assembleDebugAndroidTest`; это не запускает тесты на устройстве.

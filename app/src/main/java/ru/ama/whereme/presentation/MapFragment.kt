@@ -27,7 +27,7 @@ import ru.ama.whereme.R
 import ru.ama.whereme.databinding.DatePickerDaysBinding
 import ru.ama.whereme.databinding.FragmentMapBinding
 import ru.ama.whereme.presentation.map.RouteRequest
-import ru.ama.whereme.domain.entity.LocationDb
+import ru.ama.whereme.presentation.map.DayLocations
 import ru.ama.whereme.domain.entity.LocationDbByDays
 import java.text.SimpleDateFormat
 import java.util.*
@@ -40,7 +40,7 @@ class MapFragment : Fragment() {
     private val binding get() = _binding ?: throw RuntimeException("FragmentFirstBinding == null")
     private lateinit var viewModel: MapViewModel
     lateinit var listDays: List<LocationDbByDays>
-    private var observedDay: LiveData<List<LocationDb>>? = null
+    private var observedDay: LiveData<DayLocations>? = null
     private var routeDialog: AlertDialog? = null
     var onDataSizeListener: ((Int) -> Unit)? = null
 
@@ -88,7 +88,7 @@ class MapFragment : Fragment() {
             calendar.set(year, monthOfYear, dayOfMonth)
             val s = formatter.format(calendar.getTime())
             viewModel.getDataByDate(s)
-            observeData(s)
+            observeData()
             onDataSizeListener = {
                 if (it > 0) popupWindow.dismiss()
             }
@@ -163,7 +163,7 @@ class MapFragment : Fragment() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 if (_binding != null && url != null && isMapPage(Uri.parse(url))) {
-                    observeData(viewModel.selectedDate)
+                    observeData()
                 }
             }
         }
@@ -185,18 +185,18 @@ class MapFragment : Fragment() {
         setUrl(url)
     }
 
-    private fun observeData(abSuntitle: String) {
-        val source = viewModel.lldByDay ?: return
+    private fun observeData() {
+        val source = viewModel.lldByDay
         observedDay?.removeObservers(viewLifecycleOwner)
         observedDay = source
         source.observe(viewLifecycleOwner) {
-            onDataSizeListener?.invoke(it.size)
-            if (_binding == null) return@observe
-            val postData = Gson().toJson(it)
+            if (_binding == null || it.date != viewModel.selectedDate) return@observe
+            onDataSizeListener?.invoke(it.locations.size)
+            val postData = Gson().toJson(it.locations)
             binding.frgmntLocations.evaluateJavascript(
                 String.format(getString(R.string.map_js), postData), null
             )
-            (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = abSuntitle
+            (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = it.date
         }
     }
 

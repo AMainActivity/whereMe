@@ -27,7 +27,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import ru.ama.whereme.R
 import ru.ama.whereme.data.sync.LocationBatchUploader
-import ru.ama.whereme.data.repository.WmRepositoryImpl
+import ru.ama.whereme.data.location.LocationRecorder
+import ru.ama.whereme.domain.repository.SettingsRepository
+import ru.ama.whereme.tracking.TrackingScheduler
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import javax.inject.Inject
 
@@ -48,7 +50,13 @@ class MyForegroundService : LifecycleService() {
     }
 
     @Inject
-    lateinit var repo: WmRepositoryImpl
+    lateinit var repo: LocationRecorder
+
+    @Inject
+    lateinit var settings: SettingsRepository
+
+    @Inject
+    lateinit var scheduler: TrackingScheduler
 
     @Inject
     lateinit var uploader: LocationBatchUploader
@@ -69,7 +77,7 @@ class MyForegroundService : LifecycleService() {
     fun startGetLocations() {
         if (destroyed || !foregroundStarted || cycleJob?.isActive == true) return
         cycleJob = lifecycleScope.launch {
-            workingTimeModel = repo.getWorkingTime()
+            workingTimeModel = settings.getWorkingTime()
             try {
                 startTimer()
                 val sample = repo.collectLocation(workingTimeModel)
@@ -155,11 +163,11 @@ class MyForegroundService : LifecycleService() {
     }
 
     private fun reRunGetLocations() {
-        if (!repo.isTimeToGetLocaton()) {
+        if (!scheduler.isTimeToGetLocaton()) {
             stopTracking()
         } else {
             try {
-                repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
+                scheduler.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
             } catch (_: SecurityException) {
                 Log.w("TrackingCycle", "Unable to schedule next collection")
                 stopTracking()
@@ -213,7 +221,7 @@ class MyForegroundService : LifecycleService() {
         lastRecordedRowId = null
         cycleJob?.cancel()
         repo.stopLocationUpdates()
-        repo.cancelAlarm()
+        scheduler.cancelAlarm()
         timer?.cancel()
         isServiseAlive?.invoke(false)
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -232,7 +240,7 @@ class MyForegroundService : LifecycleService() {
         }
         isTracking = true
         isServiseAlive?.invoke(true)
-        repo.scheduleNextAlarmClockIfEnabled()
+        scheduler.scheduleNextAlarmClockIfEnabled()
         startGetLocations()
         return START_NOT_STICKY
     }

@@ -7,14 +7,14 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
-import ru.ama.whereme.data.repository.WmRepositoryImpl
+import ru.ama.whereme.tracking.TrackingScheduler
 import ru.ama.whereme.presentation.MyForegroundService
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class PeriodicAlarm : BroadcastReceiver() {
     @Inject
-    lateinit var repo: WmRepositoryImpl
+    lateinit var repo: TrackingScheduler
 
     override fun onReceive(context: Context, intent: Intent?) {
         if (!repo.isTimeToGetLocaton()) return

@@ -5,16 +5,14 @@ import androidx.lifecycle.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.usecase.*
+import ru.ama.whereme.tracking.TrackingScheduler
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val getWorkingTimeUseCase: GetWorkingTimeUseCase,
-    private val checkServiceUseCase: CheckServiceUseCase,
     private val setWorkingTimeUseCase: SetWorkingTimeUseCase,
-    private val runAlarmClockUseCase: RunAlarmClockUseCase,
-    private val cancelAlarmClockUseCase: CancelAlarmClockUseCase,
-    private val cancelAlarmServiceUseCase: CancelAlarmServiceUseCase
+    private val scheduler: TrackingScheduler
 
 ) : ViewModel() {
 
@@ -107,20 +105,20 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun runAlarmClock() {
-        runAlarmClockUseCase()
+        scheduler.runAlarmClock()
     }
 
     fun cancelAlarmClock() {
-        cancelAlarmClockUseCase()
+        scheduler.cancelAlarmClock()
     }
 
     fun cancelAlarmService() {
-        cancelAlarmServiceUseCase()
+        scheduler.cancelAlarm()
     }
 
     fun checkService(): Boolean {
-        Log.e("fromSet", checkServiceUseCase(MyForegroundService::class.java).toString())
-        return checkServiceUseCase(MyForegroundService::class.java)
+        Log.e("fromSet", scheduler.isMyServiceRunning(MyForegroundService::class.java).toString())
+        return scheduler.isMyServiceRunning(MyForegroundService::class.java)
     }
 
     fun setWorkingTime(dm: SettingsDomModel) {

@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "whereMe"
-include(":app")
+include(":app", ":domain", ":data")

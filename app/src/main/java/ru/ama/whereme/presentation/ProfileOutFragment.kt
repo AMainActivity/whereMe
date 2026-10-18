@@ -64,9 +64,11 @@ class ProfileOutFragment : Fragment() {
             .setCancelable(true)
             .setPositiveButton(getString(R.string.menu_profil_share)) { _, _ ->
                 val res = viewModel.getSetUserInfo()
-                if (res.name != null && res.url != null) sharetext(
-                    res.name,
-                    getString(R.string.profile_out_urd_body) + res.url,
+                val name = res.name
+                val url = res.url
+                if (name != null && url != null) sharetext(
+                    name,
+                    getString(R.string.profile_out_urd_body) + url,
                     false
                 )
                 else

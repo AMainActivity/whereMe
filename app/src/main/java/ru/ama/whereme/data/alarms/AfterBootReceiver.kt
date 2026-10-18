@@ -5,13 +5,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import ru.ama.whereme.data.repository.WmRepositoryImpl
+import ru.ama.whereme.tracking.TrackingScheduler
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class AfterBootReceiver : BroadcastReceiver() {
     @Inject
-    lateinit var repo: WmRepositoryImpl
+    lateinit var repo: TrackingScheduler
 
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != Intent.ACTION_BOOT_COMPLETED) return
