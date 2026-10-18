@@ -84,10 +84,6 @@
     <string name="string_ok">Ок</string>
     <string name="map_2gisapp">market://details?id=ru.dublgis.dgismobile</string>
     <string name="service_notify_title">служба</string>
-    <string name="service_notify_text">определения местоположения</string>
-    <string name="service_povtor">скоро повтор</string>
-    <string name="service_timer_povtor">\"не было найдено, скоро повтор \"</string>
-    <string name="service_timer_success">\"успешно получено \"</string>
     <string name="profile_in_alert_title">Подтверждение</string>
     <string name="profile_in_alert_text">Нажимая \"Да\", Вы подтверждаете, что учетная запись telegram: \n\n "%s"\n\n принадлежит Вам.</string>
     <string name="profile_in_no">нет</string>
@@ -131,4 +127,9 @@
     <string name="tracking_stop">Остановить запись</string>
     <string name="tracking_starting">Подготавливаем запись</string>
     <string name="tracking_schedule_ready">Расписание включено. Ожидаем выбранное время запуска</string>
+    <string name="tracking_saving">Сохраняем точку</string>
+    <string name="tracking_uploading">Проверяем отправку сохранённых точек</string>
+    <string name="tracking_stopping">Останавливаем запись</string>
+    <string name="tracking_sync_failed">Отправить точки пока не удалось. Запись продолжается</string>
+    <string name="tracking_stop_restricted">Не удалось передать команду остановки. Вернитесь в приложение и повторите</string>
 </resources>

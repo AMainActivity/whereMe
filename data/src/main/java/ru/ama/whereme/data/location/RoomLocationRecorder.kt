@@ -8,6 +8,8 @@ import ru.ama.whereme.data.database.AppDatabase
 import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.domain.entity.SettingsDomModel
+import ru.ama.whereme.domain.entity.LocationSample
+import ru.ama.whereme.domain.tracking.LocationRecorder
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -15,31 +17,29 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class LocationRecorder @Inject constructor(
-    private val locationSource: ru.ama.whereme.domain.repository.LocationSource,
+class RoomLocationRecorder @Inject constructor(
     private val database: AppDatabase,
     private val locationDao: LocationDao
-) {
-    suspend fun collectLocation(settings: SettingsDomModel): ru.ama.whereme.domain.entity.LocationOutcome =
-        locationSource.locate(
-            settings.accuracy,
-            settings.timeOfWaitAccuracy.toLong().coerceAtLeast(1L) * ONE_SECOND
-        )
-
-    fun getDate(milliSeconds: Long): String {
+) : LocationRecorder {
+    private fun getDate(milliSeconds: Long): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
         val calendar: Calendar = Calendar.getInstance()
         calendar.timeInMillis = milliSeconds
         return formatter.format(calendar.time)
     }
-    fun getCurrentDate(): String {
+    private fun getCurrentDate(): String {
         val formatter = SimpleDateFormat("dd.MM.yyyy")
         return formatter.format(Date())
     }
 
-    suspend fun saveLocation(
-        location: Location, lTime: Long, settings: SettingsDomModel, previousRowId: Long?
-    ): Long = withContext(Dispatchers.IO) {
+    override suspend fun record(sample: LocationSample, settings: SettingsDomModel, previousRowId: Long?): Long =
+        withContext(Dispatchers.IO) {
+            val lTime = sample.timeMillis
+            val location = Location("platform").apply {
+                latitude = sample.latitude; longitude = sample.longitude
+                accuracy = sample.accuracyMeters; speed = sample.speedMetersPerSecond
+                time = sample.timeMillis; elapsedRealtimeNanos = sample.elapsedRealtimeNanos
+            }
             database.withTransaction {
                 val last = locationDao.getLastValue(getCurrentDate())
                 val previous = last?.let {

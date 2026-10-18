@@ -6,6 +6,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.Module
 import dagger.Provides
+import ru.ama.whereme.data.location.PlatformLocationSource
+import ru.ama.whereme.data.location.RoomLocationRecorder
+import ru.ama.whereme.data.sync.LocationBatchUploader
+import ru.ama.whereme.domain.tracking.LocationRecorder
+import ru.ama.whereme.domain.tracking.PendingLocationUploader
 import ru.ama.whereme.data.network.WmApiService
 import ru.ama.whereme.data.database.AppDatabase
 import ru.ama.whereme.data.database.LocationDao
@@ -22,7 +27,13 @@ import ru.ama.whereme.domain.repository.*
 @InstallIn(SingletonComponent::class)
 interface DataModule {
     @Binds
-    fun bindLocationSource(impl: ru.ama.whereme.data.location.PlatformLocationSource): LocationSource
+    fun bindLocationRecorder(impl: RoomLocationRecorder): LocationRecorder
+
+    @Binds
+    fun bindLocationUploader(impl: LocationBatchUploader): PendingLocationUploader
+
+    @Binds
+    fun bindLocationSource(impl: PlatformLocationSource): LocationSource
 
     @Binds
     fun bindSettingsRepository(impl: DataStoreSettingsRepository): SettingsRepository

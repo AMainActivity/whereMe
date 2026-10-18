@@ -10,6 +10,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import ru.ama.whereme.data.network.WmApiService
+import ru.ama.whereme.domain.tracking.PendingLocationUploader
 import javax.inject.Singleton
 import ru.ama.whereme.data.network.model.DatasToJson
 import javax.inject.Inject
@@ -18,11 +19,13 @@ import javax.inject.Inject
 class LocationBatchUploader @Inject constructor(
     private val store: PendingLocationStore,
     private val api: WmApiService
-) {
+) : PendingLocationUploader {
     private val mutex = Mutex()
 
     /** Local data stays pending on every failure; cancellation belongs to the calling service. */
-    suspend fun uploadPending(timeoutMillis: Long = 30_000L) = mutex.withLock {
+    override suspend fun uploadPending() = uploadPending(timeoutMillis = 30_000L)
+
+    suspend fun uploadPending(timeoutMillis: Long) = mutex.withLock {
         val batch = store.snapshot() ?: return@withLock
         if (batch.payload.isEmpty() || !store.isCurrent(batch)) return@withLock
         val request = Gson().toJson(DatasToJson(batch.session.profile.tokenJwt, batch.payload))

@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
 import ru.ama.whereme.tracking.*
 import ru.ama.whereme.domain.entity.LocationOutcome
+import ru.ama.whereme.domain.tracking.TrackingState
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -88,7 +89,8 @@ class SettingsFragment : Fragment() {
         val b = binding
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.tracking.collect { state ->
+                viewModel.tracking.collect { snapshot ->
+                    val state = snapshot.state
                     showServiceState(state.isRunning)
                     renderTrackingState(state)
                 }
@@ -110,7 +112,12 @@ class SettingsFragment : Fragment() {
         b.frgmntSetSwitchStart.setOnCheckedChangeListener { _, enabled ->
             if (!rendering) {
                 if (enabled) requestTracking(TrackingAction.MANUAL)
-                else { viewModel.cancelTrackingRequest(); requireContext().stopService(MyForegroundService.newIntent(requireContext())) }
+                else {
+                    viewModel.cancelTrackingRequest()
+                    try { requireContext().startService(MyForegroundService.stopIntent(requireContext()))
+                    } catch (_: IllegalStateException) { accessDenied(R.string.tracking_stop_restricted)
+                    } catch (_: SecurityException) { accessDenied(R.string.tracking_stop_restricted) }
+                }
             }
         }
         b.frgmntSetButStart.setOnClickListener { pickTime(true) }
@@ -121,7 +128,7 @@ class SettingsFragment : Fragment() {
         number(b.frgmntSetTimePovtorEt, 15) { s, value -> s.copy(timeOfWorkingWM = value) }
         viewModel.settings.asLiveData().observe(viewLifecycleOwner) { state ->
             when (state) {
-                is LoadState.Ready -> { enableSettings(true); render(state.value); renderTrackingState(viewModel.tracking.value) }
+                is LoadState.Ready -> { enableSettings(true); render(state.value); renderTrackingState(viewModel.tracking.value.state) }
                 LoadState.Loading -> enableSettings(false)
                 LoadState.Failed -> {
                     enableSettings(false)
@@ -151,11 +158,18 @@ class SettingsFragment : Fragment() {
             return
         }
         binding.trackingStatus.setText(when (state) {
-            TrackingState.Starting -> R.string.tracking_starting
+            is TrackingState.Starting -> R.string.tracking_starting
             TrackingState.Stopped -> R.string.tracking_stopped
-            TrackingState.Collecting -> R.string.tracking_collecting
-            is TrackingState.Waiting -> if (state.noFix) R.string.tracking_no_fix else R.string.tracking_waiting
-            TrackingState.Failed -> R.string.tracking_failed
+            is TrackingState.Collecting -> R.string.tracking_collecting
+            is TrackingState.Saving -> R.string.tracking_saving
+            is TrackingState.Uploading -> R.string.tracking_uploading
+            TrackingState.Stopping -> R.string.tracking_stopping
+            is TrackingState.Waiting -> when {
+                state.syncFailed -> R.string.tracking_sync_failed
+                state.noFix -> R.string.tracking_no_fix
+                else -> R.string.tracking_waiting
+            }
+            is TrackingState.Failed -> R.string.tracking_failed
             is TrackingState.LocationUnavailable -> when (state.reason) {
                 LocationOutcome.Reason.PERMISSION_REQUIRED -> R.string.tracking_permission_required
                 LocationOutcome.Reason.LOCATION_DISABLED -> R.string.tracking_location_disabled
@@ -172,7 +186,7 @@ class SettingsFragment : Fragment() {
         (days() + binding.run { listOf(frgmntSetSwitchAc, frgmntSetButStart, frgmntSetButEnd,
             frgmntSetMdEt, frgmntSetAccurEt, frgmntSetTimeAcEt, frgmntSetTimePovtorEt) })
             .forEach { it.isEnabled = enabled }
-        binding.frgmntSetSwitchStart.isEnabled = enabled || viewModel.tracking.value.isRunning
+        binding.frgmntSetSwitchStart.isEnabled = enabled || viewModel.tracking.value.state.isRunning
     }
 
     private fun render(value: SettingsDomModel) {
@@ -215,8 +229,8 @@ class SettingsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        showServiceState(viewModel.tracking.value.isRunning)
-        renderTrackingState(viewModel.tracking.value)
+        showServiceState(viewModel.tracking.value.state.isRunning)
+        renderTrackingState(viewModel.tracking.value.state)
         if (viewModel.pendingTrackingAction != null && !viewModel.waitingForAccessResult) continueTrackingRequest()
     }
 
@@ -229,7 +243,7 @@ class SettingsFragment : Fragment() {
         }
         viewModel.pendingTrackingAction = action
         renderedSettings?.let(::render)
-        showServiceState(viewModel.tracking.value.isRunning)
+        showServiceState(viewModel.tracking.value.state.isRunning)
         continueTrackingRequest()
     }
 
@@ -292,7 +306,7 @@ class SettingsFragment : Fragment() {
 
     private fun accessDenied(message: Int) {
         viewModel.cancelTrackingRequest()
-        showServiceState(viewModel.tracking.value.isRunning)
+        showServiceState(viewModel.tracking.value.state.isRunning)
         renderedSettings?.let(::render)
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
             .setAction(R.string.tracking_app_settings) { startActivity(applicationSettingsIntent()) }.show()

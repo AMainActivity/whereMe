@@ -1,7 +1,7 @@
 package ru.ama.whereme.presentation
 
 import androidx.lifecycle.SavedStateHandle
-import ru.ama.whereme.tracking.TrackingRuntime
+import ru.ama.whereme.domain.tracking.TrackingCoordinator
 import ru.ama.whereme.tracking.TrackingAction
 
 import androidx.lifecycle.LiveData
@@ -21,10 +21,10 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val repository: SettingsRepository, private val scheduler: TrackingScheduler,
-    private val savedState: SavedStateHandle, runtime: TrackingRuntime,
+    private val savedState: SavedStateHandle, coordinator: TrackingCoordinator,
     @ApplicationScope applicationScope: CoroutineScope
 ) : ViewModel() {
-    val tracking = runtime.state
+    val tracking = coordinator.state
     var pendingTrackingAction: TrackingAction?
         get() = savedState.get<String>("tracking_action")?.let(TrackingAction::valueOf)
         set(value) { savedState["tracking_action"] = value?.name }
