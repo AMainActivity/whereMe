@@ -1,395 +1,188 @@
 package ru.ama.whereme.presentation
 
-import dagger.hilt.android.AndroidEntryPoint
-
-import android.annotation.SuppressLint
 import android.app.TimePickerDialog
 import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
-import android.text.Editable
-import android.text.TextWatcher
-import android.util.Log
-import android.view.*
-import android.widget.CompoundButton
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.asLiveData
+import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentSettingsBinding
 import ru.ama.whereme.domain.entity.SettingsDomModel
-import java.text.SimpleDateFormat
-
+import java.util.Locale
 
 @AndroidEntryPoint
 class SettingsFragment : Fragment() {
-
     private var _binding: FragmentSettingsBinding? = null
-    private val binding
-        get() = _binding ?: throw RuntimeException("FragmentSettingsBinding == null")
+    private val binding get() = requireNotNull(_binding)
     private lateinit var viewModel: SettingsViewModel
-    private var listOfCheckBox = listOf<AppCompatCheckBox>()
-    private lateinit var workingTimeModel: SettingsDomModel
+    private var rendering = false
+    private var renderedSettings: SettingsDomModel? = null
     private var serviceBound = false
     private var boundService: MyForegroundService? = null
-    private var updatingServiceSwitch = false
 
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        bindMyService()
-        showServiceState(boundService?.isTracking ?: viewModel.checkService())
-    }
-
-    private fun bindMyService() {
-        if (serviceBound) return
-        serviceBound = requireActivity().bindService(
-            MyForegroundService.newIntent(requireContext()), serviceConnection, 0
-        )
-    }
-
-    private fun unbindMyService() {
-        boundService?.isServiseAlive = null
-        boundService = null
-        if (serviceBound) {
-            requireActivity().unbindService(serviceConnection)
-            serviceBound = false
-        }
-    }
-
-    private fun showServiceState(running: Boolean) {
-        updatingServiceSwitch = true
-        try {
-            _binding?.frgmntSetSwitchStart?.isChecked = running
-        } finally {
-            updatingServiceSwitch = false
-        }
-    }
-
-    override fun onStop() {
-        unbindMyService()
-        super.onStop()
-    }
-
-    private fun observeViewModel() {
-        viewModel.errorMinDistance.observe(viewLifecycleOwner) {
-            val message = if (it) {
-                String.format(getString(R.string.set_format), MIN_DIST_LENGTH)
-            } else {
-                null
-            }
-            binding.frgmntSetMdEt.error = message
-        }
-        viewModel.errorAccuracy.observe(viewLifecycleOwner) {
-            val message = if (it) {
-                String.format(getString(R.string.set_format), ACCURACY_LENGTH)
-            } else {
-                null
-            }
-            binding.frgmntSetAccurEt.error = message
-        }
-        viewModel.errorTimeAccuracy.observe(viewLifecycleOwner) {
-            val message = if (it) {
-                String.format(getString(R.string.set_format), TIME_ACCURACY_LENGTH)
-            } else {
-                null
-            }
-            binding.frgmntSetTimeAcEt.error = message
-        }
-        viewModel.errorTimePeriod.observe(viewLifecycleOwner) {
-            val message = if (it) {
-                String.format(getString(R.string.set_format), TIME_PERIODIC_LENGTH)
-            } else {
-                null
-            }
-            binding.frgmntSetTimePovtorEt.error = message
-        }
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    private fun getHourFromSet(id: Int): String {
-        workingTimeModel = viewModel.getWorkingTime()
-        val start = workingTimeModel.start.split(DELIMITER)
-        val end = workingTimeModel.end.split(DELIMITER)
-        var res = EMPTY_STRING
-        when (id) {
-            1 -> res = start[0]
-            2 -> res = start[1]
-            3 -> res = end[0]
-            4 -> res = end[1]
-        }
-        return res
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = getString(R.string.menu_settings)
+        (requireActivity() as AppCompatActivity).supportActionBar?.setSubtitle(R.string.menu_settings)
         viewModel = ViewModelProvider(this)[SettingsViewModel::class.java]
-        setDays()
-        workingTimeModel = viewModel.getWorkingTime()
-        observeViewModel()
-        binding.frgmntSetSwitchAc.isChecked = workingTimeModel.isEnable
+        val b = binding
+        days().forEachIndexed { index, checkBox ->
+            checkBox.setOnCheckedChangeListener { _, checked ->
+                if (!rendering) viewModel.update { current ->
+                    current.copy(days = current.days.mapIndexed { i, day -> if (i == index) if (checked) "1" else "0" else day })
+                }
+            }
+        }
+        b.frgmntSetSwitchAc.setOnCheckedChangeListener { _, enabled ->
+            if (!rendering) viewModel.setSchedule(enabled)
+        }
+        b.frgmntSetSwitchStart.setOnCheckedChangeListener { _, enabled ->
+            if (!rendering) changeService(enabled)
+        }
+        b.frgmntSetButStart.setOnClickListener { pickTime(true) }
+        b.frgmntSetButEnd.setOnClickListener { pickTime(false) }
+        number(b.frgmntSetMdEt, 10) { s, value -> s.copy(minDist = value) }
+        number(b.frgmntSetAccurEt, 50) { s, value -> s.copy(accuracy = value) }
+        number(b.frgmntSetTimeAcEt, 20) { s, value -> s.copy(timeOfWaitAccuracy = value) }
+        number(b.frgmntSetTimePovtorEt, 15) { s, value -> s.copy(timeOfWorkingWM = value) }
+        viewModel.settings.asLiveData().observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is LoadState.Ready -> { enableSettings(true); render(state.value) }
+                LoadState.Loading -> enableSettings(false)
+                LoadState.Failed -> {
+                    enableSettings(false)
+                    Snackbar.make(b.root, R.string.storage_read_failed, Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.storage_retry) { viewModel.retrySettings() }.show()
+                }
+            }
+        }
+        viewModel.errors.observe(viewLifecycleOwner) {
+            Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+            renderedSettings?.let(::render)
+        }
+    }
+
+    private fun days() = binding.run { listOf(frgmntSetCbD1, frgmntSetCbD2, frgmntSetCbD3,
+        frgmntSetCbD4, frgmntSetCbD5, frgmntSetCbD6, frgmntSetCbD7) }
+
+    private fun enableSettings(enabled: Boolean) {
+        (days() + binding.run { listOf(frgmntSetSwitchAc, frgmntSetButStart, frgmntSetButEnd,
+            frgmntSetMdEt, frgmntSetAccurEt, frgmntSetTimeAcEt, frgmntSetTimePovtorEt) })
+            .forEach { it.isEnabled = enabled }
+        binding.frgmntSetSwitchStart.isEnabled = enabled || boundService?.isTracking == true
+    }
+
+    private fun render(value: SettingsDomModel) {
+        val first = renderedSettings == null
+        rendering = true
+        try {
+            days().forEachIndexed { index, checkBox -> checkBox.isChecked = value.days[index] == "1" }
+            binding.frgmntSetSwitchAc.isChecked = value.isEnable
+            binding.frgmntSetButStart.setText(value.start)
+            binding.frgmntSetButEnd.setText(value.end)
+            fun field(view: EditText, number: Int) {
+                if ((first || !view.hasFocus()) && view.text.toString() != number.toString()) view.setText(number.toString())
+            }
+            field(binding.frgmntSetMdEt, value.minDist)
+            field(binding.frgmntSetAccurEt, value.accuracy)
+            field(binding.frgmntSetTimeAcEt, value.timeOfWaitAccuracy)
+            field(binding.frgmntSetTimePovtorEt, value.timeOfWorkingWM)
+            renderedSettings = value
+        } finally { rendering = false }
+    }
+
+    private fun number(view: EditText, minimum: Int, change: (SettingsDomModel, Int) -> SettingsDomModel) {
+        view.doAfterTextChanged { text ->
+            if (!rendering) {
+                val value = text.toString().toIntOrNull()
+                if (value == null || value < minimum) view.error = getString(R.string.set_format, minimum)
+                else { view.error = null; viewModel.update { change(it, value) } }
+            }
+        }
+    }
+
+    private fun pickTime(start: Boolean) {
+        val current = renderedSettings ?: return
+        val parts = (if (start) current.start else current.end).split(':')
+        TimePickerDialog(requireContext(), { _, hour, minute ->
+            val value = String.format(Locale.ROOT, "%02d:%02d", hour, minute)
+            val latest = renderedSettings ?: return@TimePickerDialog
+            if ((start && value >= latest.end) || (!start && value <= latest.start)) {
+                Toast.makeText(requireContext(), if (start) getString(R.string.set_format_end, latest.end)
+                    else getString(R.string.set_format_start, latest.start), Toast.LENGTH_SHORT).show()
+            } else viewModel.update { if (start) it.copy(start = value) else it.copy(end = value) }
+        }, parts[0].toInt(), parts[1].toInt(), true).show()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!serviceBound) serviceBound = requireActivity().bindService(
+            MyForegroundService.newIntent(requireContext()), serviceConnection, 0)
         showServiceState(boundService?.isTracking ?: viewModel.checkService())
-        binding.frgmntSetSwitchStart.setOnCheckedChangeListener { _, isChecked ->
-            if (updatingServiceSwitch) return@setOnCheckedChangeListener
-            if (isChecked) {
-                if (!viewModel.checkService()) {
-                    ContextCompat.startForegroundService(
-                        requireContext(),
-                        MyForegroundService.newIntent(requireContext())
-                    )
-                    Log.e("frgmntSetSwitchStart", "isMyServiceRunning")
-                }
-            } else {
-                if (viewModel.checkService()) {
-                    Log.e("frgmntSetSwitchStart", "isMyServiceRunningFalse")
-                    val service = boundService
-                    if (service != null) service.stopTracking()
-                    else requireContext().startService(MyForegroundService.stopIntent(requireContext()))
-                    unbindMyService()
-                    viewModel.cancelAlarmService()
-                }
-            }
-        }
-        binding.frgmntSetSwitchAc.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.set_alarm_clock_set),
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-                viewModel.runAlarmClock()
-                Log.e("frgmntSetSwitchAc", "будильник установлен")
-            } else {
-                Log.e("frgmntSetSwitchAc", "будильник отключен")
-                viewModel.cancelAlarmClock()
-            }
-        }
-        binding.frgmntSetButStart.setText(
-            "${getHourFromSet(1)}:${getHourFromSet(2)}", null
-        )
-        binding.frgmntSetButEnd.setText(
-            "${getHourFromSet(3)}:${getHourFromSet(4)}", null
-        )
-        binding.frgmntSetButStart.setOnClickListener {
-            workingTimeModel = viewModel.getWorkingTime()
-            var h = EMPTY_STRING
-            var m = EMPTY_STRING
-            val timePickerDialog =
-                TimePickerDialog(requireContext(), { view, hourOfDay, minute ->
-                    h =
-                        if (hourOfDay.toString().length == 1) ZERO_STRING + (hourOfDay).toString() else (hourOfDay).toString()
-                    m =
-                        if (minute.toString().length == 1) ZERO_STRING + minute.toString() else minute.toString()
-                    Log.e("Time", "$h:$m")
-                    if (!compare2Times("$h:$m", workingTimeModel.end))
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.set_format_end, workingTimeModel.end),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    else {
-                        viewModel.setWorkingTime(
-                            workingTimeModel.copy(
-                                start = "$h:$m",
-                                isEnable = true
-                            )
-                        )
-                        if (binding.frgmntSetSwitchAc.isChecked)
-                            viewModel.runAlarmClock() else
-                            binding.frgmntSetSwitchAc.isChecked = true
-                        binding.frgmntSetButStart.setText(
-                            "$h:$m", null
-                        )
-                    }
-                }, getHourFromSet(1).toInt(), getHourFromSet(2).toInt(), true)
-            timePickerDialog.show()
-        }
-        binding.frgmntSetButEnd.setOnClickListener {
-            workingTimeModel = viewModel.getWorkingTime()
-            var h = EMPTY_STRING
-            var m = EMPTY_STRING
-            val timePickerDialog =
-                TimePickerDialog(
-                    requireContext(),
-                    { view, hourOfDay, minute ->
-                        h =
-                            if (hourOfDay.toString().length == 1) ZERO_STRING + (hourOfDay).toString() else (hourOfDay).toString()
-                        m =
-                            if (minute.toString().length == 1) ZERO_STRING + minute.toString() else minute.toString()
-                        Log.e("endTime", "$h:$m")
-                        if (!compare2Times(workingTimeModel.start, "$h:$m"))
-                            Toast.makeText(
-                                requireContext(),
-                                getString(R.string.set_format_start, workingTimeModel.start),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        else {
-                            viewModel.setWorkingTime(
-                                workingTimeModel.copy(
-                                    end = "$h:$m",
-                                    isEnable = true
-                                )
-                            )
-                            if (binding.frgmntSetSwitchAc.isChecked)
-                                viewModel.runAlarmClock() else
-                                binding.frgmntSetSwitchAc.isChecked = true
-                            binding.frgmntSetButEnd.setText(
-                                "$h:$m", null
-                            )
-                        }
-                    },
-                    getHourFromSet(3).toInt(),
-                    getHourFromSet(4).toInt(),
-                    true
-                )
-            timePickerDialog.show()
-        }
-        setOtherSettings()
-        binding.frgmntSetMdEt.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                viewModel.resetError(SettingsViewNames.MIN_DISTANCE)
-            }
-
-            override fun afterTextChanged(s: Editable) {
-                viewModel.validateInputData(s.toString(), SettingsViewNames.MIN_DISTANCE)
-            }
-        })
-        binding.frgmntSetAccurEt.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                viewModel.resetError(SettingsViewNames.ACCURACY)
-            }
-
-            override fun afterTextChanged(s: Editable) {
-                viewModel.validateInputData(s.toString(), SettingsViewNames.ACCURACY)
-            }
-        })
-        binding.frgmntSetTimeAcEt.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                viewModel.resetError(SettingsViewNames.TIME_ACCURACY)
-            }
-
-            override fun afterTextChanged(s: Editable) {
-                viewModel.validateInputData(s.toString(), SettingsViewNames.TIME_ACCURACY)
-            }
-        })
-        binding.frgmntSetTimePovtorEt.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                viewModel.resetError(SettingsViewNames.TIME_PERIOD)
-            }
-
-            override fun afterTextChanged(s: Editable) {
-                viewModel.validateInputData(s.toString(), SettingsViewNames.TIME_PERIOD)
-            }
-        })
     }
 
-    private fun setOtherSettings() {
-        binding.frgmntSetAccurEt.setText(workingTimeModel.accuracy.toString())
-        (binding.frgmntSetMdEt).setText(workingTimeModel.minDist.toString())
-        (binding.frgmntSetTimeAcEt).setText(workingTimeModel.timeOfWaitAccuracy.toString())
-        (binding.frgmntSetTimePovtorEt).setText(workingTimeModel.timeOfWorkingWM.toString())
+    private fun changeService(enabled: Boolean) {
+        try {
+            if (enabled) ContextCompat.startForegroundService(requireContext(), MyForegroundService.newIntent(requireContext()))
+            else {
+                val service = boundService
+                if (service != null) service.stopTracking()
+                else if (viewModel.checkService()) requireContext().startService(MyForegroundService.stopIntent(requireContext()))
+                viewModel.cancelAlarmService()
+                unbindService()
+            }
+        } catch (_: SecurityException) {
+            Toast.makeText(requireContext(), R.string.ma_no_access, Toast.LENGTH_LONG).show()
+            showServiceState(false)
+        } catch (_: IllegalStateException) { showServiceState(false) }
     }
 
+    private fun showServiceState(running: Boolean) {
+        rendering = true
+        try {
+            _binding?.frgmntSetSwitchStart?.let {
+                it.isChecked = running
+                it.isEnabled = running || viewModel.settings.value is LoadState.Ready
+            }
+        } finally { rendering = false }
+    }
+    private fun unbindService() {
+        boundService?.isServiseAlive = null
+        boundService = null
+        if (serviceBound) { requireActivity().unbindService(serviceConnection); serviceBound = false }
+    }
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val binder = (service as? MyForegroundService.LocalBinder) ?: return
-            val foregroundService = binder.getService()
-            boundService = foregroundService
-            showServiceState(foregroundService.isTracking)
-            foregroundService.isServiseAlive = { running -> showServiceState(running) }
+            val foreground = (service as? MyForegroundService.LocalBinder)?.getService() ?: return
+            boundService = foreground
+            showServiceState(foreground.isTracking)
+            foreground.isServiseAlive = ::showServiceState
         }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            boundService = null
-            showServiceState(false)
-        }
+        override fun onServiceDisconnected(name: ComponentName?) { boundService = null; showServiceState(false) }
     }
-
-    private fun compare2Times(start: String, end: String): Boolean {
-        var res = false
-        val sdf = SimpleDateFormat("HH:mm")
-        val strDate = sdf.parse(start)
-        val endDate = sdf.parse(end)
-        if (endDate.time > strDate.time) {
-            res = true
-        }
-        Log.e("compare2Times", "$strDate ### $endDate %%% $res")
-        return res
-    }
-
-    private fun setDays() {
-        workingTimeModel = viewModel.getWorkingTime()
-        val listOfDays = workingTimeModel.days
-        listOfCheckBox = listOf(
-            binding.frgmntSetCbD1,
-            binding.frgmntSetCbD2,
-            binding.frgmntSetCbD3,
-            binding.frgmntSetCbD4,
-            binding.frgmntSetCbD5,
-            binding.frgmntSetCbD6,
-            binding.frgmntSetCbD7
-        )
-        for (cb in listOfCheckBox) {
-            cb.setOnCheckedChangeListener { buttonView, isChecked ->
-                saveSettings()
-            }
-        }
-        if (listOfDays.size == listOfCheckBox.size) {
-            for (i in listOfDays.indices) {
-                listOfCheckBox[i].isChecked = listOfDays[i] == ONE_UNIT
-            }
-        }
-    }
-
-    private fun saveSettings() {
-        val listOfDays1: MutableList<String> = mutableListOf<String>()
-        for (cb in listOfCheckBox) {
-            listOfDays1.add((cb.isChecked).toIntTxt())
-        }
-        workingTimeModel = viewModel.getWorkingTime()
-        viewModel.setWorkingTime(workingTimeModel.copy(days = listOfDays1))
-    }
-
-    private fun Boolean.toIntTxt() = if (this) ONE_UNIT else ZERO_STRING
-
+    override fun onStop() { unbindService(); super.onStop() }
     override fun onDestroyView() {
-        unbindMyService()
-        super.onDestroyView()
+        unbindService()
+        renderedSettings = null
         _binding = null
-    }
-
-    private companion object {
-        private const val MIN_DIST_LENGTH = 10
-        private const val ACCURACY_LENGTH = 50
-        private const val TIME_ACCURACY_LENGTH = 20
-        private const val TIME_PERIODIC_LENGTH = 15
-        private const val DELIMITER = ":"
-        private const val ONE_UNIT = "1"
-        private const val ZERO_STRING = "0"
-        private const val ZERO_INT = 0
-        private const val EMPTY_STRING = ""
+        super.onDestroyView()
     }
 }

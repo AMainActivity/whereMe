@@ -1,134 +1,40 @@
 package ru.ama.whereme.presentation
 
-import android.util.Log
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import ru.ama.whereme.data.di.ApplicationScope
+import ru.ama.whereme.R
 import ru.ama.whereme.domain.entity.SettingsDomModel
-import ru.ama.whereme.domain.usecase.*
+import ru.ama.whereme.domain.repository.SettingsRepository
 import ru.ama.whereme.tracking.TrackingScheduler
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val getWorkingTimeUseCase: GetWorkingTimeUseCase,
-    private val setWorkingTimeUseCase: SetWorkingTimeUseCase,
-    private val scheduler: TrackingScheduler
-
+    private val repository: SettingsRepository, private val scheduler: TrackingScheduler,
+    @ApplicationScope applicationScope: CoroutineScope
 ) : ViewModel() {
-
-    private val _errorMinDistance = MutableLiveData<Boolean>()
-    val errorMinDistance: LiveData<Boolean>
-        get() = _errorMinDistance
-    private val _errorAccuracy = MutableLiveData<Boolean>()
-    val errorAccuracy: LiveData<Boolean>
-        get() = _errorAccuracy
-    private val _errorTimeAccuracy = MutableLiveData<Boolean>()
-    val errorTimeAccuracy: LiveData<Boolean>
-        get() = _errorTimeAccuracy
-    private val _errorTimePeriod = MutableLiveData<Boolean>()
-    val errorTimePeriod: LiveData<Boolean>
-        get() = _errorTimePeriod
-
-    fun validateInputData(name: String, idData: SettingsViewNames) {
-        when (idData) {
-            SettingsViewNames.MIN_DISTANCE -> {
-                if (name.isNotEmpty()) {
-                    if (name.toInt() >= MIN_DIST_LENGTH) {
-                        setWorkingTime(
-                            getWorkingTime().copy(
-                                minDist = name.toInt()
-                            )
-                        )
-                        _errorMinDistance.value = false
-                    } else
-                        _errorMinDistance.value = true
-                } else
-                    _errorMinDistance.value = true
-            }
-            SettingsViewNames.ACCURACY -> {
-                if (name.isNotEmpty()) {
-                    if (name.toInt() >= ACCURACY_LENGTH) {
-                        setWorkingTime(
-                            getWorkingTime().copy(
-                                accuracy = name.toInt()
-                            )
-                        )
-                        _errorAccuracy.value = false
-                    } else
-                        _errorAccuracy.value = true
-                } else
-                    _errorAccuracy.value = true
-            }
-            SettingsViewNames.TIME_ACCURACY -> {
-                if (name.isNotEmpty()) {
-                    if (name.toInt() >= TIME_ACCURACY_LENGTH) {
-                        setWorkingTime(
-                            getWorkingTime().copy(
-                                timeOfWaitAccuracy = name.toInt()
-                            )
-                        )
-                        _errorTimeAccuracy.value = false
-                    } else
-                        _errorTimeAccuracy.value = true
-                } else
-                    _errorTimeAccuracy.value = true
-            }
-            SettingsViewNames.TIME_PERIOD -> {
-                if (name.isNotEmpty()) {
-                    if (name.toInt() >= TIME_PERIODIC_LENGTH) {
-                        setWorkingTime(
-                            getWorkingTime().copy(
-                                timeOfWorkingWM = name.toInt()
-                            )
-                        )
-                        _errorTimePeriod.value = false
-                    } else
-                        _errorTimePeriod.value = true
-                } else
-                    _errorTimePeriod.value = true
-            }
+    private val retry = MutableStateFlow(0)
+    val settings = repository.settings.loadState(viewModelScope, retry)
+    private val failures = MutableLiveData<Int>()
+    val errors: LiveData<Int> = failures
+    private val commands = SettingsWriteQueue(applicationScope) { failures.postValue(R.string.storage_write_failed) }
+    fun retrySettings() { retry.value++ }
+    fun update(transform: (SettingsDomModel) -> SettingsDomModel) {
+        commands.submit {
+            val updated = repository.updateSettings(transform)
+            if (updated.isEnable) scheduler.scheduleNextAlarmClockIfEnabled()
         }
     }
-
-    fun resetError(idData: SettingsViewNames) {
-        when (idData) {
-            SettingsViewNames.MIN_DISTANCE -> _errorMinDistance.value = false
-            SettingsViewNames.ACCURACY -> _errorAccuracy.value = false
-            SettingsViewNames.TIME_ACCURACY -> _errorTimeAccuracy.value = false
-            SettingsViewNames.TIME_PERIOD -> _errorTimePeriod.value = false
-        }
-
+    fun setSchedule(enabled: Boolean) {
+        commands.submit { if (enabled) scheduler.runAlarmClock() else scheduler.cancelAlarmClock() }
     }
-
-    fun getWorkingTime(): SettingsDomModel {
-        return getWorkingTimeUseCase()
-    }
-
-    fun runAlarmClock() {
-        scheduler.runAlarmClock()
-    }
-
-    fun cancelAlarmClock() {
-        scheduler.cancelAlarmClock()
-    }
-
-    fun cancelAlarmService() {
-        scheduler.cancelAlarm()
-    }
-
-    fun checkService(): Boolean {
-        Log.e("fromSet", scheduler.isMyServiceRunning(MyForegroundService::class.java).toString())
-        return scheduler.isMyServiceRunning(MyForegroundService::class.java)
-    }
-
-    fun setWorkingTime(dm: SettingsDomModel) {
-        setWorkingTimeUseCase(dm)
-    }
-
-    private companion object {
-        private const val MIN_DIST_LENGTH = 10
-        private const val ACCURACY_LENGTH = 50
-        private const val TIME_ACCURACY_LENGTH = 20
-        private const val TIME_PERIODIC_LENGTH = 15
-    }
+    fun checkService() = scheduler.isMyServiceRunning(MyForegroundService::class.java)
+    fun cancelAlarmService() = scheduler.cancelAlarm()
+    override fun onCleared() { commands.close(); super.onCleared() }
 }

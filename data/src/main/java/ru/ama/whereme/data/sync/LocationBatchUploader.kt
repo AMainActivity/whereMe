@@ -25,7 +25,7 @@ class LocationBatchUploader @Inject constructor(
     suspend fun uploadPending(timeoutMillis: Long = 30_000L) = mutex.withLock {
         val batch = store.snapshot() ?: return@withLock
         if (batch.payload.isEmpty() || !store.isCurrent(batch)) return@withLock
-        val request = Gson().toJson(DatasToJson(batch.session.tokenJwt, batch.payload))
+        val request = Gson().toJson(DatasToJson(batch.session.profile.tokenJwt, batch.payload))
             .toRequestBody("application/json".toMediaType())
         val accepted = withTimeoutOrNull(timeoutMillis) {
             val response = try {

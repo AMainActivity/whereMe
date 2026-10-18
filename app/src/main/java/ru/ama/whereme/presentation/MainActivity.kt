@@ -18,6 +18,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.asLiveData
+import com.google.android.material.snackbar.Snackbar
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -41,11 +43,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
         startService()
-        val profileInFragment = ProfileInFragment()
-        val profileOutFragment = ProfileOutFragment()
         val mapFragment = MapFragment()
         val setFragment = SettingsFragment()
         val aboutFragment = AboutFragment()
+        viewModel.session.asLiveData().observe(this) { state ->
+            if (binding.contentMain.bottomNavigationView.selectedItemId == R.id.page_3) openProfile()
+        }
         setCurrentFragment(mapFragment)
         binding.contentMain.bottomNavigationView.setOnItemSelectedListener {
             setCurrentFragment(
@@ -53,8 +56,8 @@ class MainActivity : AppCompatActivity() {
                     R.id.page_1 -> mapFragment
                     R.id.page_2 -> setFragment
                     R.id.page_3 -> {
-                        Log.e("checkIsActivate", viewModel.checkIsActivate().toString())
-                        if (viewModel.checkIsActivate()) profileOutFragment else profileInFragment
+                        openProfile()
+                        return@setOnItemSelectedListener true
                     }
 
                     R.id.page_4 -> aboutFragment
@@ -62,6 +65,20 @@ class MainActivity : AppCompatActivity() {
                 }
             )
             true
+        }
+    }
+
+    private fun openProfile() {
+        when (val state = viewModel.session.value) {
+            is LoadState.Ready -> {
+                val current = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main)
+                if (state.value.profile.tokenJwt.isNotBlank()) {
+                    if (current !is ProfileOutFragment) setCurrentFragment(ProfileOutFragment())
+                } else if (current !is ProfileInFragment) setCurrentFragment(ProfileInFragment())
+            }
+            LoadState.Loading -> Toast.makeText(this, R.string.storage_loading, Toast.LENGTH_SHORT).show()
+            LoadState.Failed -> Snackbar.make(binding.root, R.string.storage_read_failed, Snackbar.LENGTH_INDEFINITE)
+                .setAction(R.string.storage_retry) { viewModel.retrySession() }.show()
         }
     }
 

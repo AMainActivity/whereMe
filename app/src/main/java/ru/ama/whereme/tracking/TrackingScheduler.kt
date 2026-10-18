@@ -12,6 +12,7 @@ import ru.ama.whereme.data.alarms.AlarmClockStart
 import ru.ama.whereme.data.alarms.PeriodicAlarm
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.repository.SettingsRepository
+import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -23,8 +24,7 @@ class TrackingScheduler @Inject constructor(
     private val application: Application,
     private val settings: SettingsRepository
 ) {
-    fun getWorkingTime() = settings.getWorkingTime()
-    private fun setWorkingTime(value: SettingsDomModel) = settings.setWorkingTime(value)
+    suspend fun getWorkingTime() = settings.settings.first()
 
     private fun compare2Times(start: String, end: String): Boolean {
         var res = false
@@ -38,14 +38,13 @@ class TrackingScheduler @Inject constructor(
         return res
     }
 
-    fun isCurTimeBetweenSettings(): Boolean {
-        val wTime = getWorkingTime()
+    private fun isCurTimeBetweenSettings(wTime: SettingsDomModel): Boolean {
         return (compare2Times(wTime.start, getCurrentTime()) && compare2Times(
             getCurrentTime(),
             wTime.end
         ))
     }
-    fun isTimeToGetLocaton(): Boolean {
+    suspend fun isTimeToGetLocaton(): Boolean {
         var result = false
         val wTime = getWorkingTime()
         val calendar = Calendar.getInstance()
@@ -79,7 +78,7 @@ class TrackingScheduler @Inject constructor(
                 result = wTime.days[6] == DEFAULT_SETTINGS_DAY
             }
         }
-        result = result && isCurTimeBetweenSettings()
+        result = result && isCurTimeBetweenSettings(wTime)
         Log.e("IsTimeToGetLocaton", result.toString())
         return result
     }
@@ -89,12 +88,12 @@ class TrackingScheduler @Inject constructor(
         return manager.getRunningServices(Integer.MAX_VALUE)
             .any { it.service.className == serviceClass.name }
     }
-    fun runAlarmClock() {
-        setWorkingTime(getWorkingTime().copy(isEnable = true))
+    suspend fun runAlarmClock() {
+        settings.updateSettings { it.copy(isEnable = true) }
         scheduleNextAlarmClockIfEnabled()
     }
 
-    fun scheduleNextAlarmClockIfEnabled() {
+    suspend fun scheduleNextAlarmClockIfEnabled() {
         val wTime = getWorkingTime()
         if (!wTime.isEnable) return
         val am = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -109,6 +108,8 @@ class TrackingScheduler @Inject constructor(
             timeInMillis = System.currentTimeMillis()
             set(Calendar.HOUR_OF_DAY, wTime.start.split(SPLIT_DELIMITER)[0].toInt())
             set(Calendar.MINUTE, wTime.start.split(SPLIT_DELIMITER)[1].toInt())
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
         if (calendar.timeInMillis <= System.currentTimeMillis()) {
             calendar.set(Calendar.DAY_OF_MONTH, calendar.get(Calendar.DAY_OF_MONTH) + 1)
@@ -129,7 +130,7 @@ class TrackingScheduler @Inject constructor(
          )*/
     }
 
-    fun cancelAlarmClock() {
+    suspend fun cancelAlarmClock() {
         Log.e("runAlarmClock", "cancelAlarmClock")
         val intent = Intent(application, AlarmClockStart::class.java)
         val sender = PendingIntent.getBroadcast(
@@ -140,7 +141,7 @@ class TrackingScheduler @Inject constructor(
         )
         val alarmManager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(sender)
-        setWorkingTime(getWorkingTime().copy(isEnable = false))
+        settings.updateSettings { it.copy(isEnable = false) }
     }
 
     fun runAlarm(timeInterval: Long) {

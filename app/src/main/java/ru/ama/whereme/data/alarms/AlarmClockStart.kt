@@ -10,23 +10,29 @@ import androidx.core.content.ContextCompat
 import ru.ama.whereme.tracking.TrackingScheduler
 import ru.ama.whereme.presentation.MyForegroundService
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import ru.ama.whereme.data.di.ApplicationScope
+import ru.ama.whereme.tracking.runTrackingWork
 
 @AndroidEntryPoint
 class AlarmClockStart : BroadcastReceiver() {
     @Inject
     lateinit var repo: TrackingScheduler
+    @Inject @ApplicationScope lateinit var scope: CoroutineScope
 
     override fun onReceive(context: Context, intent: Intent?) {
-        if (!repo.getWorkingTime().isEnable) return
-        // An excluded weekday must not terminate the daily schedule chain.
-        repo.scheduleNextAlarmClockIfEnabled()
-        if (!repo.isTimeToGetLocaton()) return
-        try {
-            ContextCompat.startForegroundService(context, MyForegroundService.newIntent(context))
-        } catch (failure: IllegalStateException) {
-            Log.w("AlarmClockStart", "Service start restricted: " + failure.javaClass.simpleName)
-        } catch (_: SecurityException) {
-            Log.w("AlarmClockStart", "Location access is unavailable")
+        runTrackingWork(scope) {
+            if (!repo.getWorkingTime().isEnable) return@runTrackingWork
+            // An excluded weekday must not terminate the daily schedule chain.
+            repo.scheduleNextAlarmClockIfEnabled()
+            if (!repo.isTimeToGetLocaton()) return@runTrackingWork
+            try {
+                ContextCompat.startForegroundService(context, MyForegroundService.newIntent(context))
+            } catch (failure: IllegalStateException) {
+                Log.w("AlarmClockStart", "Service start restricted: " + failure.javaClass.simpleName)
+            } catch (_: SecurityException) {
+                Log.w("AlarmClockStart", "Location access is unavailable")
+            }
         }
     }
 }

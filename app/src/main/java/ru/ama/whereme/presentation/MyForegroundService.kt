@@ -21,6 +21,7 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
@@ -77,8 +78,9 @@ class MyForegroundService : LifecycleService() {
     fun startGetLocations() {
         if (destroyed || !foregroundStarted || cycleJob?.isActive == true) return
         cycleJob = lifecycleScope.launch {
-            workingTimeModel = settings.getWorkingTime()
             try {
+                workingTimeModel = settings.settings.first()
+                scheduler.scheduleNextAlarmClockIfEnabled()
                 startTimer()
                 val sample = repo.collectLocation(workingTimeModel)
                 timer?.cancel()
@@ -162,13 +164,16 @@ class MyForegroundService : LifecycleService() {
         timer?.start()
     }
 
-    private fun reRunGetLocations() {
-        if (!scheduler.isTimeToGetLocaton()) {
+    private suspend fun reRunGetLocations() {
+        val inSchedule = try { scheduler.isTimeToGetLocaton()
+        } catch (cancelled: CancellationException) { throw cancelled
+        } catch (_: Exception) { false }
+        if (!inSchedule) {
             stopTracking()
         } else {
             try {
                 scheduler.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
-            } catch (_: SecurityException) {
+            } catch (_: Exception) {
                 Log.w("TrackingCycle", "Unable to schedule next collection")
                 stopTracking()
             }
@@ -240,7 +245,6 @@ class MyForegroundService : LifecycleService() {
         }
         isTracking = true
         isServiseAlive?.invoke(true)
-        scheduler.scheduleNextAlarmClockIfEnabled()
         startGetLocations()
         return START_NOT_STICKY
     }

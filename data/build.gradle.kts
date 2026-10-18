@@ -34,6 +34,7 @@ ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 dependencyLocking { lockAllConfigurations() }
 
 dependencies {
+    implementation(libs.datastore.preferences)
     implementation(project(":domain"))
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
@@ -51,6 +52,7 @@ dependencies {
     implementation(libs.retrofit.gson)
     implementation(libs.gson)
     testImplementation(libs.junit)
+    testImplementation(libs.datastore.core.okio)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.espresso.core)
 }

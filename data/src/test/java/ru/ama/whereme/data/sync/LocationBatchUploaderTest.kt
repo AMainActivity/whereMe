@@ -23,9 +23,10 @@ import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.data.network.model.JsonDto
 import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
+import ru.ama.whereme.domain.entity.SessionSnapshot
 
 class LocationBatchUploaderTest {
-    private val session = SettingsUserInfoDomModel("test-token", 12, 34, "Test", null, true)
+    private val session = SessionSnapshot(SettingsUserInfoDomModel("test-token", 12, 34, "Test", null, true), "test-generation")
     private val row = LocationDbModel("1000", 1000, null, "sample", 1.5, 2.5, 1, 5f, 0f, 0).apply { _id = 7 }
     private val wire = LocationDb(7, "1000", "01.01.1970 00:00:01", null, "sample", 2.5, 4.5, 1, 5f, 0f, 0)
     private val batch = PendingLocationBatch(session, listOf(row), listOf(wire))
@@ -77,7 +78,7 @@ class LocationBatchUploaderTest {
         fixture.uploader.uploadPending()
         val body = JsonParser.parseString(fixture.sent).asJsonObject
         assertEquals(setOf("tokenJWT", "mdata"), body.keySet())
-        assertEquals(session.tokenJwt, body["tokenJWT"].asString)
+        assertEquals(session.profile.tokenJwt, body["tokenJWT"].asString)
         val point = body["mdata"].asJsonArray.single().asJsonObject
         assertEquals(7L, point["_id"].asLong)
         assertEquals(wire.datestart, point["datestart"].asString)
@@ -255,7 +256,7 @@ class LocationBatchUploaderTest {
         }
         val uploader = LocationBatchUploader(this, api)
         override suspend fun snapshot() = batch
-        override fun isCurrent(batch: PendingLocationBatch) = current
+        override suspend fun isCurrent(batch: PendingLocationBatch) = current
         override suspend fun acknowledge(batch: PendingLocationBatch): Int {
             acks++
             if (ackFailure) error("database unavailable")

@@ -1,8 +1,6 @@
 package ru.ama.whereme.data.di
 
 import android.app.Application
-import android.content.Context
-import android.content.SharedPreferences
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -18,6 +16,8 @@ import ru.ama.whereme.data.network.WmApiFactory
 import ru.ama.whereme.data.sync.PendingLocationStore
 import ru.ama.whereme.data.sync.RoomPendingLocationStore
 import ru.ama.whereme.data.repository.*
+import ru.ama.whereme.data.settings.DataStoreSettingsRepository
+import ru.ama.whereme.data.session.DataStoreSessionRepository
 import javax.inject.Singleton
 import ru.ama.whereme.domain.repository.*
 
@@ -25,10 +25,10 @@ import ru.ama.whereme.domain.repository.*
 @InstallIn(SingletonComponent::class)
 interface DataModule {
     @Binds
-    fun bindSettingsRepository(impl: PreferencesRepository): SettingsRepository
+    fun bindSettingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
 
     @Binds
-    fun bindSessionRepository(impl: PreferencesRepository): SessionRepository
+    fun bindSessionRepository(impl: DataStoreSessionRepository): SessionRepository
 
     @Binds
     fun bindAuthRepository(impl: RemoteAuthRepository): AuthRepository
@@ -71,12 +71,5 @@ interface DataModule {
             return WmApiFactory.apiService
         }
 
-        @Provides
-        @Singleton
-        fun provideSharedPreferences(application: Application): SharedPreferences {
-            return application.getSharedPreferences(sharedPrefName, Context.MODE_PRIVATE)
-        }
-
-        const val sharedPrefName = "mysettings"
     }
 }

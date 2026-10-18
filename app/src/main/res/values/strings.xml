@@ -110,4 +110,9 @@
     <string name="profile_logout_text">"Выйти из профиля?  \nПосле выхода данные не будут сохранены на серверной части"</string>
     <string name="set_alarm_clock_set">будильник установлен</string>
     <string name="map_external_unavailable">Не найдено приложение для открытия ссылки</string>
+    <string name="storage_loading">Загрузка…</string>
+    <string name="storage_read_failed">Не удалось прочитать сохранённые данные. Они не были удалены.</string>
+    <string name="storage_write_failed">Не удалось сохранить изменения. Повторите попытку.</string>
+    <string name="storage_retry">Повторить</string>
+    <string name="profile_request_failed">Не удалось выполнить запрос. Проверьте сеть и повторите попытку.</string>
 </resources>

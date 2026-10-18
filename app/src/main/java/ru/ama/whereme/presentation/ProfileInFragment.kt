@@ -48,7 +48,6 @@ class ProfileInFragment : Fragment() {
             .setCancelable(true)
             .setPositiveButton(getString(R.string.ma_yes)) { _, _ ->
                 viewModel.saveUserInfo(res)
-                (requireActivity() as MainActivity).setCurrentFragment(ProfileOutFragment())
             }
             .setNegativeButton(getString(R.string.profile_in_no)) { dialogInterface, i ->
                 dialogInterface.dismiss()
@@ -75,7 +74,7 @@ class ProfileInFragment : Fragment() {
         viewModel.isError.observe(viewLifecycleOwner) {
             Toast.makeText(
                 requireContext(),
-                getString(R.string.profile_in_error_kod),
+                getString(it),
                 Toast.LENGTH_SHORT
             ).show()
         }

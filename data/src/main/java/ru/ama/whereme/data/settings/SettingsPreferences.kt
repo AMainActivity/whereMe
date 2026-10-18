@@ -1,0 +1,38 @@
+package ru.ama.whereme.data.settings
+
+import androidx.datastore.preferences.core.*
+import ru.ama.whereme.domain.entity.SettingsDomModel
+import ru.ama.whereme.domain.entity.ThemeMode
+
+internal object SettingsPreferences {
+    val VERSION = intPreferencesKey("migration_version")
+    private val DAYS = intPreferencesKey("days_mask")
+    private val START = stringPreferencesKey("start")
+    private val END = stringPreferencesKey("end")
+    private val DISTANCE = intPreferencesKey("min_distance")
+    private val ACCURACY = intPreferencesKey("accuracy")
+    private val WAIT = intPreferencesKey("wait_seconds")
+    private val PERIOD = intPreferencesKey("period_seconds")
+    private val ENABLED = booleanPreferencesKey("schedule_enabled")
+    private val THEME = stringPreferencesKey("theme")
+
+    fun read(p: Preferences): SettingsDomModel {
+        val d = SettingsDomModel.DEFAULT
+        val mask = p[DAYS] ?: 127
+        require(mask in 0..127)
+        return SettingsDomModel(List(7) { if (mask and (1 shl it) != 0) "1" else "0" },
+            p[START] ?: d.start, p[END] ?: d.end, p[DISTANCE] ?: d.minDist,
+            p[ACCURACY] ?: d.accuracy, p[WAIT] ?: d.timeOfWaitAccuracy,
+            p[PERIOD] ?: d.timeOfWorkingWM, p[ENABLED] ?: d.isEnable)
+    }
+    fun write(p: MutablePreferences, value: SettingsDomModel, onlyMissing: Boolean = false) {
+        fun <T> put(key: Preferences.Key<T>, v: T) { if (!onlyMissing || p[key] == null) p[key] = v }
+        put(DAYS, value.days.withIndex().sumOf { (i, day) -> if (day == "1") 1 shl i else 0 })
+        put(START, value.start); put(END, value.end); put(DISTANCE, value.minDist)
+        put(ACCURACY, value.accuracy); put(WAIT, value.timeOfWaitAccuracy)
+        put(PERIOD, value.timeOfWorkingWM); put(ENABLED, value.isEnable)
+    }
+    fun theme(p: Preferences) = p[THEME]?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } }
+        ?: ThemeMode.SYSTEM
+    fun theme(p: MutablePreferences, value: ThemeMode) { p[THEME] = value.name }
+}

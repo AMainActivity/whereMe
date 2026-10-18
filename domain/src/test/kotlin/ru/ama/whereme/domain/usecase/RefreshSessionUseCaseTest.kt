@@ -5,7 +5,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import ru.ama.whereme.domain.entity.SessionSnapshot
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -19,7 +21,7 @@ import ru.ama.whereme.domain.repository.SessionRepository
 import ru.ama.whereme.domain.entity.ResponseJwtEntity
 
 class RefreshSessionUseCaseTest {
-    private val initial = SettingsUserInfoDomModel("test-token", 12, 34, "Test", null, true)
+    private val initial = SessionSnapshot(SettingsUserInfoDomModel("test-token", 12, 34, "Test", null, true), "initial")
 
     @Test
     fun transportFailurePreservesCredentials() = runBlocking {
@@ -168,19 +170,45 @@ class RefreshSessionUseCaseTest {
         assertEquals(0, fixture.writes)
     }
 
+    @Test
+    fun sameCredentialsAfterReloginStillRejectOldResponse() = runBlocking {
+        val started = CompletableDeferred<Unit>()
+        val reply = CompletableDeferred<ResponseEntity>()
+        val fixture = Fixture(initial) { started.complete(Unit); reply.await() }
+        val job = launch { fixture.refresh(initial) }
+        started.await()
+        fixture.session = initial.copy(generation = "new-login")
+        reply.complete(response("0"))
+        job.join()
+        assertEquals("new-login", fixture.session.generation)
+        assertTrue(fixture.session.profile.isActivate)
+        assertEquals(0, fixture.writes)
+    }
+
+    private fun SessionSnapshot.copy(tokenJwt: String = profile.tokenJwt,
+        posId: Int = profile.posId, isActivate: Boolean = profile.isActivate) =
+        copy(profile = profile.copy(tokenJwt = tokenJwt, posId = posId, isActivate = isActivate))
+
     private fun response(message: String) = ResponseEntity(JsonEntity(false, message), true, respCode = 200)
 
-    private class Fixture(initial: SettingsUserInfoDomModel, val reply: suspend () -> ResponseEntity) {
+    private class Fixture(initial: SessionSnapshot, val reply: suspend () -> ResponseEntity) {
         var session = initial
         var writes = 0
         var requests = 0
 
         private val repository = object : SessionRepository, AuthRepository {
-            override fun getWmUserInfoSetings() = session
-            override fun setWmUserInfoSetings(set: SettingsUserInfoDomModel) {
-                session = set
-                writes++
+            override val session get() = flowOf(this@Fixture.session)
+            override suspend fun signIn(profile: SettingsUserInfoDomModel) { error("Unexpected signIn") }
+            override suspend fun clearIfCurrent(expected: SessionSnapshot): Boolean = error("Unexpected logout")
+            override suspend fun updateActivation(expected: SessionSnapshot, active: Boolean): Boolean {
+                if (this@Fixture.session != expected) return false
+                if (expected.profile.isActivate != active) {
+                    this@Fixture.session = expected.copy(profile = expected.profile.copy(isActivate = active))
+                    writes++
+                }
+                return true
             }
+            override suspend fun <T> withCurrent(expected: SessionSnapshot, action: suspend () -> T): T? = error("Unexpected lease")
             override suspend fun checkKod(code: String): ResponseJwtEntity = error("Unexpected login")
             override suspend fun logOut(token: String): ResponseEntity = error("Unexpected logout")
             override suspend fun checkWmJwToken(token: String): ResponseEntity {

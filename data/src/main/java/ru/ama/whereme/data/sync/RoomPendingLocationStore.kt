@@ -14,32 +14,33 @@ class RoomPendingLocationStore @Inject constructor(
     private val sessions: SessionRepository
 ) : PendingLocationStore {
     override suspend fun snapshot(): PendingLocationBatch? {
-        val session = sessions.getWmUserInfoSetings()
-        if (session.tokenJwt.isBlank()) return null
+        val session = sessions.current()
+        if (session.profile.tokenJwt.isBlank()) return null
         return database.withTransaction {
             val originals = dao.getPendingLocations()
             if (originals.isEmpty()) return@withTransaction null
             // Preserve the current server coordinate transform exactly until its contract is verified.
-            val posId = session.posId.toString()
-            val offset = if (posId.length <= 8) session.posId else posId.substring(0, 8).toInt()
+            val posId = session.profile.posId.toString()
+            val offset = if (posId.length <= 8) session.profile.posId else posId.substring(0, 8).toInt()
             val payload = dao.getLocations4Net(offset).map(mapper::mapDbModelToEntity)
             check(originals.map { it._id } == payload.map { it._id })
             PendingLocationBatch(session, originals, payload)
         }
     }
 
-    override fun isCurrent(batch: PendingLocationBatch): Boolean =
-        sessions.getWmUserInfoSetings() == batch.session
+    override suspend fun isCurrent(batch: PendingLocationBatch): Boolean =
+        sessions.current().generation == batch.session.generation
 
-    override suspend fun acknowledge(batch: PendingLocationBatch): Int = database.withTransaction {
-        if (!isCurrent(batch)) return@withTransaction 0
-        var count = 0
-        for (row in batch.originals) {
-            count += dao.acknowledgeUnchanged(
-                row._id, row.datetime, row.datestart, row.dateend, row.info,
-                row.latitude, row.longitude, row.sourceId, row.accuracy, row.velocity
-            )
+    override suspend fun acknowledge(batch: PendingLocationBatch): Int = sessions.withCurrent(batch.session) {
+        database.withTransaction {
+            var count = 0
+            for (row in batch.originals) {
+                count += dao.acknowledgeUnchanged(
+                    row._id, row.datetime, row.datestart, row.dateend, row.info,
+                    row.latitude, row.longitude, row.sourceId, row.accuracy, row.velocity
+                )
+            }
+            count
         }
-        count
-    }
+    } ?: 0
 }

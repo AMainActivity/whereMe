@@ -1,26 +1,30 @@
 package ru.ama.whereme.presentation
 
-import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
-import ru.ama.whereme.domain.usecase.GetJwTokenUseCase
+import ru.ama.whereme.domain.entity.SessionSnapshot
+import ru.ama.whereme.domain.repository.SessionRepository
 import ru.ama.whereme.domain.usecase.RefreshSessionUseCase
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val getJwTokenUseCase: GetJwTokenUseCase,
-    private val refreshSessionUseCase: RefreshSessionUseCase
+    sessions: SessionRepository, refresh: RefreshSessionUseCase
 ) : ViewModel() {
+    private val retry = MutableStateFlow(0)
+    val session = sessions.session.loadState(viewModelScope, retry)
     init {
-        val session = getJwTokenUseCase()
-        if (session.tokenJwt.isNotBlank()) {
-            viewModelScope.launch {
-                refreshSessionUseCase(session)
-            }
+        viewModelScope.launch {
+            session.filterIsInstance<LoadState.Ready<SessionSnapshot>>()
+                .distinctUntilChangedBy { it.value.generation }
+                .collectLatest { refresh(it.value) }
         }
     }
-
-    fun checkIsActivate() = getJwTokenUseCase().isActivate
+    fun retrySession() { retry.value++ }
 }

@@ -4,7 +4,8 @@ import androidx.room.Room
 import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.lang.reflect.Proxy
+import kotlinx.coroutines.flow.flowOf
+import ru.ama.whereme.domain.entity.SessionSnapshot
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
 import kotlinx.coroutines.CompletableDeferred
@@ -28,7 +29,7 @@ class LocationSynchronizationTest {
     private lateinit var database: AppDatabase
     private lateinit var dao: LocationDao
     private lateinit var store: RoomPendingLocationStore
-    private val initialSession = SettingsUserInfoDomModel("test-token", 12, 34, "Test", null, true)
+    private val initialSession = SessionSnapshot(SettingsUserInfoDomModel("test-token", 12, 34, "Test", null, true), "test-generation")
     private var session = initialSession
 
     @Before
@@ -37,12 +38,14 @@ class LocationSynchronizationTest {
             ApplicationProvider.getApplicationContext(), AppDatabase::class.java
         ).build()
         dao = database.locationDao()
-        val sessions = Proxy.newProxyInstance(
-            SessionRepository::class.java.classLoader, arrayOf(SessionRepository::class.java)
-        ) { _, method, _ ->
-            if (method.name == "getWmUserInfoSetings") session
-            else throw AssertionError("Unexpected call: ${method.name}")
-        } as SessionRepository
+        val sessions = object : SessionRepository {
+            override val session get() = flowOf(this@LocationSynchronizationTest.session)
+            override suspend fun signIn(profile: SettingsUserInfoDomModel) = error("Unexpected signIn")
+            override suspend fun clearIfCurrent(expected: SessionSnapshot): Boolean = error("Unexpected logout")
+            override suspend fun updateActivation(expected: SessionSnapshot, active: Boolean): Boolean = error("Unexpected activation")
+            override suspend fun <T> withCurrent(expected: SessionSnapshot, action: suspend () -> T): T? =
+                if (this@LocationSynchronizationTest.session == expected) action() else null
+        }
         store = RoomPendingLocationStore(database, dao, WmMapper(), sessions)
     }
 
@@ -96,7 +99,7 @@ class LocationSynchronizationTest {
     fun sessionChangedAfterSnapshotDoesNotAcknowledge() = runBlocking {
         insert()
         val batch = requireNotNull(store.snapshot())
-        session = initialSession.copy(tokenJwt = "new-test-token", posId = 99)
+        session = initialSession.copy(profile = initialSession.profile.copy(tokenJwt = "new-test-token", posId = 99))
         assertEquals(0, store.acknowledge(batch))
         assertEquals(1, dao.getPendingLocations().size)
     }

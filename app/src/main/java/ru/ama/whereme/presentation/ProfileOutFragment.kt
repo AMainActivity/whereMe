@@ -15,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.asLiveData
+import com.google.android.material.snackbar.Snackbar
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentOutProfileBinding
 
@@ -63,7 +65,7 @@ class ProfileOutFragment : Fragment() {
             )
             .setCancelable(true)
             .setPositiveButton(getString(R.string.menu_profil_share)) { _, _ ->
-                val res = viewModel.getSetUserInfo()
+                val res = viewModel.getSetUserInfo() ?: return@setPositiveButton
                 val name = res.name
                 val url = res.url
                 if (name != null && url != null) sharetext(
@@ -109,17 +111,22 @@ class ProfileOutFragment : Fragment() {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =
             getString(R.string.profile_in_title)
         viewModel = ViewModelProvider(this)[ProfileOutViewModel::class.java]
-        val res = viewModel.getSetUserInfo()
         binding.frgmntProOutTv.linksClickable = true
         binding.frgmntProOutTv.movementMethod = LinkMovementMethod.getInstance()
-        binding.frgmntProOutTv.text =
-            HtmlCompat.fromHtml(
-                String.format(getString(R.string.frgmnt_out_tv), res.name, res.url),
-                HtmlCompat.FROM_HTML_MODE_LEGACY
-            )
-        viewModel.isSuccess.observe(viewLifecycleOwner) {
-            (requireActivity() as MainActivity).setCurrentFragment(ProfileInFragment())
+        viewModel.session.asLiveData().observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is LoadState.Ready -> {
+                    val res = state.value.profile
+                    binding.frgmntProOutTv.text = HtmlCompat.fromHtml(
+                        getString(R.string.frgmnt_out_tv, res.name.orEmpty(), res.url.orEmpty()),
+                        HtmlCompat.FROM_HTML_MODE_LEGACY)
+                }
+                LoadState.Loading -> binding.frgmntProOutTv.setText(R.string.storage_loading)
+                LoadState.Failed -> Snackbar.make(binding.root, R.string.storage_read_failed, Snackbar.LENGTH_INDEFINITE)
+                    .setAction(R.string.storage_retry) { viewModel.retrySession() }.show()
+            }
         }
+        viewModel.isError.observe(viewLifecycleOwner) { Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show() }
     }
 
     private fun sharetext(

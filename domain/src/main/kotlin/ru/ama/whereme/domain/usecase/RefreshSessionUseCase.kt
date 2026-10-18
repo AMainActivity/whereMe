@@ -4,7 +4,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withTimeoutOrNull
-import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
+import ru.ama.whereme.domain.entity.SessionSnapshot
 import ru.ama.whereme.domain.repository.AuthRepository
 import ru.ama.whereme.domain.repository.SessionRepository
 import javax.inject.Inject
@@ -15,16 +15,25 @@ class RefreshSessionUseCase @Inject constructor(
     private val sessions: SessionRepository
 ) {
     suspend operator fun invoke(
-        expectedSession: SettingsUserInfoDomModel,
+        expectedSession: SessionSnapshot,
         timeoutMillis: Long = 5_000L
     ) {
-        if (expectedSession.tokenJwt.isBlank() ||
-            sessions.getWmUserInfoSetings() != expectedSession
+        try {
+            refresh(expectedSession, timeoutMillis)
+        } catch (cancelled: CancellationException) { throw cancelled
+        } catch (_: Exception) {
+            // A local storage failure is not authorization failure either.
+        }
+    }
+
+    private suspend fun refresh(expectedSession: SessionSnapshot, timeoutMillis: Long) {
+        if (expectedSession.profile.tokenJwt.isBlank() ||
+            sessions.current() != expectedSession
         ) return
 
         val activation = withTimeoutOrNull(timeoutMillis) {
             val response = try {
-                auth.checkWmJwToken(expectedSession.tokenJwt)
+                auth.checkWmJwToken(expectedSession.profile.tokenJwt)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -46,11 +55,6 @@ class RefreshSessionUseCase @Inject constructor(
         } ?: return
 
         currentCoroutineContext().ensureActive()
-        // Called on Main: no suspension between comparison and write. Ignore stale replies.
-        if (sessions.getWmUserInfoSetings() == expectedSession &&
-            expectedSession.isActivate != activation
-        ) {
-            sessions.setWmUserInfoSetings(expectedSession.copy(isActivate = activation))
-        }
+        sessions.updateActivation(expectedSession, activation)
     }
 }

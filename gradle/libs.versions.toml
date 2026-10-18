@@ -1,4 +1,5 @@
 [versions]
+datastore = "1.2.1"
 agp = "8.11.0"
 kotlin = "2.2.21"
 ksp = "2.2.21-2.0.4"
@@ -22,6 +23,8 @@ androidx-junit = "1.3.0"
 espresso = "3.7.0"
 
 [libraries]
+datastore-core-okio = { module = "androidx.datastore:datastore-core-okio", version.ref = "datastore" }
+datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 javax-inject = { module = "javax.inject:javax.inject", version = "1" }
 androidx-lifecycle-livedata = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycle" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core" }
