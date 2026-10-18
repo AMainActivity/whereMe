@@ -15,3 +15,22 @@
 Подробное описание - https://kol.hhos.ru/2022/12/07/%d0%bf%d1%80%d0%b8%d0%bb%d0%be%d0%b6%d0%b5%d0%bd%d0%b8%d0%b5-%d1%82%d1%8b-%d0%b3%d0%b4%d0%b5-%d0%b1%d1%8b%d0%bb/.
 
 Скачать можно с telegram-бота — https://t.me/myTestInfoBot
+
+
+## Сборка проекта
+
+Текущая конфигурация рассчитана на Android Studio с поддержкой **AGP 8.11.0**:
+JDK 17, Gradle 8.13 через wrapper, compileSdk 36, minSdk 24 и targetSdk 34.
+Kotlin 2.2.21, KSP 2.2.21-2.0.4 и Hilt 2.58 согласованы с этой версией AGP.
+Все прямые версии находятся в `gradle/libs.versions.toml`, выбранные зависимости — в lock-файлах.
+
+Открывать корень проекта и использовать Gradle wrapper. Для проверки из терминала:
+
+```sh
+./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```
+
+На Windows используется `gradlew.bat`. Путь к установленному Android SDK задаётся
+локально через Android Studio/`local.properties`. Обновление AGP требует проверки
+поддержки в используемой Android Studio, а также согласования Gradle, Kotlin,
+KSP, Hilt и требований AAR к compileSdk; успешная CLI-сборка не подтверждает IDE Sync.

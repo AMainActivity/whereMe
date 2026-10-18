@@ -1,5 +1,9 @@
 package ru.ama.whereme.presentation
 
+import dagger.hilt.android.AndroidEntryPoint
+
+import android.Manifest
+import android.content.pm.PackageManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -11,39 +15,43 @@ import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.Gson
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import okhttp3.MediaType
-import okhttp3.RequestBody
-import org.json.JSONObject
 import ru.ama.whereme.R
+import ru.ama.whereme.data.sync.LocationBatchUploader
 import ru.ama.whereme.data.repository.WmRepositoryImpl
-import ru.ama.whereme.domain.entity.DatasToJson
 import ru.ama.whereme.domain.entity.SettingsDomModel
-import java.util.Calendar
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class MyForegroundService : LifecycleService() {
 
     private var timer: CountDownTimer? = null
     private lateinit var workingTimeModel: SettingsDomModel
-    private var isEnath = false
+    private var cycleJob: Job? = null
+    private var lastRecordedRowId: Long? = null
+    private var destroyed = false
+    private var foregroundStarted = false
+    var isTracking = false
+        private set
     var isServiseAlive: ((Boolean) -> Unit)? = null
-    private val component by lazy {
-        (application as MyApp).component
-    }
     private val notificationManager by lazy {
         getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
 
     @Inject
     lateinit var repo: WmRepositoryImpl
+
+    @Inject
+    lateinit var uploader: LocationBatchUploader
 
     override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
@@ -59,18 +67,35 @@ class MyForegroundService : LifecycleService() {
     }
 
     fun startGetLocations() {
-        workingTimeModel = repo.getWorkingTime()
-        isEnath = false
-        val isGooglePlayServicesAvailab = lifecycleScope.async(Dispatchers.IO) {
-            repo.isGooglePlayServicesAvailable()
-        }
-        lifecycleScope.launch(Dispatchers.Main) {
-            startTimer()
-            if (isGooglePlayServicesAvailab.await()) {
-                repo.startLocationUpdates()
-                Log.e("SERVICE_TAG3", repo.isEnathAccuracy.value.toString() + "")
-            } else
-                Log.e("SERVICE_TAG3", "isGooglePlayServicesAvailable false")
+        if (destroyed || !foregroundStarted || cycleJob?.isActive == true) return
+        cycleJob = lifecycleScope.launch {
+            workingTimeModel = repo.getWorkingTime()
+            try {
+                startTimer()
+                val sample = repo.collectLocation(workingTimeModel)
+                timer?.cancel()
+                currentCoroutineContext().ensureActive()
+                if (sample != null) {
+                    lastRecordedRowId = repo.saveLocation(sample, sample.time, workingTimeModel, lastRecordedRowId)
+                }
+                currentCoroutineContext().ensureActive()
+                cancelTimer(
+                    getString(R.string.app_name),
+                    getString(if (sample != null) R.string.service_timer_success else R.string.service_timer_povtor) +
+                        repo.getDate(System.currentTimeMillis())
+                )
+                uploader.uploadPending()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: SecurityException) {
+                // Permissions can be revoked while collection is in progress.
+                stopTracking()
+            } catch (failure: Exception) {
+                Log.w("TrackingCycle", "Cycle failed: " + failure.javaClass.simpleName)
+            } finally {
+                timer?.cancel()
+                if (currentCoroutineContext().isActive && !destroyed && isTracking) reRunGetLocations()
+            }
         }
     }
 
@@ -85,7 +110,7 @@ class MyForegroundService : LifecycleService() {
         val b = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.service_notify_title))
             .setContentText(getString(R.string.service_notify_text))
-            .setSmallIcon(R.drawable.ic_launcher_background)
+            .setSmallIcon(R.drawable.ic_stat_location)
             .setOnlyAlertOnce(true)
             .setOngoing(true)
             .setContentIntent(resultPendingIntent)
@@ -124,94 +149,22 @@ class MyForegroundService : LifecycleService() {
                 notificationManager.notify(NOTIFICATION_ID, notification)
             }
 
-            override fun onFinish() {
-                repo.stopLocationUpdates()
-                if (repo.mBestLoc.longitude != 0.0)
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        repo.saveLocation(repo.mBestLoc, repo.mBestLoc.time)
-                    }
-                if (repo.getWmUserInfoSetings().tokenJwt.isNotEmpty())
-                    sendData4Net() else
-                    reRunGetLocations()
-                cancelTimer(
-                    getString(R.string.app_name),
-                    getString(R.string.service_timer_povtor) + repo.getDate(
-                        Calendar.getInstance().getTime().time
-                    )
-                )
-            }
+            override fun onFinish() = Unit // Collection timeout is owned by the service coroutine.
         }
         timer?.start()
     }
 
-    private fun sendData4Net() {
-        if (repo.isInternetConnected()) {
-            val idList: MutableList<Long> = ArrayList()
-            val d = lifecycleScope.async(Dispatchers.IO) {
-                val res = repo.getLocations4Net()
-                for (i in res.indices) {
-                    idList.add(res[i]._id)
-                }
-                val json1 = Gson().toJson(DatasToJson(repo.getWmUserInfoSetings().tokenJwt, res))
-                Log.e("Gson", json1.toString())
-                RequestBody.create(
-                    MediaType.parse(APPLICATION_JSON), json1
-                        .toString()
-                )
-            }
-            lifecycleScope.launch(Dispatchers.IO) {
-                val sdsd = d.await()
-                Log.e("idList", idList.size.toString())
-                if (idList.size > 0) {
-                    try {
-                        Log.e("Gson2", sdsd.toString())
-                        val response = repo.writeLoc4Net(sdsd)
-                        Log.e("responseCode", response.respCode.toString())
-                        Log.e("response", response.toString())
-                        if (response.respIsSuccess) {
-                            response.mBody?.let {
-                                if (!it.error && it.message.isNotEmpty()) {
-                                    var mSize = idList.size
-                                    while (mSize > 0) {
-                                        val sSize = if (mSize > 500) 500 else mSize
-                                        val tempList = idList.subList(0, sSize)
-                                        val r = repo.updateIsWrite(tempList)
-                                        if (r > 0) {
-                                            idList.subList(0, sSize).clear()
-                                            mSize = idList.size
-                                        }
-                                    }
-                                }
-                                reRunGetLocations()
-                            }
-                        } else {
-                            try {
-                                val jObjError = response.respError?.string()?.let { JSONObject(it) }
-                                Log.e(
-                                    "responseError",
-                                    jObjError.toString()
-                                )
-                            } catch (e: Exception) {
-                                Log.e("responseError", e.message.toString())
-                            }
-                            reRunGetLocations()
-                        }
-                    } catch (e: Exception) {
-                        reRunGetLocations()
-                    }
-                } else
-                    reRunGetLocations()
-
-            }
-        } else
-            reRunGetLocations()
-    }
-
     private fun reRunGetLocations() {
-        if (!repo.isCurTimeBetweenSettings())
-            stopSelf()
-        else
-            repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
+        if (!repo.isTimeToGetLocaton()) {
+            stopTracking()
+        } else {
+            try {
+                repo.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
+            } catch (_: SecurityException) {
+                Log.w("TrackingCycle", "Unable to schedule next collection")
+                stopTracking()
+            }
+        }
     }
 
     private fun cancelTimer(title: String, txtBody: String) {
@@ -225,51 +178,70 @@ class MyForegroundService : LifecycleService() {
     }
 
     override fun onCreate() {
-        component.inject(this)
         super.onCreate()
-        createNotificationChannel()
-        Log.e("getCurrentDateMil", repo.getCurrentDateMil())
-        Log.e("getCurrentDate", repo.getCurrentDate())
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                NOTIFICATION_ID, notificationBuilder.build(),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notificationBuilder.build())
+        val hasLocationPermission = listOf(
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ).any { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
+        if (!hasLocationPermission) {
+            stopSelf()
+            return
         }
-        //startForeground(NOTIFICATION_ID, notificationBuilder.build())
+        createNotificationChannel()
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIFICATION_ID, notificationBuilder.build(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notificationBuilder.build())
+            }
+            foregroundStarted = true
+        } catch (_: SecurityException) {
+            stopSelf()
+        }
+    }
+
+    fun stopTracking() {
+        clearTracking()
+        stopSelf()
+    }
+
+    private fun clearTracking() {
+        isTracking = false
+        lastRecordedRowId = null
+        cycleJob?.cancel()
+        repo.stopLocationUpdates()
+        repo.cancelAlarm()
+        timer?.cancel()
+        isServiseAlive?.invoke(false)
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        foregroundStarted = false
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        isServiseAlive?.invoke(true)
-        repo.onLocationChangedListener = {
-            Log.e("onLocationListener", "$it / $isEnath")
-            if (it) {
-                repo.stopLocationUpdates()
-                cancelTimer(
-                    getString(R.string.app_name),
-                    getString(R.string.service_timer_success) + repo.getDate(
-                        Calendar.getInstance().getTime().time
-                    )
-                )
-                isEnath = true
-                if (repo.getWmUserInfoSetings().tokenJwt.isNotEmpty())
-                    sendData4Net() else
-                    reRunGetLocations()
-            }
+        if (intent?.action == ACTION_STOP) {
+            stopTracking()
+            return START_NOT_STICKY
         }
-        repo.runAlarmClock()
+        if (!foregroundStarted) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        isTracking = true
+        isServiseAlive?.invoke(true)
+        repo.scheduleNextAlarmClockIfEnabled()
         startGetLocations()
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
-        notificationManager.cancelAll()
-        timer?.cancel()
-        isServiseAlive?.invoke(false)
-        lifecycleScope.cancel()
+        destroyed = true
+        clearTracking()
+        notificationManager.cancel(NOTIFICATION_ID)
+        isServiseAlive = null
         super.onDestroy()
     }
 
@@ -285,13 +257,15 @@ class MyForegroundService : LifecycleService() {
     }
 
     companion object {
+        private const val ACTION_STOP = "ru.ama.whereme.STOP_TRACKING"
         private const val CHANNEL_ID = "channel_id"
         private const val CHANNEL_NAME = "channel_name"
         private const val NOTIFICATION_ID = 1
         private const val MILLIS_IN_SECONDS = 1000L
         private const val SECONDS_IN_MINUTE = 60
         private const val FORMATTED_STRING_MINUTE_SECOND = "%02d:%02d"
-        private const val APPLICATION_JSON = "application/json"
+        fun stopIntent(context: Context): Intent = newIntent(context).setAction(ACTION_STOP)
+
         fun newIntent(context: Context): Intent {
             return Intent(context, MyForegroundService::class.java)
         }

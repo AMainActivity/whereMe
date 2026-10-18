@@ -1,5 +1,7 @@
 package ru.ama.whereme.presentation
 
+import dagger.hilt.android.AndroidEntryPoint
+
 import android.annotation.SuppressLint
 import android.app.TimePickerDialog
 import android.content.ComponentName
@@ -22,9 +24,9 @@ import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentSettingsBinding
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import java.text.SimpleDateFormat
-import javax.inject.Inject
 
 
+@AndroidEntryPoint
 class SettingsFragment : Fragment() {
 
     private var _binding: FragmentSettingsBinding? = null
@@ -32,36 +34,50 @@ class SettingsFragment : Fragment() {
         get() = _binding ?: throw RuntimeException("FragmentSettingsBinding == null")
     private lateinit var viewModel: SettingsViewModel
     private var listOfCheckBox = listOf<AppCompatCheckBox>()
-    private val component by lazy {
-        (requireActivity().application as MyApp).component
-    }
     private lateinit var workingTimeModel: SettingsDomModel
+    private var serviceBound = false
+    private var boundService: MyForegroundService? = null
+    private var updatingServiceSwitch = false
 
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
 
     override fun onAttach(context: Context) {
-        component.inject(this)
         super.onAttach(context)
     }
 
     override fun onResume() {
         super.onResume()
         bindMyService()
-        binding.frgmntSetSwitchStart.isChecked = viewModel.checkService()
+        showServiceState(boundService?.isTracking ?: viewModel.checkService())
     }
 
     private fun bindMyService() {
-        requireActivity().bindService(
-            MyForegroundService.newIntent(requireContext()),
-            serviceConnection,
-            0
+        if (serviceBound) return
+        serviceBound = requireActivity().bindService(
+            MyForegroundService.newIntent(requireContext()), serviceConnection, 0
         )
     }
 
-    private fun bindUnbindService() {
-        requireActivity().unbindService(serviceConnection)
-        bindMyService()
+    private fun unbindMyService() {
+        boundService?.isServiseAlive = null
+        boundService = null
+        if (serviceBound) {
+            requireActivity().unbindService(serviceConnection)
+            serviceBound = false
+        }
+    }
+
+    private fun showServiceState(running: Boolean) {
+        updatingServiceSwitch = true
+        try {
+            _binding?.frgmntSetSwitchStart?.isChecked = running
+        } finally {
+            updatingServiceSwitch = false
+        }
+    }
+
+    override fun onStop() {
+        unbindMyService()
+        super.onStop()
     }
 
     private fun observeViewModel() {
@@ -125,13 +141,14 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = getString(R.string.menu_settings)
-        viewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
+        viewModel = ViewModelProvider(this)[SettingsViewModel::class.java]
         setDays()
         workingTimeModel = viewModel.getWorkingTime()
         observeViewModel()
         binding.frgmntSetSwitchAc.isChecked = workingTimeModel.isEnable
-        binding.frgmntSetSwitchStart.isChecked = viewModel.checkService()
-        binding.frgmntSetSwitchStart.setOnCheckedChangeListener { view, isChecked ->
+        showServiceState(boundService?.isTracking ?: viewModel.checkService())
+        binding.frgmntSetSwitchStart.setOnCheckedChangeListener { _, isChecked ->
+            if (updatingServiceSwitch) return@setOnCheckedChangeListener
             if (isChecked) {
                 if (!viewModel.checkService()) {
                     ContextCompat.startForegroundService(
@@ -143,25 +160,14 @@ class SettingsFragment : Fragment() {
             } else {
                 if (viewModel.checkService()) {
                     Log.e("frgmntSetSwitchStart", "isMyServiceRunningFalse")
-                    requireContext().stopService(MyForegroundService.newIntent(requireContext()))
+                    val service = boundService
+                    if (service != null) service.stopTracking()
+                    else requireContext().startService(MyForegroundService.stopIntent(requireContext()))
+                    unbindMyService()
                     viewModel.cancelAlarmService()
                 }
             }
         }
-        /*binding.frgmntSetSwitchStart.setOnClickListener { view ->
-            bindUnbindService()
-            if (!viewModel.checkService()) {
-                ContextCompat.startForegroundService(
-                    requireContext(),
-                    MyForegroundService.newIntent(requireContext())
-                )
-                Log.e("frgmntSetSwitchStart", "isMyServiceRunning")
-            } else {
-                Log.e("frgmntSetSwitchStart", "isMyServiceRunningFalse")
-                requireContext().stopService(MyForegroundService.newIntent(requireContext()))
-                viewModel.cancelAlarmService()
-            }
-        }*/
         binding.frgmntSetSwitchAc.setOnCheckedChangeListener { buttonView, isChecked ->
             if (isChecked) {
                 Toast.makeText(
@@ -197,7 +203,7 @@ class SettingsFragment : Fragment() {
                     if (!compare2Times("$h:$m", workingTimeModel.end))
                         Toast.makeText(
                             requireContext(),
-                            String.format(getString(R.string.set_format_end, workingTimeModel.end)),
+                            getString(R.string.set_format_end, workingTimeModel.end),
                             Toast.LENGTH_SHORT
                         ).show()
                     else {
@@ -233,12 +239,7 @@ class SettingsFragment : Fragment() {
                         if (!compare2Times(workingTimeModel.start, "$h:$m"))
                             Toast.makeText(
                                 requireContext(),
-                                String.format(
-                                    getString(
-                                        R.string.set_format_start,
-                                        workingTimeModel.start
-                                    )
-                                ),
+                                getString(R.string.set_format_start, workingTimeModel.start),
                                 Toast.LENGTH_SHORT
                             ).show()
                         else {
@@ -316,15 +317,14 @@ class SettingsFragment : Fragment() {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = (service as? MyForegroundService.LocalBinder) ?: return
             val foregroundService = binder.getService()
-            foregroundService.isServiseAlive = { flag ->
-                try {
-                    binding.frgmntSetSwitchStart.isChecked = flag
-                } catch (e: Exception) {
-                }
-            }
+            boundService = foregroundService
+            showServiceState(foregroundService.isTracking)
+            foregroundService.isServiseAlive = { running -> showServiceState(running) }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
+            boundService = null
+            showServiceState(false)
         }
     }
 
@@ -373,18 +373,10 @@ class SettingsFragment : Fragment() {
         viewModel.setWorkingTime(workingTimeModel.copy(days = listOfDays1))
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        try {
-            requireActivity().unbindService(serviceConnection)
-        } catch (e: Exception) {
-
-        }
-    }
-
     private fun Boolean.toIntTxt() = if (this) ONE_UNIT else ZERO_STRING
 
     override fun onDestroyView() {
+        unbindMyService()
         super.onDestroyView()
         _binding = null
     }

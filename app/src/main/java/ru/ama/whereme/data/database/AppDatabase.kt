@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [LocationDbModel::class], version = 3, exportSchema = false)
+@Database(entities = [LocationDbModel::class], version = 3, exportSchema = true)
 //@TypeConverters(OffsetDateTimeConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     companion object {

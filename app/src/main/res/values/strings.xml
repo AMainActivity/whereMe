@@ -9,9 +9,9 @@
     </string>
 
     <string name="frgmnt_out_tv">
-  Пользователь: &lt;b>%s&lt;/b>,&lt;br>
+  Пользователь: &lt;b>%1$s&lt;/b>,&lt;br>
   ссылка для просмотра данных:&lt;br>
-  &lt;a href=\'https://kol.hhos.ru/gkk/map.php?wm=%s\'>https://kol.hhos.ru/gkk&lt;/a>&lt;br>
+  &lt;a href=\'https://kol.hhos.ru/gkk/map.php?wm=%2$s\'>https://kol.hhos.ru/gkk&lt;/a>&lt;br>
         Поделиться ссылкой можно, нажав кнопку в правом верхнем углу.
     </string>
 
@@ -61,7 +61,7 @@
     <string name="set_end_time">Время окончания</string>
     <string name="set_min_dist">Минимальное расстояние, м</string>
     <string name="set_accuracy">Точность, м</string>
-    <string name="set_format">введите число больше %s</string>
+    <string name="set_format">введите число больше %1$d</string>
     <string name="set_format_end">время должо быть раньше времени конца: %s</string>
     <string name="set_format_start">время должо быть позже времени старта: %s</string>
     <string name="set_wait_accuracy_time">Время ожидания точности, с</string>
@@ -84,7 +84,7 @@
     <string name="map_route">маршрут</string>
     <string name="map_js">javascript:fromAndroid(%s)</string>
     <string name="map_get_route">построить маршрут?\n %s</string>
-    <string name="map_route_url">dgis://2gis.ru/routeSearch/rsType/car/from/%s,%s/to/%s,%s</string>
+    <string name="map_route_url">dgis://2gis.ru/routeSearch/rsType/car/from/%1$s,%2$s/to/%3$s,%4$s</string>
     <string name="map_cancel">Отмена</string>
     <string name="string_ok">Ок</string>
     <string name="map_2gisapp">market://details?id=ru.dublgis.dgismobile</string>
@@ -109,4 +109,5 @@
     <string name="profile_logout_title">Выход</string>
     <string name="profile_logout_text">"Выйти из профиля?  \nПосле выхода данные не будут сохранены на серверной части"</string>
     <string name="set_alarm_clock_set">будильник установлен</string>
+    <string name="map_external_unavailable">Не найдено приложение для открытия ссылки</string>
 </resources>

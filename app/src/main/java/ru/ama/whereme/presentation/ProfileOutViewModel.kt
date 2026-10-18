@@ -3,13 +3,13 @@ package ru.ama.whereme.presentation
 
 import android.app.Application
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import org.json.JSONObject
 import ru.ama.whereme.R
@@ -18,6 +18,7 @@ import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
 
+@HiltViewModel
 class ProfileOutViewModel @Inject constructor(
     private val logOutUseCase: LogOutUseCase,
     private val setWmJwTokenUseCase: SetJwTokenUseCase,
@@ -41,13 +42,11 @@ class ProfileOutViewModel @Inject constructor(
         val json = JSONObject()
         json.put(application.getString(R.string.profile_in_json_param), wmTokenInfoModel.tokenJwt)
         val requestBody: RequestBody =
-            RequestBody.create(MediaType.parse(APPLICATION_JSON), json.toString())
+            RequestBody.create(APPLICATION_JSON.toMediaTypeOrNull(), json.toString())
 
-        Log.e("response1", json.toString())
         viewModelScope.launch {
             val response = logOutUseCase(requestBody)
             Log.e("responseCode", response.respCode.toString())
-            Log.e("response", response.toString())
             if (response.respIsSuccess) {
                 response.mBody?.let {
                     if (!it.error && it.message == ONE_UNIT) {
@@ -65,16 +64,7 @@ class ProfileOutViewModel @Inject constructor(
                     }
                 }
             } else {
-                try {
-                    val jObjError = response.respError?.string()?.let { JSONObject(it) }
-
-                    Log.e(
-                        "responseError",
-                        jObjError.toString()/*.getJSONObject("error").getString("message")*/
-                    )
-                } catch (e: Exception) {
-                    Log.e("responseError", e.message.toString())
-                }
+                response.respError?.close()
             }
 
         }

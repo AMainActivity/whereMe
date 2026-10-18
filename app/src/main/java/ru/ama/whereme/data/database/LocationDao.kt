@@ -17,8 +17,17 @@ interface LocationDao {
     )
     suspend fun getLocations4Net(param: Int): List<LocationDbModel>
 
-    @Query("update tab_locations  set isWrite =  1  where _id in (:idList)")
-    fun updateQuery(idList: List<Long>): Int
+    @Query("SELECT * FROM tab_locations WHERE isWrite=0 ORDER BY _id ASC")
+    suspend fun getPendingLocations(): List<LocationDbModel>
+
+    @Query("UPDATE tab_locations SET isWrite=1 WHERE _id=:id AND isWrite=0 " +
+        "AND datetime=:datetime AND datestart=:datestart AND dateend IS :dateend " +
+        "AND info IS :info AND latitude=:latitude AND longitude=:longitude " +
+        "AND sourceId=:sourceId AND accuracy=:accuracy AND velocity=:velocity")
+    suspend fun acknowledgeUnchanged(
+        id: Long, datetime: String, datestart: Long, dateend: Long?, info: String?,
+        latitude: Double, longitude: Double, sourceId: Int, accuracy: Float, velocity: Float
+    ): Int
 
     @Query("SELECT * FROM tab_locations  ORDER BY _id asc ")
     fun getLocations(): LiveData<List<LocationDbModel>>
@@ -30,7 +39,7 @@ interface LocationDao {
     suspend fun getLocationsByDays(): List<LocationDbModelByDays>
 
     @Query("SELECT * FROM tab_locations where strftime('%d.%m.%Y', datestart / 1000, 'unixepoch', 'localtime') =:mDate ORDER BY _id desc limit 1 ")
-    fun getLastValue(mDate: String): LocationDbModel
+    suspend fun getLastValue(mDate: String): LocationDbModel?
 
     @Query(
         "SELECT _id,strftime('%d.%m.%Y %H:%M:%S', datestart / 1000, 'unixepoch', 'localtime') as datetime,datestart,dateend," +
@@ -38,13 +47,10 @@ interface LocationDao {
     )
     fun getLastValu1e(): List<LocationDbModel>
 
-    @Query("update tab_locations  set info =  :newInfo,isWrite =  0 where _id=:id")
-    fun updateLocationById(id: Int, newInfo: String): Int
+    @Query("UPDATE tab_locations SET dateend=:newTime, info=:newInfo, isWrite=0 WHERE _id=:id")
+    suspend fun updateInterval(id: Long, newTime: Long, newInfo: String): Int
 
-    @Query("update tab_locations  set dateend =  :newTime  where _id=:id")
-    fun updateTime2ById(id: Int, newTime: Long): Int
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertLocation(mLoc: LocationDbModel)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertLocation(mLoc: LocationDbModel): Long
 
 }

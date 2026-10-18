@@ -1,5 +1,7 @@
 package ru.ama.whereme.presentation
 
+import dagger.hilt.android.AndroidEntryPoint
+
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -15,24 +17,18 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentOutProfileBinding
-import javax.inject.Inject
 
 
+@AndroidEntryPoint
 class ProfileOutFragment : Fragment() {
 
     private var _binding: FragmentOutProfileBinding? = null
     private val binding
         get() = _binding ?: throw RuntimeException("FragmentOutProfileBinding == null")
     private lateinit var viewModel: ProfileOutViewModel
-    private val component by lazy {
-        (requireActivity().application as MyApp).component
-    }
 
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
 
     override fun onAttach(context: Context) {
-        component.inject(this)
         super.onAttach(context)
     }
 
@@ -110,7 +106,7 @@ class ProfileOutFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =
             getString(R.string.profile_in_title)
-        viewModel = ViewModelProvider(this, viewModelFactory)[ProfileOutViewModel::class.java]
+        viewModel = ViewModelProvider(this)[ProfileOutViewModel::class.java]
         val res = viewModel.getSetUserInfo()
         binding.frgmntProOutTv.linksClickable = true
         binding.frgmntProOutTv.movementMethod = LinkMovementMethod.getInstance()

@@ -1,12 +1,18 @@
 package ru.ama.whereme.presentation
 
+import dagger.hilt.android.AndroidEntryPoint
+
 import android.annotation.SuppressLint
+import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.LiveData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import android.webkit.*
 import android.widget.PopupWindow
@@ -20,28 +26,26 @@ import com.google.gson.Gson
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.DatePickerDaysBinding
 import ru.ama.whereme.databinding.FragmentMapBinding
+import ru.ama.whereme.presentation.map.RouteRequest
+import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.entity.LocationDbByDays
 import java.text.SimpleDateFormat
 import java.util.*
-import javax.inject.Inject
 
 
+@AndroidEntryPoint
 class MapFragment : Fragment() {
 
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding ?: throw RuntimeException("FragmentFirstBinding == null")
     private lateinit var viewModel: MapViewModel
     lateinit var listDays: List<LocationDbByDays>
-    private val component by lazy {
-        (requireActivity().application as MyApp).component
-    }
+    private var observedDay: LiveData<List<LocationDb>>? = null
+    private var routeDialog: AlertDialog? = null
     var onDataSizeListener: ((Int) -> Unit)? = null
 
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
 
     override fun onAttach(context: Context) {
-        component.inject(this)
         super.onAttach(context)
     }
 
@@ -77,7 +81,8 @@ class MapFragment : Fragment() {
         popupWindow.width = WindowManager.LayoutParams.WRAP_CONTENT
         popupWindow.height = WindowManager.LayoutParams.WRAP_CONTENT
         val binding2 = DatePickerDaysBinding.inflate(layoutInflater)
-        binding2.frgmntMapDp.setOnDateChangedListener { datePicker, year, monthOfYear, dayOfMonth ->
+        val datePicker = binding2.frgmntMapDp
+        datePicker.init(datePicker.year, datePicker.month, datePicker.dayOfMonth) { _, year, monthOfYear, dayOfMonth ->
             val formatter = SimpleDateFormat("dd.MM.yyyy")
             val calendar: Calendar = Calendar.getInstance()
             calendar.set(year, monthOfYear, dayOfMonth)
@@ -119,7 +124,7 @@ class MapFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =
             getString(R.string.menu_map)
-        viewModel = ViewModelProvider(this, viewModelFactory)[MapViewModel::class.java]
+        viewModel = ViewModelProvider(this)[MapViewModel::class.java]
         viewModel.ld_days.observe(viewLifecycleOwner) {
             listDays = it
         }
@@ -135,109 +140,125 @@ class MapFragment : Fragment() {
                 origin: String,
                 callback: GeolocationPermissions.Callback
             ) {
-                callback.invoke(origin, true, false)
+                if (_binding == null || !isAdded) {
+                    callback.invoke(origin, false, false)
+                    return
+                }
+                val locationGranted = listOf(
+                    Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION
+                ).any { ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED }
+                callback.invoke(origin, isMapOrigin(Uri.parse(origin)) && locationGranted, false)
             }
         }
         binding.frgmntLocations.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                view?.context?.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                )
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                if (_binding == null || !isAdded) return true
+                if (isMapPage(request.url)) return false
+                if (request.isForMainFrame && request.hasGesture() &&
+                    request.url.scheme in listOf("https", "http")
+                ) openExternal(request.url)
                 return true
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                try {
-                    observeData(viewModel.getCurrentDate())
-                } catch (e: Exception) {
+                if (_binding != null && url != null && isMapPage(Uri.parse(url))) {
+                    observeData(viewModel.selectedDate)
                 }
             }
         }
         binding.frgmntLocations.settings.javaScriptEnabled = true
         val url = getString(R.string.map_url)
         binding.frgmntMapReply.setOnClickListener { setUrl(url) }
+        val webView = binding.frgmntLocations
+        webView.settings.allowFileAccess = false
+        webView.settings.allowContentAccess = false
+        webView.addJavascriptInterface(WebAppInterface { payload ->
+            val route = RouteRequest.parse(payload) ?: return@WebAppInterface
+            webView.post {
+                val current = _binding ?: return@post
+                if (current.frgmntLocations === webView && isResumed &&
+                    isMapPage(Uri.parse(webView.url ?: ""))
+                ) showRouteDialog(route)
+            }
+        }, getString(R.string.map_android))
         setUrl(url)
-        binding.frgmntLocations.addJavascriptInterface(
-            WebAppInterface(requireContext()), getString(
-                R.string.map_android
-            )
-        )
     }
 
     private fun observeData(abSuntitle: String) {
-        viewModel.lldByDay?.observe(viewLifecycleOwner) {
+        val source = viewModel.lldByDay ?: return
+        observedDay?.removeObservers(viewLifecycleOwner)
+        observedDay = source
+        source.observe(viewLifecycleOwner) {
             onDataSizeListener?.invoke(it.size)
-            if (it.isNotEmpty()) {
-                val postData = Gson().toJson(it).toString()
-                binding.frgmntLocations.evaluateJavascript(
-                    String.format(
-                        getString(R.string.map_js), postData
-                    ),
-                    null
-                )
-                (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = abSuntitle
-            } else
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.map_nodata),
-                    Toast.LENGTH_SHORT
-                ).show()
-            Log.e("getLocationlldByDay", it.toString())
+            if (_binding == null) return@observe
+            val postData = Gson().toJson(it)
+            binding.frgmntLocations.evaluateJavascript(
+                String.format(getString(R.string.map_js), postData), null
+            )
+            (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = abSuntitle
         }
+    }
+
+    private fun isMapOrigin(uri: Uri): Boolean {
+        val expected = Uri.parse(getString(R.string.map_url))
+        return uri.scheme == "https" && uri.host == expected.host && uri.port in listOf(-1, 443)
+    }
+
+    private fun isMapPage(uri: Uri): Boolean =
+        isMapOrigin(uri) && uri.path == Uri.parse(getString(R.string.map_url)).path
+
+    private fun openExternal(uri: Uri) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, uri))
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(requireContext(), R.string.map_external_unavailable, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showRouteDialog(route: RouteRequest) {
+        if (routeDialog?.isShowing == true) return
+        val description = "${route.fromLatitude}, ${route.fromLongitude} → ${route.toLatitude}, ${route.toLongitude}"
+        routeDialog = AlertDialog.Builder(requireContext())
+            .setTitle(R.string.map_route)
+            .setMessage(getString(R.string.map_get_route, description))
+            .setNegativeButton(R.string.map_cancel, null)
+            .setPositiveButton(R.string.string_ok) { _, _ ->
+                val uri = Uri.parse(getString(
+                    R.string.map_route_url, route.fromLongitude.toString(), route.fromLatitude.toString(),
+                    route.toLongitude.toString(), route.toLatitude.toString()
+                ))
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, uri))
+                } catch (_: ActivityNotFoundException) {
+                    openExternal(Uri.parse(getString(R.string.map_2gisapp)))
+                }
+            }
+            .show()
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
-        viewModel.lldByDay?.removeObservers(viewLifecycleOwner)
+        observedDay?.removeObservers(viewLifecycleOwner)
+        observedDay = null
+        onDataSizeListener = null
+        routeDialog?.dismiss()
+        routeDialog = null
+        val webView = binding.frgmntLocations
+        webView.removeJavascriptInterface(getString(R.string.map_android))
+        webView.stopLoading()
+        webView.webChromeClient = null
+        (webView.parent as? ViewGroup)?.removeView(webView)
+        webView.destroy()
         _binding = null
+        super.onDestroyView()
     }
 
-    class WebAppInterface(private val mContext: Context) {
+    class WebAppInterface(private val onRoute: (String) -> Unit) {
         @JavascriptInterface
-        fun showToast(toast: String) {
-            val ar = toast.split(DELIMITER)
-            if (ar.size == 4) {
-                val builder = AlertDialog.Builder(mContext)
-                builder.setTitle(mContext.getString(R.string.map_route))
-                builder.setCancelable(false)
-                //builder.setIcon(R.drawable.search);
-                builder.setMessage(String.format(mContext.getString(R.string.map_get_route, toast)))
-                builder.setNegativeButton(mContext.getString(R.string.map_cancel)) { dialog, which ->
-                    dialog.cancel()
-                }
-                builder.setPositiveButton(mContext.getString(R.string.string_ok)) { dialog, which ->
-                    val mar = String.format(
-                        mContext.getString(
-                            R.string.map_route_url,
-                            ar[1],
-                            ar[0],
-                            ar[3],
-                            ar[2]
-                        )
-                    )
-                    //"dgis://2gis.ru/routeSearch/rsType/car/from/${ar[1]},${ar[0]}/to/${ar[3]},${ar[2]}"
-                    val uri = Uri.parse(mar)//"dgis://")
-                    var intent = Intent(Intent.ACTION_VIEW, uri)
-                    val packageManager = (mContext).packageManager
-                    val activities = packageManager.queryIntentActivities(intent, 0)
-                    val isIntentSafe = activities.size > 0
-                    if (isIntentSafe) {
-                        (mContext).startActivity(intent)
-                    } else {
-                        intent = Intent(Intent.ACTION_VIEW)
-                        intent.data = Uri.parse(mContext.getString(R.string.map_2gisapp))
-                        mContext.startActivity(intent)
-                    }
-                }
-                val dialoga = builder.create()
-                dialoga.show()
-            } else Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show()
-        }
+        fun showToast(payload: String) = onRoute(payload)
     }
 
     private companion object {
-        const val DELIMITER = '#'
         const val ENCODING = "UTF-8"
         const val MIME_TYPE = "text/html; charset=utf-8"
     }

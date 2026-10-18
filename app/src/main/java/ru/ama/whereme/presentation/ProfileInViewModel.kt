@@ -2,15 +2,14 @@ package ru.ama.whereme.presentation
 
 
 import android.app.Application
-import android.content.Context
-import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import org.json.JSONObject
 import ru.ama.whereme.R
@@ -22,6 +21,7 @@ import ru.ama.whereme.domain.usecase.SetJwTokenUseCase
 import javax.inject.Inject
 
 
+@HiltViewModel
 class ProfileInViewModel @Inject constructor(
     private val checkKodUseCase: CheckKodUseCase,
     private val setWmJwTokenUseCase: SetJwTokenUseCase,
@@ -34,10 +34,6 @@ class ProfileInViewModel @Inject constructor(
     private val _isError = MutableLiveData<Unit>()
     val isError: LiveData<Unit>
         get() = _isError
-
-    init {
-        Log.e("getJwTokenUseCase", getJwTokenUseCase().toString())
-    }
 
     fun saveUserInfo(res: JsonJwt) {
         setWmJwTokenUseCase(
@@ -56,12 +52,10 @@ class ProfileInViewModel @Inject constructor(
         val json = JSONObject()
         json.put(application.getString(R.string.profile_in_json_param), kod)
         val requestBody: RequestBody =
-            RequestBody.create(MediaType.parse(APPLICATION_JSON), json.toString())
-        Log.e("response1", json.toString())
+            RequestBody.create(APPLICATION_JSON.toMediaTypeOrNull(), json.toString())
         viewModelScope.launch {
             val response = checkKodUseCase(requestBody)
             Log.e("responseCode", response.respCode.toString())
-            Log.e("response", response.toString())
             if (response.respIsSuccess) {
                 response.mBody?.let {
                     if (!it.error && it.message == ONE_UNIT) {
@@ -71,15 +65,7 @@ class ProfileInViewModel @Inject constructor(
                 }
             } else {
                 _isError.value = Unit
-                try {
-                    val jObjError = response.respError?.string()?.let { JSONObject(it) }
-                    Log.e(
-                        "responseError",
-                        jObjError.toString()
-                    )
-                } catch (e: Exception) {
-                    Log.e("responseError", e.message.toString())
-                }
+                response.respError?.close()
             }
         }
     }

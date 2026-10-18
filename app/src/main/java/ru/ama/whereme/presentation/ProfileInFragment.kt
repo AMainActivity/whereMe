@@ -1,5 +1,7 @@
 package ru.ama.whereme.presentation
 
+import dagger.hilt.android.AndroidEntryPoint
+
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
@@ -16,23 +18,17 @@ import androidx.lifecycle.ViewModelProvider
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentInProfileBinding
 import ru.ama.whereme.domain.entity.JsonJwt
-import javax.inject.Inject
 
 
+@AndroidEntryPoint
 class ProfileInFragment : Fragment() {
 
     private var _binding: FragmentInProfileBinding? = null
     private val binding
         get() = _binding ?: throw RuntimeException("FragmentInProfileBinding == null")
     private lateinit var viewModel: ProfileInViewModel
-    private val component by lazy {
-        (requireActivity().application as MyApp).component
-    }
 
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
     override fun onAttach(context: Context) {
-        component.inject(this)
 
         super.onAttach(context)
     }
@@ -65,7 +61,7 @@ class ProfileInFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =
             getString(R.string.profile_in_title)
-        viewModel = ViewModelProvider(this, viewModelFactory)[ProfileInViewModel::class.java]
+        viewModel = ViewModelProvider(this)[ProfileInViewModel::class.java]
         binding.frgmntProButCk.setOnClickListener {
             viewModel.checkKod(binding.frgmntProEt.text.toString())
         }

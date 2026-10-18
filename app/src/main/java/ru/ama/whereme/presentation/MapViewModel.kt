@@ -2,6 +2,7 @@ package ru.ama.whereme.presentation
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
@@ -15,12 +16,16 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 
+@HiltViewModel
 class MapViewModel @Inject constructor(
     private val getLocationsFromBdUseCase: GetLocationsFromBdUseCase,
     private val getGropingDaysUseCase: GetGropingDaysUseCase,
     private val getLocationsFromBdByIdUseCase: GetLocationsFromBdByIdUseCase,
     private val checkInternetConnectionUseCase: CheckInternetConnectionUseCase
 ) : ViewModel() {
+
+    var selectedDate: String = getCurrentDate()
+        private set
 
     var lld2: LiveData<List<LocationDb>>? = null
     var lldByDay: LiveData<List<LocationDb>>? = null
@@ -44,6 +49,7 @@ class MapViewModel @Inject constructor(
     }
 
     fun getDataByDate(mDate: String) {
+        selectedDate = mDate
         viewModelScope.launch {
             lldByDay = getLocationsFromBdByIdUseCase(mDate)
         }

@@ -9,3 +9,9 @@
 .cxx
 local.properties
 gradle.properties
+
+# Android package and APK export artifacts
+*.apk
+*.aab
+/app/debug/
+/app/release/

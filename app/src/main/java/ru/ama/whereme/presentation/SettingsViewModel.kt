@@ -2,10 +2,12 @@ package ru.ama.whereme.presentation
 
 import android.util.Log
 import androidx.lifecycle.*
+import dagger.hilt.android.lifecycle.HiltViewModel
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.usecase.*
 import javax.inject.Inject
 
+@HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val getWorkingTimeUseCase: GetWorkingTimeUseCase,
     private val checkServiceUseCase: CheckServiceUseCase,

@@ -1,5 +1,7 @@
 package ru.ama.whereme.presentation
 
+import dagger.hilt.android.AndroidEntryPoint
+
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
@@ -13,21 +15,15 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentAboutBinding
-import javax.inject.Inject
 
+@AndroidEntryPoint
 class AboutFragment : Fragment() {
     private var _binding: FragmentAboutBinding? = null
     private val binding
         get() = _binding ?: throw RuntimeException("FragmentAboutBinding == null")
-    private val component by lazy {
-        (requireActivity().application as MyApp).component
-    }
 
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
 
     override fun onAttach(context: Context) {
-        component.inject(this)
 
         super.onAttach(context)
     }

@@ -1,16 +1,7 @@
 package ru.ama.whereme.presentation
 
 import android.app.Application
-import ru.ama.whereme.di.DaggerApplicationComponent
+import dagger.hilt.android.HiltAndroidApp
 
-
-class MyApp : Application() {
-    val component by lazy {
-        DaggerApplicationComponent.factory().create(this)
-    }
-
-    override fun onCreate() {
-        component.inject(this)
-        super.onCreate()
-    }
-}
+@HiltAndroidApp
+class MyApp : Application()
