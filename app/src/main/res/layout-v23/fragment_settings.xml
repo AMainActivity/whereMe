@@ -51,6 +51,14 @@
                         android:background="@android:color/transparent"
                         android:orientation="vertical">
 
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/tracking_status"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="16dp"
+                            android:accessibilityLiveRegion="polite"
+                            android:text="@string/tracking_stopped" />
+
                         <com.google.android.material.switchmaterial.SwitchMaterial
                             android:id="@+id/frgmnt_set_switch_start"
                             android:layout_width="match_parent"

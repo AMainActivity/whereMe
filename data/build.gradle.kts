@@ -38,10 +38,7 @@ dependencies {
     implementation(project(":domain"))
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
-    // Temporary adapter; removed in the LocationManager migration.
-    implementation(libs.gms.base)
-    implementation(libs.gms.location)
-    implementation(libs.coroutines.play.services)
+    implementation(libs.androidx.core.ktx)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.room.runtime)

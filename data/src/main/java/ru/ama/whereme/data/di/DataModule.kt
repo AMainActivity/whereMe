@@ -1,9 +1,6 @@
 package ru.ama.whereme.data.di
 
 import android.app.Application
-import com.google.android.gms.common.GoogleApiAvailability
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
 import dagger.Binds
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -24,6 +21,9 @@ import ru.ama.whereme.domain.repository.*
 @Module
 @InstallIn(SingletonComponent::class)
 interface DataModule {
+    @Binds
+    fun bindLocationSource(impl: ru.ama.whereme.data.location.PlatformLocationSource): LocationSource
+
     @Binds
     fun bindSettingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
 
@@ -52,18 +52,6 @@ interface DataModule {
         @Provides
         @Singleton
         fun provideLocationDao(database: AppDatabase): LocationDao = database.locationDao()
-
-        @Provides
-        @Singleton
-        fun provideFusedLocationProviderClient(
-            application: Application
-        ): FusedLocationProviderClient {
-            return LocationServices.getFusedLocationProviderClient(application)
-        }
-
-        @Provides
-        @Singleton
-        fun provideGoogleApiAvailability() = GoogleApiAvailability.getInstance()
 
         @Provides
         @Singleton

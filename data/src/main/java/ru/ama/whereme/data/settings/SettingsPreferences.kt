@@ -1,6 +1,7 @@
 package ru.ama.whereme.data.settings
 
 import androidx.datastore.preferences.core.*
+import java.io.IOException
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.entity.ThemeMode
 
@@ -17,6 +18,7 @@ internal object SettingsPreferences {
     private val THEME = stringPreferencesKey("theme")
 
     fun read(p: Preferences): SettingsDomModel {
+        validateVersion(p)
         val d = SettingsDomModel.DEFAULT
         val mask = p[DAYS] ?: 127
         require(mask in 0..127)
@@ -25,14 +27,29 @@ internal object SettingsPreferences {
             p[ACCURACY] ?: d.accuracy, p[WAIT] ?: d.timeOfWaitAccuracy,
             p[PERIOD] ?: d.timeOfWorkingWM, p[ENABLED] ?: d.isEnable)
     }
-    fun write(p: MutablePreferences, value: SettingsDomModel, onlyMissing: Boolean = false) {
-        fun <T> put(key: Preferences.Key<T>, v: T) { if (!onlyMissing || p[key] == null) p[key] = v }
+    fun write(p: MutablePreferences, value: SettingsDomModel) {
+        validateVersion(p)
+        p[VERSION] = 1
+        fun <T> put(key: Preferences.Key<T>, v: T) { p[key] = v }
         put(DAYS, value.days.withIndex().sumOf { (i, day) -> if (day == "1") 1 shl i else 0 })
         put(START, value.start); put(END, value.end); put(DISTANCE, value.minDist)
         put(ACCURACY, value.accuracy); put(WAIT, value.timeOfWaitAccuracy)
         put(PERIOD, value.timeOfWorkingWM); put(ENABLED, value.isEnable)
     }
-    fun theme(p: Preferences) = p[THEME]?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } }
-        ?: ThemeMode.SYSTEM
-    fun theme(p: MutablePreferences, value: ThemeMode) { p[THEME] = value.name }
+    fun theme(p: Preferences): ThemeMode {
+        validateVersion(p)
+        val name = p[THEME] ?: return ThemeMode.SYSTEM
+        return ThemeMode.entries.firstOrNull { it.name == name }
+            ?: throw IOException("Unsupported theme; stored data retained")
+    }
+    fun theme(p: MutablePreferences, value: ThemeMode) {
+        validateVersion(p)
+        p[VERSION] = 1
+        p[THEME] = value.name
+    }
+    private fun validateVersion(p: Preferences) {
+        if (p.asMap().isNotEmpty() && p[VERSION] != 1) {
+            throw IOException("Unsupported or missing settings format; stored data retained")
+        }
+    }
 }

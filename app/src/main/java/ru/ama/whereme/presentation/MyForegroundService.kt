@@ -2,6 +2,12 @@ package ru.ama.whereme.presentation
 
 import dagger.hilt.android.AndroidEntryPoint
 
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import android.location.Location
+import android.location.LocationManager
+import ru.ama.whereme.domain.entity.LocationOutcome
+
 import android.Manifest
 import android.content.pm.PackageManager
 import android.app.NotificationChannel
@@ -10,10 +16,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.os.Binder
 import android.os.Build
 import android.os.CountDownTimer
-import android.os.IBinder
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
@@ -21,7 +25,9 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
@@ -31,7 +37,15 @@ import ru.ama.whereme.data.sync.LocationBatchUploader
 import ru.ama.whereme.data.location.LocationRecorder
 import ru.ama.whereme.domain.repository.SettingsRepository
 import ru.ama.whereme.tracking.TrackingScheduler
+import ru.ama.whereme.tracking.TrackingRuntime
+import ru.ama.whereme.tracking.TrackingState
+import ru.ama.whereme.tracking.TrackingAction
+import ru.ama.whereme.tracking.TrackingRequirement
+import ru.ama.whereme.tracking.trackingCapabilities
 import ru.ama.whereme.domain.entity.SettingsDomModel
+import ru.ama.whereme.domain.usecase.SchedulePolicy
+import java.util.TimeZone
+import android.app.Notification
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -43,9 +57,9 @@ class MyForegroundService : LifecycleService() {
     private var lastRecordedRowId: Long? = null
     private var destroyed = false
     private var foregroundStarted = false
-    var isTracking = false
-        private set
-    var isServiseAlive: ((Boolean) -> Unit)? = null
+    private var scheduled = false
+
+    @Inject lateinit var runtime: TrackingRuntime
     private val notificationManager by lazy {
         getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
@@ -62,49 +76,64 @@ class MyForegroundService : LifecycleService() {
     @Inject
     lateinit var uploader: LocationBatchUploader
 
-    override fun onBind(intent: Intent): IBinder {
-        super.onBind(intent)
-        return LocalBinder()
-    }
-
-    inner class LocalBinder : Binder() {
-        fun getService() = this@MyForegroundService
-    }
-
     private val notificationBuilder by lazy {
         createNotificationBuilder()
     }
 
-    fun startGetLocations() {
+    private fun startGetLocations() {
         if (destroyed || !foregroundStarted || cycleJob?.isActive == true) return
+        runtime.publish(TrackingState.Starting)
         cycleJob = lifecycleScope.launch {
             try {
-                workingTimeModel = settings.settings.first()
-                scheduler.scheduleNextAlarmClockIfEnabled()
-                startTimer()
-                val sample = repo.collectLocation(workingTimeModel)
-                timer?.cancel()
-                currentCoroutineContext().ensureActive()
-                if (sample != null) {
-                    lastRecordedRowId = repo.saveLocation(sample, sample.time, workingTimeModel, lastRecordedRowId)
+                while (isActive) {
+                    workingTimeModel = settings.settings.first()
+                    if (scheduled && !scheduler.isTimeToGetLocation()) { stopTracking(); return@launch }
+                    runtime.publish(TrackingState.Collecting)
+                    startTimer()
+                    val outcome = repo.collectLocation(workingTimeModel)
+                    timer?.cancel()
+                    currentCoroutineContext().ensureActive()
+                    if (outcome is LocationOutcome.Unavailable && outcome.reason != LocationOutcome.Reason.NO_FIX) {
+                        stopTracking()
+                        runtime.publish(TrackingState.LocationUnavailable(outcome.reason))
+                        return@launch
+                    }
+                    if (scheduled && !scheduler.isTimeToGetLocation()) { stopTracking(); return@launch }
+                    val sample = (outcome as? LocationOutcome.Fix)?.sample?.let { fix ->
+                        Location("platform").apply {
+                            latitude = fix.latitude; longitude = fix.longitude
+                            accuracy = fix.accuracyMeters; speed = fix.speedMetersPerSecond
+                            time = fix.timeMillis; elapsedRealtimeNanos = fix.elapsedRealtimeNanos
+                        }
+                    }
+                    if (sample != null) lastRecordedRowId =
+                        repo.saveLocation(sample, sample.time, workingTimeModel, lastRecordedRowId)
+                    currentCoroutineContext().ensureActive()
+                    runtime.publish(TrackingState.Waiting(noFix = sample == null))
+                    cancelTimer(getString(R.string.app_name),
+                        getString(if (sample != null) R.string.service_timer_success else R.string.service_timer_povtor) +
+                            repo.getDate(System.currentTimeMillis()))
+                    uploader.uploadPending()
+                    val period = workingTimeModel.timeOfWorkingWM.toLong() * MILLIS_IN_SECONDS
+                    val untilEnd = if (scheduled) SchedulePolicy.activeUntil(workingTimeModel,
+                        System.currentTimeMillis(), TimeZone.getDefault())?.minus(System.currentTimeMillis()) ?: 0L
+                        else period
+                    val wait = minOf(period, untilEnd).coerceAtLeast(1L)
+                    // Wake for the next sample, interval end, or a real settings change; Stop cancels all three.
+                    withTimeoutOrNull(wait) { settings.settings.first { it != workingTimeModel } }
                 }
-                currentCoroutineContext().ensureActive()
-                cancelTimer(
-                    getString(R.string.app_name),
-                    getString(if (sample != null) R.string.service_timer_success else R.string.service_timer_povtor) +
-                        repo.getDate(System.currentTimeMillis())
-                )
-                uploader.uploadPending()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: SecurityException) {
-                // Permissions can be revoked while collection is in progress.
                 stopTracking()
+                runtime.publish(TrackingState.LocationUnavailable(LocationOutcome.Reason.PERMISSION_REQUIRED))
             } catch (failure: Exception) {
                 Log.w("TrackingCycle", "Cycle failed: " + failure.javaClass.simpleName)
+                stopTracking()
+                runtime.publish(TrackingState.Failed)
             } finally {
                 timer?.cancel()
-                if (currentCoroutineContext().isActive && !destroyed && isTracking) reRunGetLocations()
+                runtime.stopped()
             }
         }
     }
@@ -124,6 +153,8 @@ class MyForegroundService : LifecycleService() {
             .setOnlyAlertOnce(true)
             .setOngoing(true)
             .setContentIntent(resultPendingIntent)
+            .addAction(0, getString(R.string.tracking_stop), PendingIntent.getService(this, 1,
+                stopIntent(this), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
         return b
     }
 
@@ -156,28 +187,12 @@ class MyForegroundService : LifecycleService() {
                         false
                     )
                     .build()
-                notificationManager.notify(NOTIFICATION_ID, notification)
+                postNotification(notification)
             }
 
             override fun onFinish() = Unit // Collection timeout is owned by the service coroutine.
         }
         timer?.start()
-    }
-
-    private suspend fun reRunGetLocations() {
-        val inSchedule = try { scheduler.isTimeToGetLocaton()
-        } catch (cancelled: CancellationException) { throw cancelled
-        } catch (_: Exception) { false }
-        if (!inSchedule) {
-            stopTracking()
-        } else {
-            try {
-                scheduler.runAlarm(workingTimeModel.timeOfWorkingWM.toLong())
-            } catch (_: Exception) {
-                Log.w("TrackingCycle", "Unable to schedule next collection")
-                stopTracking()
-            }
-        }
     }
 
     private fun cancelTimer(title: String, txtBody: String) {
@@ -187,18 +202,52 @@ class MyForegroundService : LifecycleService() {
             .setContentText(txtBody)
             .setProgress(0, 0, false)
             .build()
-        notificationManager.notify(NOTIFICATION_ID, notification)
+        postNotification(notification)
+    }
+
+    private fun postNotification(notification: Notification) {
+        if (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(this,
+                Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            notificationManager.notify(NOTIFICATION_ID, notification)
+        }
+    }
+
+    private val providersChanged = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent?) {
+            if (intent?.action != LocationManager.PROVIDERS_CHANGED_ACTION || !runtime.state.value.isRunning) return
+            val reason = when (trackingCapabilities().requirement(TrackingAction.MANUAL)) {
+                TrackingRequirement.FOREGROUND_LOCATION, TrackingRequirement.PRECISE_LOCATION -> LocationOutcome.Reason.PERMISSION_REQUIRED
+                TrackingRequirement.LOCATION_ENABLED -> LocationOutcome.Reason.LOCATION_DISABLED
+                TrackingRequirement.PROVIDER -> LocationOutcome.Reason.NO_PROVIDER
+                else -> return
+            }
+            stopTracking()
+            runtime.publish(TrackingState.LocationUnavailable(reason))
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
+        ContextCompat.registerReceiver(this, providersChanged, IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED)
         val hasLocationPermission = listOf(
             Manifest.permission.ACCESS_COARSE_LOCATION,
             Manifest.permission.ACCESS_FINE_LOCATION
         ).any { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
         if (!hasLocationPermission) {
+            runtime.publish(TrackingState.LocationUnavailable(LocationOutcome.Reason.PERMISSION_REQUIRED))
             stopSelf()
             return
+        }
+        lifecycleScope.launch {
+            try {
+                settings.settings.collect { if (scheduled && !it.isEnable) stopTracking() }
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (failure: Exception) {
+                Log.w("TrackingSettings", "Settings unavailable: " + failure.javaClass.simpleName)
+                stopTracking()
+                runtime.publish(TrackingState.Failed)
+            }
         }
         createNotificationChannel()
         try {
@@ -212,6 +261,7 @@ class MyForegroundService : LifecycleService() {
             }
             foregroundStarted = true
         } catch (_: SecurityException) {
+            runtime.publish(TrackingState.LocationUnavailable(LocationOutcome.Reason.PERMISSION_REQUIRED))
             stopSelf()
         }
     }
@@ -222,13 +272,10 @@ class MyForegroundService : LifecycleService() {
     }
 
     private fun clearTracking() {
-        isTracking = false
+        runtime.stopped()
         lastRecordedRowId = null
         cycleJob?.cancel()
-        repo.stopLocationUpdates()
-        scheduler.cancelAlarm()
         timer?.cancel()
-        isServiseAlive?.invoke(false)
         stopForeground(STOP_FOREGROUND_REMOVE)
         foregroundStarted = false
     }
@@ -243,17 +290,17 @@ class MyForegroundService : LifecycleService() {
             stopSelf()
             return START_NOT_STICKY
         }
-        isTracking = true
-        isServiseAlive?.invoke(true)
+        if (cycleJob?.isActive != true) scheduled = intent?.getBooleanExtra(EXTRA_SCHEDULED, false) == true
+        else if (intent?.getBooleanExtra(EXTRA_SCHEDULED, false) != true) scheduled = false
         startGetLocations()
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
         destroyed = true
+        unregisterReceiver(providersChanged)
         clearTracking()
         notificationManager.cancel(NOTIFICATION_ID)
-        isServiseAlive = null
         super.onDestroy()
     }
 
@@ -269,6 +316,7 @@ class MyForegroundService : LifecycleService() {
     }
 
     companion object {
+        private const val EXTRA_SCHEDULED = "scheduled"
         private const val ACTION_STOP = "ru.ama.whereme.STOP_TRACKING"
         private const val CHANNEL_ID = "channel_id"
         private const val CHANNEL_NAME = "channel_name"
@@ -278,8 +326,8 @@ class MyForegroundService : LifecycleService() {
         private const val FORMATTED_STRING_MINUTE_SECOND = "%02d:%02d"
         fun stopIntent(context: Context): Intent = newIntent(context).setAction(ACTION_STOP)
 
-        fun newIntent(context: Context): Intent {
-            return Intent(context, MyForegroundService::class.java)
+        fun newIntent(context: Context, scheduled: Boolean = false): Intent {
+            return Intent(context, MyForegroundService::class.java).putExtra(EXTRA_SCHEDULED, scheduled)
         }
     }
 }

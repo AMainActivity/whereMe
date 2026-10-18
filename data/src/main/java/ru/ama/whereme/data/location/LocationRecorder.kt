@@ -16,12 +16,12 @@ import javax.inject.Singleton
 
 @Singleton
 class LocationRecorder @Inject constructor(
-    private val locationSource: FusedLocationSource,
+    private val locationSource: ru.ama.whereme.domain.repository.LocationSource,
     private val database: AppDatabase,
     private val locationDao: LocationDao
 ) {
-    suspend fun collectLocation(settings: SettingsDomModel): Location? =
-        locationSource.collectBestLocation(
+    suspend fun collectLocation(settings: SettingsDomModel): ru.ama.whereme.domain.entity.LocationOutcome =
+        locationSource.locate(
             settings.accuracy,
             settings.timeOfWaitAccuracy.toLong().coerceAtLeast(1L) * ONE_SECOND
         )
@@ -66,7 +66,6 @@ class LocationRecorder @Inject constructor(
             }
         }
 
-    fun stopLocationUpdates() = locationSource.stop()
     private companion object {
         const val LOCATION_A = "lastValue"
         const val ONE_SECOND = 1000L

@@ -1,11 +1,23 @@
 package ru.ama.whereme.presentation
 
 import android.app.TimePickerDialog
-import android.content.ComponentName
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.core.net.toUri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
+import ru.ama.whereme.tracking.*
+import ru.ama.whereme.domain.entity.LocationOutcome
 import android.content.Context
-import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.IBinder
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -31,8 +43,38 @@ class SettingsFragment : Fragment() {
     private lateinit var viewModel: SettingsViewModel
     private var rendering = false
     private var renderedSettings: SettingsDomModel? = null
-    private var serviceBound = false
-    private var boundService: MyForegroundService? = null
+    private var accessDialog: AlertDialog? = null
+    private val foregroundPermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        viewModel.waitingForAccessResult = false
+        val requirement = requireContext().trackingCapabilities().requirement(viewModel.pendingTrackingAction ?: return@registerForActivityResult)
+        if (requirement == TrackingRequirement.FOREGROUND_LOCATION || requirement == TrackingRequirement.PRECISE_LOCATION) {
+            accessDenied(R.string.tracking_permission_required)
+        } else continueTrackingRequest()
+    }
+    private val backgroundPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        viewModel.waitingForAccessResult = false
+        if (granted) continueTrackingRequest() else accessDenied(R.string.tracking_background_required)
+    }
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        viewModel.waitingForAccessResult = false
+        // Notification denial does not revoke location access or prevent an allowed foreground service.
+        completeTrackingRequest()
+    }
+    private val locationSettings = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.waitingForAccessResult = false
+        if (requireContext().trackingCapabilities().locationEnabled) continueTrackingRequest()
+        else accessDenied(R.string.tracking_location_disabled)
+    }
+    private val backgroundSettings = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.waitingForAccessResult = false
+        if (requireContext().trackingCapabilities().background) continueTrackingRequest()
+        else accessDenied(R.string.tracking_background_required)
+    }
+    private val alarmSettings = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.waitingForAccessResult = false
+        if (requireContext().trackingCapabilities().exactAlarm) continueTrackingRequest()
+        else accessDenied(R.string.tracking_alarm_required)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
@@ -44,6 +86,14 @@ class SettingsFragment : Fragment() {
         (requireActivity() as AppCompatActivity).supportActionBar?.setSubtitle(R.string.menu_settings)
         viewModel = ViewModelProvider(this)[SettingsViewModel::class.java]
         val b = binding
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.tracking.collect { state ->
+                    showServiceState(state.isRunning)
+                    renderTrackingState(state)
+                }
+            }
+        }
         days().forEachIndexed { index, checkBox ->
             checkBox.setOnCheckedChangeListener { _, checked ->
                 if (!rendering) viewModel.update { current ->
@@ -52,10 +102,16 @@ class SettingsFragment : Fragment() {
             }
         }
         b.frgmntSetSwitchAc.setOnCheckedChangeListener { _, enabled ->
-            if (!rendering) viewModel.setSchedule(enabled)
+            if (!rendering) {
+                if (enabled) requestTracking(TrackingAction.SCHEDULE)
+                else { viewModel.cancelTrackingRequest(); viewModel.setSchedule(false) }
+            }
         }
         b.frgmntSetSwitchStart.setOnCheckedChangeListener { _, enabled ->
-            if (!rendering) changeService(enabled)
+            if (!rendering) {
+                if (enabled) requestTracking(TrackingAction.MANUAL)
+                else { viewModel.cancelTrackingRequest(); requireContext().stopService(MyForegroundService.newIntent(requireContext())) }
+            }
         }
         b.frgmntSetButStart.setOnClickListener { pickTime(true) }
         b.frgmntSetButEnd.setOnClickListener { pickTime(false) }
@@ -65,7 +121,7 @@ class SettingsFragment : Fragment() {
         number(b.frgmntSetTimePovtorEt, 15) { s, value -> s.copy(timeOfWorkingWM = value) }
         viewModel.settings.asLiveData().observe(viewLifecycleOwner) { state ->
             when (state) {
-                is LoadState.Ready -> { enableSettings(true); render(state.value) }
+                is LoadState.Ready -> { enableSettings(true); render(state.value); renderTrackingState(viewModel.tracking.value) }
                 LoadState.Loading -> enableSettings(false)
                 LoadState.Failed -> {
                     enableSettings(false)
@@ -80,6 +136,35 @@ class SettingsFragment : Fragment() {
         }
     }
 
+    private fun renderTrackingState(state: TrackingState) {
+        val scheduleEnabled = (viewModel.settings.value as? LoadState.Ready)?.value?.isEnable == true
+        if (state == TrackingState.Stopped && scheduleEnabled) {
+            val message = when (requireContext().trackingCapabilities().requirement(TrackingAction.SCHEDULE)) {
+                TrackingRequirement.FOREGROUND_LOCATION, TrackingRequirement.PRECISE_LOCATION -> R.string.tracking_permission_required
+                TrackingRequirement.LOCATION_ENABLED -> R.string.tracking_location_disabled
+                TrackingRequirement.PROVIDER -> R.string.tracking_no_provider
+                TrackingRequirement.BACKGROUND_LOCATION -> R.string.tracking_background_required
+                TrackingRequirement.EXACT_ALARM -> R.string.tracking_alarm_required
+                TrackingRequirement.READY -> R.string.tracking_schedule_ready
+            }
+            binding.trackingStatus.setText(message)
+            return
+        }
+        binding.trackingStatus.setText(when (state) {
+            TrackingState.Starting -> R.string.tracking_starting
+            TrackingState.Stopped -> R.string.tracking_stopped
+            TrackingState.Collecting -> R.string.tracking_collecting
+            is TrackingState.Waiting -> if (state.noFix) R.string.tracking_no_fix else R.string.tracking_waiting
+            TrackingState.Failed -> R.string.tracking_failed
+            is TrackingState.LocationUnavailable -> when (state.reason) {
+                LocationOutcome.Reason.PERMISSION_REQUIRED -> R.string.tracking_permission_required
+                LocationOutcome.Reason.LOCATION_DISABLED -> R.string.tracking_location_disabled
+                LocationOutcome.Reason.NO_PROVIDER -> R.string.tracking_no_provider
+                LocationOutcome.Reason.NO_FIX -> R.string.tracking_no_fix
+            }
+        })
+    }
+
     private fun days() = binding.run { listOf(frgmntSetCbD1, frgmntSetCbD2, frgmntSetCbD3,
         frgmntSetCbD4, frgmntSetCbD5, frgmntSetCbD6, frgmntSetCbD7) }
 
@@ -87,7 +172,7 @@ class SettingsFragment : Fragment() {
         (days() + binding.run { listOf(frgmntSetSwitchAc, frgmntSetButStart, frgmntSetButEnd,
             frgmntSetMdEt, frgmntSetAccurEt, frgmntSetTimeAcEt, frgmntSetTimePovtorEt) })
             .forEach { it.isEnabled = enabled }
-        binding.frgmntSetSwitchStart.isEnabled = enabled || boundService?.isTracking == true
+        binding.frgmntSetSwitchStart.isEnabled = enabled || viewModel.tracking.value.isRunning
     }
 
     private fun render(value: SettingsDomModel) {
@@ -124,36 +209,97 @@ class SettingsFragment : Fragment() {
         val parts = (if (start) current.start else current.end).split(':')
         TimePickerDialog(requireContext(), { _, hour, minute ->
             val value = String.format(Locale.ROOT, "%02d:%02d", hour, minute)
-            val latest = renderedSettings ?: return@TimePickerDialog
-            if ((start && value >= latest.end) || (!start && value <= latest.start)) {
-                Toast.makeText(requireContext(), if (start) getString(R.string.set_format_end, latest.end)
-                    else getString(R.string.set_format_start, latest.start), Toast.LENGTH_SHORT).show()
-            } else viewModel.update { if (start) it.copy(start = value) else it.copy(end = value) }
+            viewModel.update { if (start) it.copy(start = value) else it.copy(end = value) }
         }, parts[0].toInt(), parts[1].toInt(), true).show()
     }
 
     override fun onResume() {
         super.onResume()
-        if (!serviceBound) serviceBound = requireActivity().bindService(
-            MyForegroundService.newIntent(requireContext()), serviceConnection, 0)
-        showServiceState(boundService?.isTracking ?: viewModel.checkService())
+        showServiceState(viewModel.tracking.value.isRunning)
+        renderTrackingState(viewModel.tracking.value)
+        if (viewModel.pendingTrackingAction != null && !viewModel.waitingForAccessResult) continueTrackingRequest()
     }
 
-    private fun changeService(enabled: Boolean) {
-        try {
-            if (enabled) ContextCompat.startForegroundService(requireContext(), MyForegroundService.newIntent(requireContext()))
-            else {
-                val service = boundService
-                if (service != null) service.stopTracking()
-                else if (viewModel.checkService()) requireContext().startService(MyForegroundService.stopIntent(requireContext()))
-                viewModel.cancelAlarmService()
-                unbindService()
-            }
-        } catch (_: SecurityException) {
-            Toast.makeText(requireContext(), R.string.ma_no_access, Toast.LENGTH_LONG).show()
-            showServiceState(false)
-        } catch (_: IllegalStateException) { showServiceState(false) }
+    private fun requestTracking(action: TrackingAction) {
+        if (viewModel.pendingTrackingAction != null) return
+        if (action == TrackingAction.SCHEDULE && renderedSettings?.let { it.start == it.end || it.days.none { day -> day == "1" } } != false) {
+            renderedSettings?.let(::render)
+            Snackbar.make(binding.root, R.string.tracking_invalid_schedule, Snackbar.LENGTH_LONG).show()
+            return
+        }
+        viewModel.pendingTrackingAction = action
+        renderedSettings?.let(::render)
+        showServiceState(viewModel.tracking.value.isRunning)
+        continueTrackingRequest()
     }
+
+    private fun continueTrackingRequest() {
+        val action = viewModel.pendingTrackingAction ?: return
+        if (viewModel.waitingForAccessResult || accessDialog?.isShowing == true) return
+        when (requireContext().trackingCapabilities().requirement(action)) {
+            TrackingRequirement.FOREGROUND_LOCATION, TrackingRequirement.PRECISE_LOCATION -> explain(R.string.tracking_location_explanation) {
+                viewModel.waitingForAccessResult = true
+                foregroundPermission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            }
+            TrackingRequirement.LOCATION_ENABLED -> explain(R.string.tracking_location_disabled) {
+                viewModel.waitingForAccessResult = true
+                locationSettings.launch(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            }
+            TrackingRequirement.PROVIDER -> accessDenied(R.string.tracking_no_provider)
+            TrackingRequirement.BACKGROUND_LOCATION -> explain(R.string.tracking_background_explanation) {
+                viewModel.waitingForAccessResult = true
+                if (Build.VERSION.SDK_INT >= 30) backgroundSettings.launch(applicationSettingsIntent())
+                else if (Build.VERSION.SDK_INT >= 29) backgroundPermission.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                else accessDenied(R.string.tracking_requirements_changed)
+            }
+            TrackingRequirement.EXACT_ALARM -> explain(R.string.tracking_alarm_explanation) {
+                viewModel.waitingForAccessResult = true
+                if (Build.VERSION.SDK_INT >= 31) alarmSettings.launch(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                    ("package:" + requireContext().packageName).toUri()))
+                else accessDenied(R.string.tracking_requirements_changed)
+            }
+            TrackingRequirement.READY -> {
+                if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(requireContext(),
+                        Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    viewModel.waitingForAccessResult = true
+                    notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else completeTrackingRequest()
+            }
+        }
+    }
+
+    private fun explain(message: Int, action: () -> Unit) {
+        accessDialog = AlertDialog.Builder(requireContext()).setMessage(message)
+            .setPositiveButton(R.string.tracking_continue) { dialog, _ -> dialog.dismiss(); accessDialog = null; action() }
+            .setNegativeButton(android.R.string.cancel) { _, _ -> viewModel.cancelTrackingRequest() }
+            .setOnCancelListener { viewModel.cancelTrackingRequest() }.create()
+        accessDialog?.show()
+    }
+
+    private fun completeTrackingRequest() {
+        val action = viewModel.pendingTrackingAction ?: return
+        viewModel.cancelTrackingRequest()
+        if (requireContext().trackingCapabilities().requirement(action) != TrackingRequirement.READY) {
+            accessDenied(R.string.tracking_requirements_changed)
+            return
+        }
+        try {
+            if (action == TrackingAction.SCHEDULE) viewModel.setSchedule(true)
+            else ContextCompat.startForegroundService(requireContext(), MyForegroundService.newIntent(requireContext()))
+        } catch (_: SecurityException) { accessDenied(R.string.tracking_permission_required)
+        } catch (_: IllegalStateException) { accessDenied(R.string.tracking_start_restricted) }
+    }
+
+    private fun accessDenied(message: Int) {
+        viewModel.cancelTrackingRequest()
+        showServiceState(viewModel.tracking.value.isRunning)
+        renderedSettings?.let(::render)
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
+            .setAction(R.string.tracking_app_settings) { startActivity(applicationSettingsIntent()) }.show()
+    }
+
+    private fun applicationSettingsIntent() = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        ("package:" + requireContext().packageName).toUri())
 
     private fun showServiceState(running: Boolean) {
         rendering = true
@@ -164,23 +310,11 @@ class SettingsFragment : Fragment() {
             }
         } finally { rendering = false }
     }
-    private fun unbindService() {
-        boundService?.isServiseAlive = null
-        boundService = null
-        if (serviceBound) { requireActivity().unbindService(serviceConnection); serviceBound = false }
-    }
-    private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val foreground = (service as? MyForegroundService.LocalBinder)?.getService() ?: return
-            boundService = foreground
-            showServiceState(foreground.isTracking)
-            foreground.isServiseAlive = ::showServiceState
-        }
-        override fun onServiceDisconnected(name: ComponentName?) { boundService = null; showServiceState(false) }
-    }
-    override fun onStop() { unbindService(); super.onStop() }
+
     override fun onDestroyView() {
-        unbindService()
+        accessDialog?.setOnCancelListener(null)
+        accessDialog?.dismiss()
+        accessDialog = null
         renderedSettings = null
         _binding = null
         super.onDestroyView()

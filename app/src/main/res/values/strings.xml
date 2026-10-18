@@ -43,9 +43,6 @@
     </string>
     <string name="frgmnt_menu_share_mail">10ama@mail.ru</string>
     <string name="frgmnt_menu_share_use">использовать</string>
-    <string name="ma_no_access">нет доступа</string>
-    <string name="ma_turn_on_gps">Включи GPS</string>
-    <string name="ma_yes_no">да/нет</string>
     <string name="ma_yes">да</string>
     <string name="set_start_service">Начать слежение</string>
     <string name="set_alarm_clock">Будильник</string>
@@ -62,8 +59,6 @@
     <string name="set_min_dist">Минимальное расстояние, м</string>
     <string name="set_accuracy">Точность, м</string>
     <string name="set_format">введите число больше %1$d</string>
-    <string name="set_format_end">время должо быть раньше времени конца: %s</string>
-    <string name="set_format_start">время должо быть позже времени старта: %s</string>
     <string name="set_wait_accuracy_time">Время ожидания точности, с</string>
     <string name="set_periodic_time">Периодичность контроля, с</string>
     <string name="profile_kod">код</string>
@@ -115,4 +110,25 @@
     <string name="storage_write_failed">Не удалось сохранить изменения. Повторите попытку.</string>
     <string name="storage_retry">Повторить</string>
     <string name="profile_request_failed">Не удалось выполнить запрос. Проверьте сеть и повторите попытку.</string>
+    <string name="tracking_stopped">Запись остановлена</string>
+    <string name="tracking_collecting">Определяем местоположение</string>
+    <string name="tracking_waiting">Точка сохранена. Ожидаем следующий замер</string>
+    <string name="tracking_no_fix">Координаты пока не получены. Повторим замер</string>
+    <string name="tracking_failed">Запись остановлена из-за ошибки. Проверьте настройки и начните снова</string>
+    <string name="tracking_permission_required">Нет разрешения на местоположение. История и настройки доступны</string>
+    <string name="tracking_location_disabled">Геолокация выключена. Включите её, чтобы начать запись</string>
+    <string name="tracking_no_provider">Нет доступного провайдера местоположения. Проверьте геолокацию и разрешение на точное положение</string>
+    <string name="tracking_background_required">Для запуска по расписанию нужен доступ к местоположению в фоне</string>
+    <string name="tracking_alarm_required">Для расписания разрешите будильники и напоминания</string>
+    <string name="tracking_location_explanation">Разрешите доступ к местоположению для записи точек. Приблизительное положение тоже поддерживается, если на устройстве доступен сетевой провайдер. Для GPS без сети нужно разрешение на точное положение</string>
+    <string name="tracking_background_explanation">Чтобы запись могла начаться по расписанию при закрытом приложении, разрешите доступ к местоположению «Всегда». На следующем экране откройте разрешения приложения. Для ручного запуска этот доступ не нужен</string>
+    <string name="tracking_alarm_explanation">Разрешите будильники и напоминания для запуска записи в выбранное время. Частота замеров зависит от ограничений Android</string>
+    <string name="tracking_continue">Продолжить</string>
+    <string name="tracking_app_settings">Настройки</string>
+    <string name="tracking_requirements_changed">Условия запуска изменились. Проверьте разрешения и геолокацию</string>
+    <string name="tracking_start_restricted">Android запретил запуск записи. Вернитесь в приложение и попробуйте снова</string>
+    <string name="tracking_invalid_schedule">Выберите хотя бы один день и разные время начала и окончания</string>
+    <string name="tracking_stop">Остановить запись</string>
+    <string name="tracking_starting">Подготавливаем запись</string>
+    <string name="tracking_schedule_ready">Расписание включено. Ожидаем выбранное время запуска</string>
 </resources>

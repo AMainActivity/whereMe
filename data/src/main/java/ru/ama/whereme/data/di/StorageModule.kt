@@ -1,7 +1,6 @@
 package ru.ama.whereme.data.di
 
 import android.app.Application
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -30,21 +29,17 @@ object StorageModule {
     fun provideScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Provides @Singleton
-    fun provideLegacy(application: Application): LegacyPreferences = SharedPreferencesLegacyAdapter(
-        application.getSharedPreferences("mysettings", Context.MODE_PRIVATE))
-
-    @Provides @Singleton
     fun provideCipher(keys: AndroidSessionKeyProvider): SessionCipher = SessionCipher(keys)
 
     @Provides @Singleton @SettingsStore
-    fun provideSettings(application: Application, legacy: LegacyPreferences,
+    fun provideSettings(application: Application,
         @ApplicationScope scope: CoroutineScope): DataStore<Preferences> = PreferenceDataStoreFactory.create(
-        migrations = listOf(SettingsMigration(legacy)), scope = scope,
+        scope = scope,
         produceFile = { application.preferencesDataStoreFile("settings") })
 
     @Provides @Singleton @SessionStore
-    fun provideSession(application: Application, legacy: LegacyPreferences, cipher: SessionCipher,
+    fun provideSession(application: Application,
         @ApplicationScope scope: CoroutineScope): DataStore<Preferences> = PreferenceDataStoreFactory.create(
-        migrations = listOf(SessionMigration(legacy, cipher)), scope = scope,
+        scope = scope,
         produceFile = { File(application.noBackupFilesDir, "session.preferences_pb") })
 }

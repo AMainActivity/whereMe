@@ -1,5 +1,9 @@
 package ru.ama.whereme.presentation
 
+import androidx.lifecycle.SavedStateHandle
+import ru.ama.whereme.tracking.TrackingRuntime
+import ru.ama.whereme.tracking.TrackingAction
+
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -17,8 +21,17 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val repository: SettingsRepository, private val scheduler: TrackingScheduler,
+    private val savedState: SavedStateHandle, runtime: TrackingRuntime,
     @ApplicationScope applicationScope: CoroutineScope
 ) : ViewModel() {
+    val tracking = runtime.state
+    var pendingTrackingAction: TrackingAction?
+        get() = savedState.get<String>("tracking_action")?.let(TrackingAction::valueOf)
+        set(value) { savedState["tracking_action"] = value?.name }
+    var waitingForAccessResult: Boolean
+        get() = savedState["tracking_waiting"] ?: false
+        set(value) { savedState["tracking_waiting"] = value }
+    fun cancelTrackingRequest() { pendingTrackingAction = null; waitingForAccessResult = false }
     private val retry = MutableStateFlow(0)
     val settings = repository.settings.loadState(viewModelScope, retry)
     private val failures = MutableLiveData<Int>()
@@ -27,14 +40,16 @@ class SettingsViewModel @Inject constructor(
     fun retrySettings() { retry.value++ }
     fun update(transform: (SettingsDomModel) -> SettingsDomModel) {
         commands.submit {
-            val updated = repository.updateSettings(transform)
+            val updated = repository.updateSettings { current ->
+                val candidate = transform(current)
+                require(!candidate.isEnable || (candidate.start != candidate.end && candidate.days.any { it == "1" }))
+                candidate
+            }
             if (updated.isEnable) scheduler.scheduleNextAlarmClockIfEnabled()
         }
     }
     fun setSchedule(enabled: Boolean) {
         commands.submit { if (enabled) scheduler.runAlarmClock() else scheduler.cancelAlarmClock() }
     }
-    fun checkService() = scheduler.isMyServiceRunning(MyForegroundService::class.java)
-    fun cancelAlarmService() = scheduler.cancelAlarm()
     override fun onCleared() { commands.close(); super.onCleared() }
 }

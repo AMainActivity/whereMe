@@ -1,12 +1,10 @@
 package ru.ama.whereme.data.settings
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.core.DataMigration
 import androidx.datastore.core.okio.OkioStorage
 import okio.FileSystem
 import okio.Path.Companion.toOkioPath
 import androidx.datastore.preferences.core.*
-import com.google.gson.Gson
 import java.io.File
 import java.io.IOException
 import javax.crypto.KeyGenerator
@@ -20,7 +18,7 @@ import org.junit.rules.TemporaryFolder
 import ru.ama.whereme.data.session.*
 import ru.ama.whereme.domain.entity.*
 
-class StorageMigrationTest {
+class StorageRepositoryTest {
     @get:Rule val temporary = TemporaryFolder()
     private val scopes = mutableListOf<CoroutineScope>()
     private val profile = SettingsUserInfoDomModel("synthetic-token", 12, 34, "Тест", "https://example.com/profile", true)
@@ -28,27 +26,16 @@ class StorageMigrationTest {
     private val key = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
     private val cipher = SessionCipher { key }
 
-    private class Legacy : LegacyPreferences {
-        val values = mutableMapOf<String, String>()
-        var failCleanup = false
-        override fun read(key: String) = values[key]
-        override fun contains(key: String) = values.containsKey(key)
-        override fun remove(key: String) {
-            if (failCleanup) throw IOException("injected cleanup failure")
-            values.remove(key)
-        }
-    }
-    private fun store(file: File, migrations: List<DataMigration<Preferences>> = emptyList()): DataStore<Preferences> {
+    private fun store(file: File): DataStore<Preferences> {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO).also(scopes::add)
         // The Android FileStorage uses SDK_INT=0 in local JVM tests. Okio supplies portable atomic replacement.
         return PreferenceDataStoreFactory.create(
             storage = OkioStorage(FileSystem.SYSTEM, PreferencesSerializer, producePath = { file.toOkioPath() }),
-            migrations = migrations, scope = scope)
+            scope = scope)
     }
     private fun file() = File(temporary.newFolder(), "test.preferences_pb")
-    private fun settings(file: File, legacy: Legacy) = DataStoreSettingsRepository(store(file, listOf(SettingsMigration(legacy))))
-    private fun sessions(file: File, legacy: Legacy, encryption: SessionCipher = cipher) =
-        DataStoreSessionRepository(store(file, listOf(SessionMigration(legacy, encryption))), encryption)
+    private fun settings(file: File) = DataStoreSettingsRepository(store(file))
+    private fun sessions(file: File, encryption: SessionCipher = cipher) = DataStoreSessionRepository(store(file), encryption)
     private suspend fun closeStores() {
         scopes.forEach { it.coroutineContext[Job]?.cancelAndJoin() }
         scopes.clear()
@@ -59,99 +46,16 @@ class StorageMigrationTest {
     }
 
     @Test fun newInstallHasSafeDefaultsWithoutNetwork() = runBlocking {
-        val legacy = Legacy()
-        val settings = settings(file(), legacy)
+        val settings = settings(file())
         assertEquals(SettingsDomModel.DEFAULT, settings.settings.first())
         assertEquals(ThemeMode.SYSTEM, settings.themeMode.first())
-        val current = sessions(file(), legacy).current()
+        val current = sessions(file()).current()
         assertEquals(SettingsUserInfoDomModel.EMPTY, current.profile)
         assertTrue(current.generation.isNotBlank())
     }
 
-    @Test fun allLegacySettingsIncludingExcludedWeekdaysSurvive() = runBlocking {
-        val legacy = Legacy().apply { values["worktime"] = Gson().toJson(previous) }
-        assertEquals(previous, settings(file(), legacy).settings.first())
-        assertFalse(legacy.contains("worktime"))
-    }
-
-    @Test fun profileIsMigratedCompletelyAndOnlyEncryptedBytesArePersisted() = runBlocking {
-        val legacy = Legacy().apply { values["jwt"] = Gson().toJson(profile) }
-        val path = file()
-        assertEquals(profile, sessions(path, legacy).current().profile)
-        assertFalse(legacy.contains("jwt"))
-        assertFalse(path.readBytes().toString(Charsets.ISO_8859_1).contains(profile.tokenJwt))
-        closeStores()
-        assertEquals(profile, sessions(path, Legacy()).current().profile)
-    }
-
-    @Test fun invalidSettingsAreRetainedInsteadOfSilentlyReset() = runBlocking {
-        for (raw in listOf("{", "null", "[]", "{}", Gson().toJson(previous).replace("\"06:15\"", "\"28:15\""),
-            Gson().toJson(previous).replace("\"minDist\":123", "\"minDist\":1.5"),
-            Gson().toJson(previous).replace("\"minDist\":123", "\"minDist\":2147483648"),
-            Gson().toJson(previous).replace("\"minDist\":123", "\"minDist\":\"123\""),
-            Gson().toJson(previous).replace("\"days\":[\"0\",\"1\",\"0\",\"1\",\"0\",\"1\",\"0\"]", "\"days\":[\"1\"]"))) {
-            val legacy = Legacy().apply { values["worktime"] = raw }
-            expectFailure { settings(file(), legacy).settings.first() }
-            assertEquals(raw, legacy.values["worktime"])
-        }
-    }
-
-    @Test fun invalidSessionDoesNotBlockIndependentSettingsMigration() = runBlocking {
-        val legacy = Legacy().apply { values["jwt"] = "broken"; values["worktime"] = Gson().toJson(previous) }
-        expectFailure { sessions(file(), legacy).current() }
-        assertEquals("broken", legacy.values["jwt"])
-        assertEquals(previous, settings(file(), legacy).settings.first())
-    }
-
-    @Test fun invalidSettingsDoNotBlockIndependentSessionMigration() = runBlocking {
-        val legacy = Legacy().apply { values["worktime"] = "broken"; values["jwt"] = Gson().toJson(profile) }
-        expectFailure { settings(file(), legacy).settings.first() }
-        assertEquals(profile, sessions(file(), legacy).current().profile)
-        assertEquals("broken", legacy.values["worktime"])
-    }
-
-    @Test fun failedEncryptionLeavesLegacyCredentialsUntouched() = runBlocking {
-        val legacy = Legacy().apply { values["jwt"] = Gson().toJson(profile) }
-        val path = file()
-        expectFailure { sessions(path, legacy, SessionCipher { throw IOException("key unavailable") }).current() }
-        assertEquals(Gson().toJson(profile), legacy.values["jwt"])
-        closeStores()
-        assertEquals(profile, sessions(path, legacy).current().profile)
-    }
-
-    @Test fun failedCleanupIsRetriedWithoutOverwritingCommittedProfile() = runBlocking {
-        val legacy = Legacy().apply { values["jwt"] = Gson().toJson(profile); failCleanup = true }
-        val path = file()
-        expectFailure { sessions(path, legacy).current() }
-        assertTrue(path.exists())
-        assertTrue(legacy.contains("jwt"))
-        closeStores()
-        legacy.values["jwt"] = Gson().toJson(profile.copy(tokenJwt = "stale-legacy-token"))
-        legacy.failCleanup = false
-        assertEquals(profile, sessions(path, legacy).current().profile)
-        assertFalse(legacy.contains("jwt"))
-    }
-
-    @Test fun failedCleanupDoesNotOverwriteCommittedSettingsOnRetry() = runBlocking {
-        val legacy = Legacy().apply { values["worktime"] = Gson().toJson(previous); failCleanup = true }
-        val path = file()
-        expectFailure { settings(path, legacy).settings.first() }
-        closeStores()
-        legacy.values["worktime"] = Gson().toJson(SettingsDomModel.DEFAULT)
-        legacy.failCleanup = false
-        assertEquals(previous, settings(path, legacy).settings.first())
-    }
-
-    @Test fun migrationKeepsAlreadyWrittenDataStoreValues() = runBlocking {
-        val path = file()
-        store(path).edit { SettingsPreferences.write(it, previous.copy(minDist = 999)) }
-        closeStores()
-        val legacy = Legacy().apply { values["worktime"] = Gson().toJson(previous) }
-        assertEquals(previous.copy(minDist = 999), settings(path, legacy).settings.first())
-    }
-
     @Test fun concurrentFieldUpdatesDoNotLoseEachOther() = runBlocking {
-        val repository = settings(file(), Legacy())
+        val repository = settings(file())
         coroutineScope {
             repeat(20) {
                 launch { repository.updateSettings { it.copy(minDist = it.minDist + 1) } }
@@ -163,7 +67,7 @@ class StorageMigrationTest {
     }
 
     @Test fun failedUpdateDoesNotChangePersistedSettings() = runBlocking {
-        val repository = settings(file(), Legacy())
+        val repository = settings(file())
         try { repository.updateSettings { throw IllegalArgumentException("injected transform failure") }; fail() }
         catch (_: IllegalArgumentException) { }
         assertEquals(SettingsDomModel.DEFAULT, repository.settings.first())
@@ -172,9 +76,9 @@ class StorageMigrationTest {
     @Test fun eachThemeSurvivesReopeningAndDoesNotEnableSchedule() = runBlocking {
         val path = file()
         for (theme in ThemeMode.entries) {
-            settings(path, Legacy()).setThemeMode(theme)
+            settings(path).setThemeMode(theme)
             closeStores()
-            val repository = settings(path, Legacy())
+            val repository = settings(path)
             assertEquals(theme, repository.themeMode.first())
             assertFalse(repository.settings.first().isEnable)
             closeStores()
@@ -182,7 +86,7 @@ class StorageMigrationTest {
     }
 
     @Test fun reloginWithSameCredentialsInvalidatesPreviousGeneration() = runBlocking {
-        val repository = sessions(file(), Legacy())
+        val repository = sessions(file())
         repository.signIn(profile)
         val first = repository.current()
         repository.signIn(profile)
@@ -195,7 +99,7 @@ class StorageMigrationTest {
     }
 
     @Test fun activationKeepsGenerationAndLogoutChangesIt() = runBlocking {
-        val repository = sessions(file(), Legacy())
+        val repository = sessions(file())
         repository.signIn(profile)
         val expected = repository.current()
         assertTrue(repository.updateActivation(expected, false))
@@ -207,19 +111,8 @@ class StorageMigrationTest {
         assertEquals(SettingsUserInfoDomModel.EMPTY, repository.current().profile)
     }
 
-    @Test fun staleLegacyTokenCannotResurrectLoggedOutSession() = runBlocking {
-        val path = file()
-        val legacy = Legacy().apply { values["jwt"] = Gson().toJson(profile) }
-        val repository = sessions(path, legacy)
-        assertTrue(repository.clearIfCurrent(repository.current()))
-        closeStores()
-        legacy.values["jwt"] = Gson().toJson(profile)
-        assertEquals(SettingsUserInfoDomModel.EMPTY, sessions(path, legacy).current().profile)
-        assertFalse(legacy.contains("jwt"))
-    }
-
     @Test fun activationRefreshDoesNotInvalidateCurrentLogout() = runBlocking {
-        val repository = sessions(file(), Legacy())
+        val repository = sessions(file())
         repository.signIn(profile)
         val beforeRefresh = repository.current()
         assertTrue(repository.updateActivation(beforeRefresh, false))
@@ -228,7 +121,7 @@ class StorageMigrationTest {
     }
 
     @Test fun activationUpdateComparesLatestStoredValue() = runBlocking {
-        val repository = sessions(file(), Legacy())
+        val repository = sessions(file())
         repository.signIn(profile)
         val expected = repository.current()
         assertTrue(repository.updateActivation(expected, false))
@@ -238,7 +131,7 @@ class StorageMigrationTest {
 
     @Test fun sessionLeaseSerializesLocalAckWithSignIn() = runBlocking {
         withTimeout(5_000) {
-            val repository = sessions(file(), Legacy())
+            val repository = sessions(file())
             repository.signIn(profile)
             val expected = repository.current()
             val acquired = CompletableDeferred<Unit>()
@@ -260,7 +153,7 @@ class StorageMigrationTest {
 
     @Test fun corruptCiphertextIsNotReplacedWithAnonymousSession() = runBlocking {
         val path = file()
-        val datastore = store(path, listOf(SessionMigration(Legacy(), cipher)))
+        val datastore = store(path)
         val repository = DataStoreSessionRepository(datastore, cipher)
         repository.signIn(profile)
         val broken = byteArrayOf(1, 2, 3)
@@ -273,36 +166,136 @@ class StorageMigrationTest {
         val path = file()
         store(path).edit { SettingsPreferences.write(it, previous); it[SettingsPreferences.VERSION] = 2 }
         closeStores()
-        val legacy = Legacy().apply { values["worktime"] = Gson().toJson(SettingsDomModel.DEFAULT) }
-        expectFailure { settings(path, legacy).settings.first() }
-        assertTrue(legacy.contains("worktime"))
+        expectFailure { settings(path).settings.first() }
         closeStores()
         val persisted = store(path).data.first()
         assertEquals(2, persisted[SettingsPreferences.VERSION])
-        assertEquals(previous, SettingsPreferences.read(persisted))
+        assertEquals(previous.minDist, persisted[intPreferencesKey("min_distance")])
     }
 
     @Test fun corruptPreferencesFileIsRetainedWithoutDefaultReplacement() = runBlocking {
         val path = file()
         val raw = byteArrayOf(1, 2, 3)
         path.writeBytes(raw)
-        val legacy = Legacy().apply { values["worktime"] = Gson().toJson(previous) }
-        expectFailure { settings(path, legacy).settings.first() }
+        expectFailure { settings(path).settings.first() }
         assertArrayEquals(raw, path.readBytes())
-        assertTrue(legacy.contains("worktime"))
     }
 
     @Test fun unknownSessionVersionIsNotOverwrittenDuringDowngrade() = runBlocking {
         val path = file()
         val codec = SessionPreferences(cipher)
-        store(path).edit { codec.write(it, profile); it[SessionPreferences.VERSION] = 2 }
+        val original = store(path)
+        original.edit { codec.write(it, profile); it[SessionPreferences.VERSION] = 2 }
+        val before = original.data.first()[byteArrayPreferencesKey("encrypted_profile")]
         closeStores()
-        val legacy = Legacy().apply { values["jwt"] = Gson().toJson(profile.copy(tokenJwt = "stale-token")) }
-        expectFailure { sessions(path, legacy).current() }
-        assertTrue(legacy.contains("jwt"))
+        expectFailure { sessions(path).current() }
         closeStores()
         val persisted = store(path).data.first()
         assertEquals(2, persisted[SessionPreferences.VERSION])
-        assertEquals(profile, codec.read(persisted).profile)
+        assertArrayEquals(before, persisted[byteArrayPreferencesKey("encrypted_profile")])
     }
+
+    @Test fun existingVersionOneSettingsRemainReadableWithoutMigration() = runBlocking {
+        val path = file()
+        store(path).edit { p ->
+            p[intPreferencesKey("migration_version")] = 1
+            p[intPreferencesKey("days_mask")] = 42
+            p[stringPreferencesKey("start")] = "06:15"
+            p[stringPreferencesKey("end")] = "22:45"
+            p[intPreferencesKey("min_distance")] = 123
+            p[intPreferencesKey("accuracy")] = 76
+            p[intPreferencesKey("wait_seconds")] = 88
+            p[intPreferencesKey("period_seconds")] = 321
+            p[booleanPreferencesKey("schedule_enabled")] = true
+        }
+        closeStores()
+        val repository = settings(path)
+        assertEquals(previous, repository.settings.first())
+        assertEquals(ThemeMode.SYSTEM, repository.themeMode.first())
+        repository.setThemeMode(ThemeMode.DARK)
+        closeStores()
+        assertEquals(previous, settings(path).settings.first())
+    }
+
+    @Test fun existingEncryptedVersionOneSessionKeepsProfileAndGeneration() = runBlocking {
+        val path = file()
+        // Independent fixture of the JSON emitted by the previous installed version.
+        val raw = """{"tokenJwt":"synthetic-token","posId":12,"famId":34,"name":"Тест","url":"https://example.com/profile","isActivate":true}"""
+        store(path).edit { p ->
+            p[intPreferencesKey("migration_version")] = 1
+            p[stringPreferencesKey("generation")] = "previous-login-generation"
+            p[byteArrayPreferencesKey("encrypted_profile")] = cipher.encrypt(raw.toByteArray())
+        }
+        closeStores()
+        val current = sessions(path).current()
+        assertEquals(profile, current.profile)
+        assertEquals("previous-login-generation", current.generation)
+    }
+
+    @Test fun loginFailureRetainsPreviouslyPersistedSession() = runBlocking {
+        val path = file()
+        val original = sessions(path)
+        original.signIn(profile)
+        val expected = original.current()
+        closeStores()
+        val broken = sessions(path, SessionCipher { throw IOException("injected key failure") })
+        expectFailure { broken.signIn(profile.copy(tokenJwt = "replacement")) }
+        closeStores()
+        assertEquals(expected, sessions(path).current())
+    }
+
+    @Test fun unknownFormatCannotBeOverwrittenBySettingsOrThemeWrites() = runBlocking {
+        val path = file()
+        store(path).edit { SettingsPreferences.write(it, previous); it[SettingsPreferences.VERSION] = 2 }
+        closeStores()
+        val repository = settings(path)
+        expectFailure { repository.updateSettings { SettingsDomModel.DEFAULT } }
+        expectFailure { repository.setThemeMode(ThemeMode.DARK) }
+        closeStores()
+        val raw = store(path).data.first()
+        assertEquals(2, raw[SettingsPreferences.VERSION])
+        assertEquals(123, raw[intPreferencesKey("min_distance")])
+    }
+
+    @Test fun missingSessionFieldsDoNotProduceAnonymousSession() = runBlocking {
+        val path = file()
+        store(path).edit { it[SessionPreferences.VERSION] = 1 }
+        closeStores()
+        val repository = sessions(path)
+        expectFailure { repository.current() }
+        closeStores()
+        assertEquals(1, store(path).data.first().asMap().size)
+    }
+
+    @Test fun logoutRemainsDurableAfterReopeningStore() = runBlocking {
+        val path = file()
+        val repository = sessions(path)
+        repository.signIn(profile)
+        val expected = repository.current()
+        assertTrue(repository.clearIfCurrent(expected))
+        val signedOut = repository.current()
+        closeStores()
+        assertEquals(signedOut, sessions(path).current())
+        assertEquals(SettingsUserInfoDomModel.EMPTY, signedOut.profile)
+        assertNotEquals(expected.generation, signedOut.generation)
+    }
+
+
+    @Test fun explicitSignInCanReplaceSessionAfterKeyReplacement() = runBlocking {
+        val path = file()
+        val original = sessions(path)
+        original.signIn(profile)
+        val oldGeneration = original.current().generation
+        closeStores()
+        val replacementKey = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        val recovered = sessions(path, SessionCipher { replacementKey })
+        expectFailure { recovered.current() }
+        val newProfile = profile.copy(tokenJwt = "new-explicit-login")
+        recovered.signIn(newProfile)
+        assertEquals(newProfile, recovered.current().profile)
+        assertNotEquals(oldGeneration, recovered.current().generation)
+        closeStores()
+        assertEquals(newProfile, sessions(path, SessionCipher { replacementKey }).current().profile)
+    }
+
 }
