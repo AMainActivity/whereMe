@@ -22,7 +22,7 @@ import ru.ama.whereme.domain.tracking.TrackingFailure
 import ru.ama.whereme.domain.tracking.TrackingMode
 import ru.ama.whereme.domain.tracking.RecordingSession
 import ru.ama.whereme.tracking.TrackingNotification
-import ru.ama.whereme.tracking.TrackingRequirement
+import ru.ama.whereme.domain.tracking.TrackingRequirement
 import ru.ama.whereme.tracking.trackingCapabilities
 
 @AndroidEntryPoint

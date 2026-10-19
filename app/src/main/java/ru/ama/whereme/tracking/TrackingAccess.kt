@@ -9,27 +9,7 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
 
-enum class TrackingAction { MANUAL, SCHEDULE }
-enum class TrackingRequirement { FOREGROUND_LOCATION, LOCATION_ENABLED, PRECISE_LOCATION, PROVIDER, BACKGROUND_LOCATION, EXACT_ALARM, READY }
-
-data class TrackingCapabilities(
-    val foreground: Boolean,
-    val locationEnabled: Boolean,
-    val provider: Boolean,
-    val preciseWouldProvideLocation: Boolean,
-    val background: Boolean,
-    val exactAlarm: Boolean
-) {
-    fun requirement(): TrackingRequirement = when {
-        !foreground -> TrackingRequirement.FOREGROUND_LOCATION
-        !locationEnabled -> TrackingRequirement.LOCATION_ENABLED
-        !provider && preciseWouldProvideLocation -> TrackingRequirement.PRECISE_LOCATION
-        !provider -> TrackingRequirement.PROVIDER
-        !background -> TrackingRequirement.BACKGROUND_LOCATION
-        !exactAlarm -> TrackingRequirement.EXACT_ALARM
-        else -> TrackingRequirement.READY
-    }
-}
+import ru.ama.whereme.domain.tracking.TrackingCapabilities
 
 fun Context.trackingCapabilities(): TrackingCapabilities {
     fun granted(permission: String) = ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED

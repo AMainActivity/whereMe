@@ -1,0 +1,14 @@
+<resources>
+  <string name="map_title">Карта</string>
+  <string name="map_date">Дата: %1$s</string>
+  <string name="map_choose_date">Выбрать дату</string>
+  <string name="map_done">Выбрать</string>
+  <string name="map_cancel">Отмена</string>
+  <string name="map_retry">Повторить</string>
+  <string name="map_loading">Загрузка карты…</string>
+  <string name="map_failed">Не удалось загрузить карту. Проверьте подключение к интернету. Запись точек работает независимо от карты.</string>
+  <string name="map_storage_failed">Не удалось прочитать точки за выбранный день.</string>
+  <string name="map_empty">За этот день пока нет точек.</string>
+  <string name="map_route">Построить маршрут в 2ГИС?</string>
+  <string name="map_external_failed">Не удалось открыть приложение для этого действия.</string>
+</resources>

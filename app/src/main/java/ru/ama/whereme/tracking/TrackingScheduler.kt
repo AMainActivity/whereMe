@@ -1,5 +1,6 @@
 package ru.ama.whereme.tracking
 
+import ru.ama.whereme.domain.tracking.TrackingRequirement
 import android.app.AlarmManager
 import android.app.Application
 import android.app.PendingIntent

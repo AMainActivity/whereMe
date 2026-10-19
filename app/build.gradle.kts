@@ -1,4 +1,6 @@
 plugins {
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.aboutlibraries)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -32,7 +34,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
-        viewBinding = true
+        compose = true
         buildConfig = true
     }
     testOptions { unitTests.isIncludeAndroidResources = true }
@@ -51,19 +53,30 @@ dependencyLocking {
 }
 
 dependencies {
+    implementation(project(":feature:settings"))
+    implementation(project(":feature:profile"))
+    implementation(project(":feature:map"))
+    implementation(project(":feature:about"))
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.material3)
+    implementation(libs.activity.compose)
+    implementation(libs.lifecycle.compose)
+    implementation(libs.decompose.core)
+    implementation(libs.decompose.compose)
+    implementation(libs.essenty.coroutines)
+    debugImplementation(libs.compose.tooling)
+    debugImplementation(libs.compose.test.manifest)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.test)
     implementation(project(":domain"))
     implementation(project(":data"))
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.cardview)
-    implementation(libs.androidx.fragment)
     implementation(libs.androidx.work)
     implementation(libs.androidx.lifecycle.service)
     implementation(libs.androidx.lifecycle.process)
-    implementation(libs.androidx.lifecycle.viewmodel)
 
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
@@ -74,6 +87,8 @@ dependencies {
 
     implementation(libs.serialization.json)
 
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.test)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.work.testing)
     testImplementation(libs.junit)

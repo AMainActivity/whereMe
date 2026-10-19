@@ -1,5 +1,6 @@
 package ru.ama.whereme.tracking
 
+import ru.ama.whereme.domain.tracking.*
 import org.junit.Assert.*
 import org.junit.Test
 

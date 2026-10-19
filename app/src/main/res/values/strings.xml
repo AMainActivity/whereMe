@@ -1,138 +1,20 @@
 <resources>
-    <string name="app_name"> Ты где был?!#</string>
-    <string name="action_settings">Settings</string>
-    <string name="first_fragment_label">First Fragment</string>
-    <string name="frgmnt_set_label">настройки</string>
-    <string name="ma_menu_help">
-  &lt;center>Регистрация через telegram-бота:&lt;/center>&lt;br>
-  &lt;a href=\'https:\/\/t.me\/myTestInfoBot\'>@myTestInfoBot&lt;/a>
-    </string>
-
-    <string name="frgmnt_out_tv">
-  Пользователь: &lt;b>%1$s&lt;/b>,&lt;br>
-  ссылка для просмотра данных:&lt;br>
-  &lt;a href=\'https://kol.hhos.ru/gkk/map.php?wm=%2$s\'>https://kol.hhos.ru/gkk&lt;/a>&lt;br>
-        Поделиться ссылкой можно, нажав кнопку в правом верхнем углу.
-    </string>
-
-    <string name="frgmnt_ab_main">
-  &lt;center>Приложение  \"Ты где был?!#\": &lt;br>хранит историю местоположений как в оффлайн,
-        так и в онлайн режимах. &lt;br>Используя это приложение, Вы полностью соглашаетесь с
-        &lt;a href=\'https://kol.hhos.ru/gkk/user.html\'>Пользовательским соглашением&lt;/a>
-        и&lt;br> &lt;a href=\'https://kol.hhos.ru/gkk/privacy.html\'>Политикой конфиденциальности&lt;/a>
-        .&lt;/center>&lt;br>
-&lt;p>При работе в оффлайн-режиме все данные хранятся только в локальной базе данный устройства.&lt;br>
-        У Вас есть возможность простматривать свои местоположения за определенный день.&lt;br>
-&lt;/p>
-     &lt;p>   Для перехода в онлайн-режим необходимо получить уникальный код в телеграм-боте
-        &lt;a href=\'https:\/\/t.me\/myTestInfoBot\'>@myTestInfoBot&lt;/a>  и ввести его в поле ввода на экране \"Профиль\".
-        &lt;br>
-        При работе в онлайн-режиме все данные из локального хранилища передаются на серверную часть.&lt;br>
-        Вы можете поделится уникальной ссылкой на просмотр своих местоположений с другими лицами. &lt;br>
-        Сделать этом можно на экране \"Профиль\".&lt;br>&lt;/p>
-        &lt;p>Для закрытия доступа на просмотр по ссылке необходимо в телеграм-боте получить новый код.
-        При этом для продолжения работы в онлайн-режиме необходимо заново ввести его в поле ввода на экране
-        \"Профиль\".
-&lt;br>&lt;/p>
-       &lt;p> Для перехода в оффлайн-режим с сохранением данных на сервере нужно выйти с профиля одноименном экране.&lt;br>
-        Для перехода в оффлайн-режим с удалением всех данных на сервере необходимо воспользоваться
-        соответсвующим функционалом телеграм-бота.&lt;/p>
-       &lt;p> Для работы приложения ему нужно дать разрешение на работу в фоне.&lt;/p>
-       &lt;p> По всем вопросам прошу обращаться на почту
-       &lt;a href=\'mailto:10ama@mail.ru\'>10ama@mail.ru&lt;/a>.&lt;/p>
-    </string>
-    <string name="frgmnt_menu_share_use">использовать</string>
-    <string name="ma_yes">да</string>
-    <string name="set_start_service">Начать слежение</string>
-    <string name="set_alarm_clock">Будильник</string>
-    <string name="set_working_days">Рабочие дни</string>
-    <string name="set_monday">пн</string>
-    <string name="set_tuesday">вт</string>
-    <string name="set_wednesday">ср</string>
-    <string name="set_thursday">чт</string>
-    <string name="set_friday">пт</string>
-    <string name="set_saturday">сб</string>
-    <string name="set_sunday">вс</string>
-    <string name="set_start_time">Время старта</string>
-    <string name="set_end_time">Время окончания</string>
-    <string name="set_min_dist">Минимальное расстояние, м</string>
-    <string name="set_accuracy">Точность, м</string>
-    <string name="set_format">введите число больше %1$d</string>
-    <string name="set_wait_accuracy_time">Время ожидания точности, с</string>
-    <string name="set_periodic_time">Периодичность контроля, с</string>
-    <string name="profile_kod">код</string>
-    <string name="profile_check">проверить</string>
-    <string name="map_retry">повторить</string>
-    <string name="about_title">о приложении</string>
-    <string name="menu_profil_share">поделиться</string>
-    <string name="menu_profile_logout">выход</string>
-    <string name="menu_map_date">список дат</string>
-    <string name="menu_map">Карта</string>
-    <string name="menu_settings">настройки</string>
-    <string name="menu_profile">профиль</string>
-    <string name="menu_about">о приложении</string>
-    <string name="map_no_net">Нет подключения, нет возможноти показать карту. Функционал получения местоположений доступен без наличия интернета</string>
-    <string name="map_url">https://kol.hhos.ru/map/i.php</string>
-    <string name="map_android">Android</string>
-    <string name="map_nodata">нет данных</string>
-    <string name="map_route">маршрут</string>
-    <string name="map_js">javascript:fromAndroid(%s)</string>
-    <string name="map_get_route">построить маршрут?\n %s</string>
-    <string name="map_route_url">dgis://2gis.ru/routeSearch/rsType/car/from/%1$s,%2$s/to/%3$s,%4$s</string>
-    <string name="map_cancel">Отмена</string>
-    <string name="string_ok">Ок</string>
-    <string name="map_2gisapp">market://details?id=ru.dublgis.dgismobile</string>
-    <string name="service_notify_title">служба</string>
-    <string name="profile_in_alert_title">Подтверждение</string>
-    <string name="profile_in_alert_text">Нажимая \"Да\", Вы подтверждаете, что учетная запись telegram: \n\n "%s"\n\n принадлежит Вам.</string>
-    <string name="profile_in_no">нет</string>
-    <string name="profile_in_title">Профиль</string>
-    <string name="profile_in_error_kod">неверный код, повторите попытку</string>
-    <string name="profile_in_json_param">kod</string>
-    <string name="profile_out_alert_title">Важная информация</string>
-    <string name="profile_out_alert_text">Вы можете поделиться ссылкой для просмотра своих данных.
-                          \nДелитесь с сылкой с теми лицами, которым Вы доверяете просмотр своих данных.
-                        Перейдя по ссылке, эти лица могут контролировать как и текущие Ваши местоположения,
-                        так и видеть Ваши местоположения за определенный день.\n
-                        Для запрета использования ссылки перейдите в telegram-bot и сформируйте новый код."</string>
-    <string name="profile_out_urd_body">https://kol.hhos.ru/gkk/map.php?wm=</string>
-    <string name="profile_logout_title">Выход</string>
-    <string name="profile_logout_text">"Выйти из профиля?  \nПосле выхода данные не будут сохранены на серверной части"</string>
-    <string name="set_alarm_clock_set">будильник установлен</string>
-    <string name="map_external_unavailable">Не найдено приложение для открытия ссылки</string>
-    <string name="storage_loading">Загрузка…</string>
-    <string name="storage_read_failed">Не удалось прочитать сохранённые данные. Они не были удалены.</string>
-    <string name="storage_write_failed">Не удалось сохранить изменения. Повторите попытку.</string>
-    <string name="storage_retry">Повторить</string>
-    <string name="profile_request_failed">Не удалось выполнить запрос. Проверьте сеть и повторите попытку.</string>
-    <string name="tracking_stopped">Запись остановлена</string>
-    <string name="tracking_collecting">Определяем местоположение</string>
-    <string name="tracking_waiting">Точка сохранена. Ожидаем следующий замер</string>
-    <string name="tracking_no_fix">Координаты пока не получены. Повторим замер</string>
-    <string name="tracking_failed">Запись остановлена из-за ошибки. Проверьте настройки и начните снова</string>
-    <string name="tracking_permission_required">Нет разрешения на местоположение. История и настройки доступны</string>
-    <string name="tracking_location_disabled">Геолокация выключена. Включите её, чтобы начать запись</string>
-    <string name="tracking_no_provider">Нет доступного провайдера местоположения. Проверьте геолокацию и разрешение на точное положение</string>
-    <string name="tracking_background_required">Для периодической записи нужен доступ к местоположению в фоне</string>
-    <string name="tracking_alarm_required">Для периодической записи разрешите будильники и напоминания</string>
-    <string name="tracking_location_explanation">Разрешите доступ к местоположению для записи точек. Приблизительное положение тоже поддерживается, если на устройстве доступен сетевой провайдер. Для GPS без сети нужно разрешение на точное положение</string>
-    <string name="tracking_background_explanation">Чтобы периодическая запись продолжалась при закрытом приложении, разрешите доступ к местоположению «Всегда». На следующем экране откройте разрешения приложения</string>
-    <string name="tracking_alarm_explanation">Разрешите будильники и напоминания: каждый замер запускается системным будильником, который пробуждает устройство при выключенном экране. Частые замеры увеличивают расход батареи</string>
-    <string name="tracking_continue">Продолжить</string>
-    <string name="tracking_app_settings">Настройки</string>
-    <string name="tracking_requirements_changed">Условия запуска изменились. Проверьте разрешения и геолокацию</string>
-    <string name="tracking_start_restricted">Android запретил запуск записи. Вернитесь в приложение и попробуйте снова</string>
-    <string name="tracking_invalid_schedule">Выберите хотя бы один день и разные время начала и окончания</string>
-    <string name="tracking_stop">Остановить запись</string>
-    <string name="tracking_starting">Подготавливаем запись</string>
-    <string name="tracking_schedule_ready">Расписание включено. Ожидаем выбранное время запуска</string>
-    <string name="tracking_saving">Сохраняем точку</string>
-    <string name="tracking_uploading">Проверяем отправку сохранённых точек</string>
-    <string name="tracking_stopping">Останавливаем запись</string>
-    <string name="tracking_armed">Запись включена. Ожидаем следующий системный будильник</string>
-    <string name="tracking_sample_failed">Не удалось выполнить замер. Повторим по следующему будильнику</string>
-    <string name="tracking_sync_failed">Отправить точки пока не удалось. Запись продолжается</string>
-    <string name="tracking_stop_restricted">Не удалось передать команду остановки. Вернитесь в приложение и повторите</string>
-    <string name="settings_apply_measurements">Применить параметры измерения</string>
-    <string name="profile_reenter">Не удалось прочитать сохранённый профиль. Можно повторить чтение или войти заново. История сохранится.</string>
+  <string name="app_name"> Ты где был?!#</string>
+  <string name="menu_map">Карта</string>
+  <string name="menu_settings">Настройки</string>
+  <string name="menu_profile">Профиль</string>
+  <string name="menu_about">О приложении</string>
+  <string name="service_notify_title">служба</string>
+  <string name="storage_read_failed">Не удалось прочитать сохранённые данные. Они не были удалены.</string>
+  <string name="storage_retry">Повторить</string>
+  <string name="tracking_collecting">Определяем местоположение</string>
+  <string name="tracking_waiting">Точка сохранена. Ожидаем следующий замер</string>
+  <string name="tracking_no_fix">Координаты пока не получены. Повторим замер</string>
+  <string name="tracking_stop">Остановить запись</string>
+  <string name="tracking_starting">Подготавливаем запись</string>
+  <string name="tracking_saving">Сохраняем точку</string>
+  <string name="tracking_uploading">Проверяем отправку сохранённых точек</string>
+  <string name="tracking_stopping">Останавливаем запись</string>
+  <string name="tracking_sample_failed">Не удалось выполнить замер. Повторим по следующему будильнику</string>
+  <string name="tracking_sync_failed">Отправить точки пока не удалось. Запись продолжается</string>
 </resources>

@@ -8,7 +8,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
 import ru.ama.whereme.tracking.TrackingScheduler
-import ru.ama.whereme.tracking.TrackingRequirement
+import ru.ama.whereme.domain.tracking.TrackingRequirement
 import ru.ama.whereme.tracking.trackingCapabilities
 import ru.ama.whereme.presentation.MyForegroundService
 import javax.inject.Inject

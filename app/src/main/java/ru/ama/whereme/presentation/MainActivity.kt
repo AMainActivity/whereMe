@@ -1,83 +1,74 @@
 package ru.ama.whereme.presentation
 
+import android.graphics.Color
 import android.os.Bundle
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import com.google.android.material.snackbar.Snackbar
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arkivanov.decompose.retainedComponent
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
+import javax.inject.Inject
+import ru.ama.whereme.BuildConfig
 import ru.ama.whereme.R
-import ru.ama.whereme.databinding.ActivityMainBinding
+import ru.ama.whereme.domain.entity.ThemeMode
+import ru.ama.whereme.domain.state.LoadState
+import ru.ama.whereme.navigation.RootFactory
+import ru.ama.whereme.ui.RootScreen
+import ru.ama.whereme.ui.theme.WhereMeTheme
+import ru.ama.whereme.ui.theme.isDark
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
-    private lateinit var viewModel: MainViewModel
-    private lateinit var binding: ActivityMainBinding
+class MainActivity : ComponentActivity() {
+    @Inject lateinit var rootFactory: RootFactory
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        setSupportActionBar(binding.toolbar)
-        binding.contentMain.bottomNavigationView.setOnItemSelectedListener { item ->
-            if (item.itemId == R.id.page_3) openProfile()
-            else {
-                showScreen(item.itemId)
-                true
+        val root = retainedComponent(factory = rootFactory::create)
+        setContent {
+            val theme by root.theme.collectAsStateWithLifecycle()
+            val dark = ((theme as? LoadState.Ready)?.value ?: ThemeMode.SYSTEM).isDark()
+            SideEffect {
+                val bars =
+                    if (dark) SystemBarStyle.dark(Color.TRANSPARENT)
+                    else SystemBarStyle.light(Color.TRANSPARENT, Color.rgb(16, 25, 20))
+                enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
             }
-        }
-        if (savedInstanceState == null) showScreen(R.id.page_1)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                viewModel.session.collect {
-                    if (binding.contentMain.bottomNavigationView.selectedItemId == R.id.page_3) openProfile()
+            WhereMeTheme(dark) {
+                Surface(Modifier.fillMaxSize()) {
+                    if (theme == LoadState.Loading)
+                        Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = androidx.compose.ui.Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    else if (theme == LoadState.Failed)
+                        Column(Modifier.safeDrawingPadding().padding(16.dp)) {
+                            Text(
+                                stringResource(R.string.storage_read_failed),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            Button(onClick = root::retryStorage) {
+                                Text(stringResource(R.string.storage_retry))
+                            }
+                            RootScreen(
+                                root,
+                                BuildConfig.VERSION_NAME,
+                                R.raw.aboutlibraries,
+                                Modifier.weight(1f),
+                            )
+                        }
+                    else RootScreen(root, BuildConfig.VERSION_NAME, R.raw.aboutlibraries)
                 }
             }
         }
-    }
-
-    private fun showScreen(id: Int) {
-        val current = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main)
-        val next = when (id) {
-            R.id.page_2 -> if (current is SettingsFragment) return else SettingsFragment()
-            R.id.page_4 -> if (current is AboutFragment) return else AboutFragment()
-            else -> if (current is MapFragment) return else MapFragment()
-        }
-        setCurrentFragment(next)
-    }
-
-    private fun openProfile(): Boolean {
-        when (val state = viewModel.session.value) {
-            is LoadState.Ready -> {
-                val current = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main)
-                if (state.value.profile.tokenJwt.isNotBlank()) {
-                    if (current !is ProfileOutFragment) setCurrentFragment(ProfileOutFragment())
-                } else if (current !is ProfileInFragment) setCurrentFragment(ProfileInFragment())
-                return true
-            }
-            LoadState.Loading -> Toast.makeText(this, R.string.storage_loading, Toast.LENGTH_SHORT).show()
-            LoadState.Failed -> {
-                if (supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main) !is ProfileInFragment)
-                    setCurrentFragment(ProfileInFragment())
-                Snackbar.make(binding.root, R.string.profile_reenter, Snackbar.LENGTH_LONG)
-                    .setAction(R.string.storage_retry) { viewModel.retrySession() }.show()
-                return true
-            }
-        }
-        return false
-    }
-
-    fun onSessionReplaced() { viewModel.retrySession() }
-
-    private fun setCurrentFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.nav_host_fragment_content_main, fragment)
-            .commit()
     }
 }

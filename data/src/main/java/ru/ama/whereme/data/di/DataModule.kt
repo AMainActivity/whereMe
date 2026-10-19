@@ -60,9 +60,6 @@ interface DataModule {
     @Binds
     fun bindLocationHistoryRepository(impl: RoomLocationHistoryRepository): LocationHistoryRepository
 
-    @Binds
-    fun bindNetworkStatus(impl: AndroidNetworkStatus): NetworkStatus
-
 
     @Binds
     fun bindPendingLocationStore(impl: RoomPendingLocationStore): PendingLocationStore

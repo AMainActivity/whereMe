@@ -1,5 +1,6 @@
 package ru.ama.whereme.tracking
 
+import ru.ama.whereme.domain.tracking.TrackingRequirement
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver

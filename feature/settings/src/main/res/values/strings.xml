@@ -1,0 +1,73 @@
+<resources>
+  <string name="tracking_stopped">Запись остановлена</string>
+  <string name="tracking_collecting">Определяем местоположение</string>
+  <string name="tracking_waiting">Точка сохранена. Ожидаем следующий замер</string>
+  <string name="tracking_no_fix">Координаты пока не получены. Повторим замер</string>
+  <string name="tracking_failed">Запись остановлена из-за ошибки. Проверьте настройки и начните снова</string>
+  <string name="tracking_permission_required">Нет разрешения на местоположение. История и настройки доступны</string>
+  <string name="tracking_location_disabled">Геолокация выключена. Включите её, чтобы начать запись</string>
+  <string name="tracking_no_provider">Нет доступного провайдера местоположения. Проверьте геолокацию и разрешение на точное положение</string>
+  <string name="tracking_background_required">Для периодической записи нужен доступ к местоположению в фоне</string>
+  <string name="tracking_alarm_required">Для периодической записи разрешите будильники и напоминания</string>
+  <string name="tracking_location_explanation">Разрешите доступ к местоположению для записи точек. Приблизительное положение тоже поддерживается, если на устройстве доступен сетевой провайдер. Для GPS без сети нужно разрешение на точное положение</string>
+  <string name="tracking_background_explanation">Чтобы периодическая запись продолжалась при закрытом приложении, разрешите доступ к местоположению «Всегда». На следующем экране откройте разрешения приложения</string>
+  <string name="tracking_alarm_explanation">Разрешите будильники и напоминания: каждый замер запускается системным будильником, который пробуждает устройство при выключенном экране. Частые замеры увеличивают расход батареи</string>
+  <string name="tracking_continue">Продолжить</string>
+  <string name="tracking_app_settings">Настройки</string>
+  <string name="tracking_requirements_changed">Условия запуска изменились. Проверьте разрешения и геолокацию</string>
+  <string name="tracking_start_restricted">Android запретил запуск записи. Вернитесь в приложение и попробуйте снова</string>
+  <string name="tracking_invalid_schedule">Выберите хотя бы один день и разные время начала и окончания</string>
+  <string name="tracking_stop">Остановить запись</string>
+  <string name="tracking_starting">Подготавливаем запись</string>
+  <string name="tracking_schedule_ready">Расписание включено. Ожидаем выбранное время запуска</string>
+  <string name="tracking_saving">Сохраняем точку</string>
+  <string name="tracking_uploading">Проверяем отправку сохранённых точек</string>
+  <string name="tracking_stopping">Останавливаем запись</string>
+  <string name="tracking_armed">Запись включена. Ожидаем следующий системный будильник</string>
+  <string name="tracking_sample_failed">Не удалось выполнить замер. Повторим по следующему будильнику</string>
+  <string name="tracking_sync_failed">Отправить точки пока не удалось. Запись продолжается</string>
+  <string name="tracking_stop_restricted">Не удалось передать команду остановки. Вернитесь в приложение и повторите</string>
+  <string name="settings_title">Настройки</string>
+  <string name="settings_recording">Запись местоположений</string>
+  <string name="settings_start">Начать запись</string>
+  <string name="settings_stop">Остановить запись</string>
+  <string name="settings_schedule">Расписание</string>
+  <string name="settings_schedule_hint">Запись запускается в выбранные дни. Интервал через полночь тоже поддерживается.</string>
+  <string name="settings_start_time">Начало: %1$s</string>
+  <string name="settings_end_time">Окончание: %1$s</string>
+  <string name="settings_time_title">Время записи</string>
+  <string name="settings_measurements">Параметры замера</string>
+  <string name="settings_distance">Минимальное перемещение, м</string>
+  <string name="settings_accuracy">Желаемая точность, м</string>
+  <string name="settings_wait">Ожидание координаты, с</string>
+  <string name="settings_period">Период между замерами, с</string>
+  <string name="settings_minimum">Целое число, не меньше %1$d</string>
+  <string name="settings_apply">Применить параметры</string>
+  <string name="settings_saving">Сохранение…</string>
+  <string name="settings_loading">Загрузка настроек…</string>
+  <string name="settings_read_error">Не удалось прочитать настройки. Сохранённые значения не изменены.</string>
+  <string name="settings_retry">Повторить</string>
+  <string name="settings_dismiss">Закрыть</string>
+  <string name="settings_cancel">Отмена</string>
+  <string name="settings_done">Готово</string>
+  <string name="settings_theme">Оформление</string>
+  <string name="settings_system">Как на устройстве</string>
+  <string name="settings_light">Светлая</string>
+  <string name="settings_dark">Тёмная</string>
+  <string name="settings_access_title">Для записи местоположений</string>
+  <string name="settings_access_failed">Разрешение не получено. Проверьте настройки приложения.</string>
+  <string name="settings_open_system">Настройки приложения</string>
+  <string name="settings_no_activity">Не удалось открыть системные настройки.</string>
+  <string name="settings_measurements_hint">Во время замера выбирается лучшая доступная координата. Без сети точки сохраняются на устройстве.</string>
+  <string-array name="settings_days">
+    <item>Пн</item>
+    <item>Вт</item>
+    <item>Ср</item>
+    <item>Чт</item>
+    <item>Пт</item>
+    <item>Сб</item>
+    <item>Вс</item>
+  </string-array>
+  <string name="settings_write_error">Не удалось сохранить настройки. Повторите действие.</string>
+  <string name="settings_theme_error">Не удалось прочитать тему. Повторите загрузку настроек.</string>
+</resources>

@@ -1,0 +1,35 @@
+package ru.ama.whereme.feature.settings
+
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import ru.ama.whereme.domain.reportFailure
+
+/** Accepted edits finish in application scope when the settings screen closes. */
+internal class SettingsWriteQueue(
+    scope: CoroutineScope,
+    private val onFailure: (Exception) -> Unit,
+) {
+    private val commands = Channel<suspend () -> Unit>(Channel.UNLIMITED)
+    internal val completion = scope.launch {
+        for (command in commands) {
+            try {
+                command()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                reportFailure("Save settings", failure)
+                onFailure(failure)
+            }
+        }
+    }
+
+    fun submit(command: suspend () -> Unit) {
+        check(commands.trySend(command).isSuccess)
+    }
+
+    fun close() {
+        commands.close()
+    }
+}
