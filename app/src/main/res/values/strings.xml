@@ -114,11 +114,11 @@
     <string name="tracking_permission_required">Нет разрешения на местоположение. История и настройки доступны</string>
     <string name="tracking_location_disabled">Геолокация выключена. Включите её, чтобы начать запись</string>
     <string name="tracking_no_provider">Нет доступного провайдера местоположения. Проверьте геолокацию и разрешение на точное положение</string>
-    <string name="tracking_background_required">Для запуска по расписанию нужен доступ к местоположению в фоне</string>
-    <string name="tracking_alarm_required">Для расписания разрешите будильники и напоминания</string>
+    <string name="tracking_background_required">Для периодической записи нужен доступ к местоположению в фоне</string>
+    <string name="tracking_alarm_required">Для периодической записи разрешите будильники и напоминания</string>
     <string name="tracking_location_explanation">Разрешите доступ к местоположению для записи точек. Приблизительное положение тоже поддерживается, если на устройстве доступен сетевой провайдер. Для GPS без сети нужно разрешение на точное положение</string>
-    <string name="tracking_background_explanation">Чтобы запись могла начаться по расписанию при закрытом приложении, разрешите доступ к местоположению «Всегда». На следующем экране откройте разрешения приложения. Для ручного запуска этот доступ не нужен</string>
-    <string name="tracking_alarm_explanation">Разрешите будильники и напоминания для запуска записи в выбранное время. Частота замеров зависит от ограничений Android</string>
+    <string name="tracking_background_explanation">Чтобы периодическая запись продолжалась при закрытом приложении, разрешите доступ к местоположению «Всегда». На следующем экране откройте разрешения приложения</string>
+    <string name="tracking_alarm_explanation">Разрешите будильники и напоминания: каждый замер запускается системным будильником, который пробуждает устройство при выключенном экране. Частые замеры увеличивают расход батареи</string>
     <string name="tracking_continue">Продолжить</string>
     <string name="tracking_app_settings">Настройки</string>
     <string name="tracking_requirements_changed">Условия запуска изменились. Проверьте разрешения и геолокацию</string>
@@ -130,6 +130,9 @@
     <string name="tracking_saving">Сохраняем точку</string>
     <string name="tracking_uploading">Проверяем отправку сохранённых точек</string>
     <string name="tracking_stopping">Останавливаем запись</string>
+    <string name="tracking_restore_failed">Не удалось восстановить будильники записи. Проверьте разрешения и настройки приложения</string>
+    <string name="tracking_armed">Запись включена. Ожидаем следующий системный будильник</string>
+    <string name="tracking_sample_failed">Не удалось выполнить замер. Повторим по следующему будильнику</string>
     <string name="tracking_sync_failed">Отправить точки пока не удалось. Запись продолжается</string>
     <string name="tracking_stop_restricted">Не удалось передать команду остановки. Вернитесь в приложение и повторите</string>
 </resources>

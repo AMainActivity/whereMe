@@ -20,11 +20,18 @@ import javax.inject.Singleton
 
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class SettingsStore
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class SessionStore
+@Qualifier @Retention(AnnotationRetention.BINARY) annotation class RecordingStore
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class ApplicationScope
 
 @Module
 @InstallIn(SingletonComponent::class)
 object StorageModule {
+    @Provides @Singleton @RecordingStore
+    fun provideRecording(application: Application,
+        @ApplicationScope scope: CoroutineScope): DataStore<Preferences> = PreferenceDataStoreFactory.create(
+        scope = scope,
+        produceFile = { File(application.noBackupFilesDir, "recording.preferences_pb") })
+
     @Provides @Singleton @ApplicationScope
     fun provideScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

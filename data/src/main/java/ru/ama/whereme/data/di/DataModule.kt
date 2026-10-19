@@ -9,6 +9,8 @@ import dagger.Provides
 import ru.ama.whereme.data.location.PlatformLocationSource
 import ru.ama.whereme.data.location.RoomLocationRecorder
 import ru.ama.whereme.data.sync.LocationBatchUploader
+import ru.ama.whereme.data.tracking.DataStoreRecordingSessionStore
+import ru.ama.whereme.domain.tracking.RecordingSessionStore
 import ru.ama.whereme.domain.tracking.LocationRecorder
 import ru.ama.whereme.domain.tracking.PendingLocationUploader
 import ru.ama.whereme.data.network.WmApiService
@@ -26,6 +28,9 @@ import ru.ama.whereme.domain.repository.*
 @Module
 @InstallIn(SingletonComponent::class)
 interface DataModule {
+    @Binds
+    fun bindRecordingStore(impl: DataStoreRecordingSessionStore): RecordingSessionStore
+
     @Binds
     fun bindLocationRecorder(impl: RoomLocationRecorder): LocationRecorder
 

@@ -16,6 +16,7 @@ import ru.ama.whereme.tracking.runTrackingWork
 class AfterBootReceiver : BroadcastReceiver() {
     @Inject
     lateinit var repo: TrackingScheduler
+    @Inject lateinit var coordinator: ru.ama.whereme.domain.tracking.TrackingCoordinator
     @Inject @ApplicationScope lateinit var scope: CoroutineScope
 
     override fun onReceive(context: Context, intent: Intent?) {
@@ -25,6 +26,7 @@ class AfterBootReceiver : BroadcastReceiver() {
         // Boot restores the user's enabled schedule; it must not enable it itself.
         runTrackingWork(scope) {
             repo.scheduleNextAlarmClockIfEnabled()
+            coordinator.restoreAlarms()
         }
     }
 }

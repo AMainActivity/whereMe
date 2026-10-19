@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.location.LocationManager
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
@@ -19,6 +20,7 @@ import ru.ama.whereme.domain.tracking.TrackingClock
 import ru.ama.whereme.domain.tracking.TrackingCoordinator
 import ru.ama.whereme.domain.tracking.TrackingFailure
 import ru.ama.whereme.domain.tracking.TrackingMode
+import ru.ama.whereme.domain.tracking.RecordingSession
 import ru.ama.whereme.tracking.TrackingAction
 import ru.ama.whereme.tracking.TrackingNotification
 import ru.ama.whereme.tracking.TrackingRequirement
@@ -44,6 +46,7 @@ class MyForegroundService : LifecycleService() {
         lifecycleScope.launch {
             coordinator.state.collectLatest { snapshot ->
                 if (snapshot.ownerId != handle.ownerId || snapshot.requestId != handle.latestRequest || lastStartId == 0) return@collectLatest
+                Log.d("TrackingService", "State: ${snapshot.state}")
                 if (snapshot.state.isRunning) {
                     notification.render(snapshot.state)
                 } else if (stopSelfResult(lastStartId)) {
@@ -58,7 +61,18 @@ class MyForegroundService : LifecycleService() {
         super.onStartCommand(intent, flags, startId)
         lastStartId = startId
         when {
-            intent == null || intent.action == ACTION_STOP -> handle.stop()
+            intent?.action == ACTION_STOP -> handle.stop()
+            intent == null -> stopSelfResult(startId)
+            intent.action == ACTION_WAKE && promoteToForeground() -> {
+                val id = intent.getStringExtra(EXTRA_RECORDING)
+                val due = intent.getLongExtra(EXTRA_DUE, 0)
+                if (id.isNullOrBlank() || due <= 0) stopSelfResult(startId)
+                else {
+                    Log.d("TrackingAlarm", "Sampling alarm delivered; due=$due")
+                    handle.wake(id, due)
+                }
+            }
+            intent.action == ACTION_WAKE -> stopSelfResult(startId)
             promoteToForeground() -> handle.start(if (intent.getBooleanExtra(EXTRA_SCHEDULED, false))
                 TrackingMode.SCHEDULED else TrackingMode.MANUAL)
             else -> stopSelfResult(startId)
@@ -67,6 +81,9 @@ class MyForegroundService : LifecycleService() {
     }
 
     private fun promoteToForeground(): Boolean {
+        if (trackingCapabilities().requirement(TrackingAction.MANUAL) == TrackingRequirement.EXACT_ALARM) {
+            handle.fail(TrackingFailure.ALARM); return false
+        }
         val unavailable = unavailableLocation()
         if (unavailable != null) { handle.block(unavailable); return false }
         if (foregroundStarted) return true
@@ -86,7 +103,7 @@ class MyForegroundService : LifecycleService() {
     }
 
     private fun unavailableLocation(): LocationOutcome.Reason? = when (trackingCapabilities().requirement(TrackingAction.MANUAL)) {
-        TrackingRequirement.FOREGROUND_LOCATION, TrackingRequirement.PRECISE_LOCATION -> LocationOutcome.Reason.PERMISSION_REQUIRED
+        TrackingRequirement.FOREGROUND_LOCATION, TrackingRequirement.PRECISE_LOCATION, TrackingRequirement.BACKGROUND_LOCATION -> LocationOutcome.Reason.PERMISSION_REQUIRED
         TrackingRequirement.LOCATION_ENABLED -> LocationOutcome.Reason.LOCATION_DISABLED
         TrackingRequirement.PROVIDER -> LocationOutcome.Reason.NO_PROVIDER
         else -> null
@@ -117,6 +134,16 @@ class MyForegroundService : LifecycleService() {
     companion object {
         private const val EXTRA_SCHEDULED = "scheduled"
         private const val ACTION_STOP = "ru.ama.whereme.STOP_TRACKING"
+        private const val ACTION_WAKE = "ru.ama.whereme.SAMPLE_LOCATION"
+        private const val EXTRA_RECORDING = "recording_id"
+        private const val EXTRA_DUE = "sample_due_millis"
+        fun wakeIntent(context: Context, session: RecordingSession?): Intent =
+            Intent(context, MyForegroundService::class.java).setAction(ACTION_WAKE).apply {
+                if (session != null) {
+                    putExtra(EXTRA_RECORDING, session.id)
+                    putExtra(EXTRA_DUE, session.nextAtMillis)
+                }
+            }
         fun stopIntent(context: Context): Intent = newIntent(context).setAction(ACTION_STOP)
         fun newIntent(context: Context, scheduled: Boolean = false): Intent =
             Intent(context, MyForegroundService::class.java).putExtra(EXTRA_SCHEDULED, scheduled)

@@ -4,6 +4,8 @@ import java.io.IOException
 import java.time.Instant
 import java.util.TimeZone
 import kotlin.coroutines.resume
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
@@ -49,7 +51,18 @@ class TrackingCoordinatorTest {
         fun fail() { values.value = Result.failure(IOException("synthetic settings failure")) }
     }
 
-    private class Fixture(scope: TestScope, initial: SettingsDomModel, epoch: String = "2026-10-19T12:00:00Z") {
+    private class MemorySessions : RecordingSessionStore {
+        var value: RecordingSession? = null
+        var failWrites = false
+        override suspend fun read() = value
+        override suspend fun write(session: RecordingSession?) {
+            if (failWrites) throw IOException("synthetic state write failure")
+            value = session
+        }
+    }
+
+    private class Fixture(scope: TestScope, initial: SettingsDomModel, epoch: String = "2026-10-19T12:00:00Z",
+        val sessions: MemorySessions = MemorySessions()) {
         val settings = Settings(initial)
         var wallShift = 0L
         var zone = TimeZone.getTimeZone("UTC")
@@ -90,8 +103,27 @@ class TrackingCoordinatorTest {
         var uploadHandler: suspend () -> Unit = {}
         var uploads = 0
         private val uploader = PendingLocationUploader { uploads++; uploadHandler() }
-        val coordinator = TrackingCoordinator(settings, source, recorder, uploader, clock, scope.backgroundScope)
-        val handle = coordinator.attach()
+        var autoDeliver = true
+        var alarmFailure = false
+        var pending: RecordingSession? = null
+        var alarmCount = 0
+        private var alarmJob: Job? = null
+        private val alarm = object : TrackingAlarm {
+            override fun schedule(session: RecordingSession) {
+                if (alarmFailure) throw SecurityException("synthetic revoked alarm access")
+                pending = session; alarmCount++
+                alarmJob?.cancel()
+                if (autoDeliver) alarmJob = scope.backgroundScope.launch {
+                    delay((session.nextAtMillis - clock.nowMillis()).coerceAtLeast(0))
+                    handle.wake(session.id, session.nextAtMillis)
+                }
+            }
+            override fun cancel() { pending = null; alarmJob?.cancel() }
+        }
+        val coordinator: TrackingCoordinator = TrackingCoordinator(settings, source, recorder, uploader, clock, scope.backgroundScope, sessions, alarm)
+        fun recreateWithoutService(scope: TestScope) =
+            TrackingCoordinator(settings, source, recorder, uploader, clock, scope.backgroundScope, sessions, alarm)
+        val handle: TrackingCoordinator.Handle = coordinator.attach()
         val state get() = coordinator.state.value.state
     }
 
@@ -325,19 +357,19 @@ class TrackingCoordinatorTest {
         assertTrue(f.state is TrackingState.Collecting)
     }
 
-    @Test fun locationFailureIsReportedAndNeedsAnExplicitRestart() = runTest {
+    @Test fun temporaryLocationFailureKeepsTheNextSamplingAlarm() = runTest {
         val f = Fixture(this, defaults)
         f.sourceHandler = { throw IOException("synthetic source failure") }
         f.handle.start(TrackingMode.MANUAL); runCurrent()
-        assertEquals(TrackingState.Failed(TrackingFailure.LOCATION), f.state)
-        advanceTimeBy(60_000); runCurrent(); assertEquals(1, f.calls)
+        assertEquals(TrackingFailure.LOCATION, (f.state as TrackingState.Waiting).failure)
+        advanceTimeBy(15_000); runCurrent(); assertEquals(2, f.calls)
     }
 
     @Test fun failedLocalWriteDoesNotReportSuccessOrAttemptUpload() = runTest {
         val f = Fixture(this, defaults)
         f.sourceHandler = { f.fix() }; f.recordHandler = { throw IOException("synthetic write failure") }
         f.handle.start(TrackingMode.MANUAL); runCurrent()
-        assertEquals(TrackingState.Failed(TrackingFailure.STORAGE), f.state)
+        assertEquals(TrackingFailure.STORAGE, (f.state as TrackingState.Waiting).failure)
         assertEquals(0, f.writes); assertEquals(0, f.uploads)
     }
 
@@ -350,11 +382,11 @@ class TrackingCoordinatorTest {
         assertEquals(TrackingState.LocationUnavailable(LocationOutcome.Reason.PERMISSION_REQUIRED), f.state)
     }
 
-    @Test fun staleSampleIsNotPersistedEvenIfASourceReturnsIt() = runTest {
+    @Test fun sampleOlderThanThirtySecondsIsPersisted() = runTest {
         val f = Fixture(this, defaults)
         f.sourceHandler = { val fix = f.fix().sample; LocationOutcome.Fix(fix.copy(elapsedRealtimeNanos = fix.elapsedRealtimeNanos - 31_000_000_000L)) }
         f.handle.start(TrackingMode.MANUAL); runCurrent()
-        assertEquals(0, f.writes); assertTrue((f.state as TrackingState.Waiting).noFix)
+        assertEquals(1, f.writes); assertFalse((f.state as TrackingState.Waiting).noFix)
     }
 
     @Test fun explicitStopStartsANewPersistenceIntervalOnTheNextStart() = runTest {
@@ -404,4 +436,243 @@ class TrackingCoordinatorTest {
         assertEquals(TrackingState.Failed(TrackingFailure.SETTINGS), f.state)
     }
 
+
+    @Test fun elapsedTimeAloneCannotStartAnotherMeasurement() = runTest {
+        val f = Fixture(this, defaults)
+        f.autoDeliver = false
+        f.sourceHandler = { f.fix() }
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        advanceTimeBy(60_000); runCurrent()
+        assertEquals(1, f.calls)
+        assertNotNull(f.pending)
+    }
+
+    @Test fun nextAlarmIsArmedBeforeLocationAndDoesNotWaitForHttp() = runTest {
+        val f = Fixture(this, defaults)
+        f.sourceHandler = { assertNotNull(f.pending); f.fix() }
+        f.uploadHandler = { awaitCancellation() }
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        assertEquals(1, f.uploads)
+        advanceTimeBy(15_000); runCurrent()
+        assertEquals(2, f.calls); assertEquals(2, f.writes)
+        assertEquals(1, f.uploads) // One network attempt can span several sampling periods.
+    }
+
+    @Test fun stopCancelsTheAlarmAndRejectsAnAlreadyDeliveredWakeup() = runTest {
+        val f = Fixture(this, defaults)
+        f.sourceHandler = { f.fix() }
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        val old = requireNotNull(f.pending)
+        f.handle.stop(); runCurrent()
+        assertNull(f.pending); assertNull(f.sessions.value)
+        advanceTimeBy(15_000)
+        f.handle.wake(old.id, old.nextAtMillis); runCurrent()
+        assertEquals(1, f.calls); assertEquals(TrackingState.Stopped, f.state)
+    }
+
+    @Test fun anOldAlarmCannotReplaceANewManualSession() = runTest {
+        val f = Fixture(this, defaults)
+        f.sourceHandler = { f.fix() }
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        val old = requireNotNull(f.pending)
+        f.handle.stop(); f.handle.start(TrackingMode.MANUAL); runCurrent()
+        val fresh = requireNotNull(f.pending)
+        assertNotEquals(old.id, fresh.id)
+        f.handle.wake(old.id, old.nextAtMillis); runCurrent()
+        assertEquals(fresh, f.pending); assertEquals(2, f.calls)
+    }
+
+    @Test fun delayedDeliverySkipsMissedPeriodsWithoutBursting() = runTest {
+        val f = Fixture(this, defaults)
+        f.autoDeliver = false; f.sourceHandler = { f.fix() }
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        val alarm = requireNotNull(f.pending)
+        advanceTimeBy(61_000)
+        f.handle.wake(alarm.id, alarm.nextAtMillis); runCurrent()
+        assertEquals(2, f.calls)
+        assertEquals(f.clock.nowMillis() + 14_000, requireNotNull(f.pending).nextAtMillis)
+        f.handle.wake(alarm.id, alarm.nextAtMillis); runCurrent()
+        assertEquals(2, f.calls)
+    }
+
+    @Test fun earlyOrUpdatedPendingIntentCannotCollectBeforeItsDeadline() = runTest {
+        val f = Fixture(this, defaults)
+        f.sourceHandler = { f.fix() }
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        val pending = requireNotNull(f.pending)
+        f.handle.wake(pending.id, pending.nextAtMillis); runCurrent()
+        assertEquals(1, f.calls); assertEquals(pending, f.pending)
+    }
+
+    @Test fun destroyedServiceLeavesTheAlarmForANewProcessOwner() = runTest {
+        val durable = MemorySessions()
+        val first = Fixture(this, defaults, sessions = durable)
+        first.autoDeliver = false; first.sourceHandler = { first.fix() }
+        first.handle.start(TrackingMode.MANUAL); runCurrent()
+        val pending = requireNotNull(first.pending)
+        first.handle.close(); runCurrent()
+        assertEquals(pending, durable.value)
+        assertEquals(TrackingState.Armed(pending.mode, pending.nextAtMillis), first.state)
+        val replacement = Fixture(this, defaults, sessions = durable)
+        replacement.sourceHandler = { replacement.fix() }
+        advanceTimeBy(15_000)
+        replacement.handle.wake(pending.id, pending.nextAtMillis); runCurrent()
+        assertEquals(1, replacement.calls)
+        assertEquals(pending.id, requireNotNull(replacement.pending).id)
+        assertEquals(TrackingMode.MANUAL, requireNotNull(durable.value).mode)
+    }
+
+    @Test fun revokedAlarmAccessFailsVisiblyBeforeAnyLocationRequest() = runTest {
+        val f = Fixture(this, defaults)
+        f.alarmFailure = true
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        assertEquals(0, f.calls)
+        assertEquals(TrackingState.Failed(TrackingFailure.ALARM), f.state)
+    }
+
+    @Test fun recordingStateWriteFailureDoesNotStartAnUnrecoverableCycle() = runTest {
+        val f = Fixture(this, defaults)
+        f.sessions.failWrites = true
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        assertEquals(0, f.calls); assertEquals(0, f.alarmCount)
+        assertEquals(TrackingState.Failed(TrackingFailure.STORAGE), f.state)
+    }
+
+    @Test fun periodicWakeWaitsForCancelledLocationCleanup() = runTest {
+        val f = Fixture(this, defaults)
+        f.sourceCleanup = { withContext(NonCancellable) { delay(100) } }
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        advanceTimeBy(15_000); runCurrent()
+        assertEquals(1, f.calls)
+        advanceTimeBy(100); runCurrent()
+        assertEquals(2, f.calls); assertEquals(1, f.maximumActive)
+    }
+
+    @Test fun restorationRearmsManualStateButDoesNotStartLocationInTheReceiver() = runTest {
+        val f = Fixture(this, defaults)
+        f.sessions.value = RecordingSession("restored", TrackingMode.MANUAL, f.clock.nowMillis() - 1_000)
+        f.coordinator.restoreAlarms()
+        assertEquals(0, f.calls)
+        assertEquals(f.clock.nowMillis() + 1_000, requireNotNull(f.pending).nextAtMillis)
+    }
+
+    @Test fun restorationDropsAnExpiredScheduledSession() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true, start = "09:00", end = "10:00"))
+        f.sessions.value = RecordingSession("expired", TrackingMode.SCHEDULED, f.clock.nowMillis() - 1_000)
+        f.coordinator.restoreAlarms()
+        assertNull(f.pending); assertNull(f.sessions.value); assertEquals(0, f.calls)
+    }
+
+    @Test fun aColdProcessKeepsTheCadenceAfterALateAlarmAndSlowSettingsRead() = runTest {
+        val f = Fixture(this, defaults)
+        f.autoDeliver = false
+        val gate = CompletableDeferred<Unit>()
+        f.settings.readGate = gate
+        val due = f.clock.nowMillis() + 15_000
+        f.sessions.value = RecordingSession("cold", TrackingMode.MANUAL, due)
+        advanceTimeBy(61_000)
+        f.handle.wake("cold", due); runCurrent()
+        assertEquals(0, f.calls)
+        gate.complete(Unit); runCurrent()
+        assertEquals(1, f.calls)
+        assertEquals(f.clock.nowMillis() + 14_000, requireNotNull(f.pending).nextAtMillis)
+    }
+
+    @Test fun coldSettingsUiShowsTheDurableRecordingBeforeAnyServiceStarts() = runTest {
+        val f = Fixture(this, defaults)
+        f.autoDeliver = false; f.sourceHandler = { f.fix() }
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        val pending = requireNotNull(f.pending)
+        f.handle.close(); runCurrent()
+        val reopened = f.recreateWithoutService(this); runCurrent()
+        assertEquals(TrackingState.Armed(TrackingMode.MANUAL, pending.nextAtMillis), reopened.state.value.state)
+        assertEquals(1, f.calls)
+    }
+
+    @Test fun openingSettingsDoesNotRestartAnAlreadyRunningMeasurement() = runTest {
+        val f = Fixture(this, defaults)
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        val pending = f.pending
+        f.coordinator.restoreAlarms(refreshRunning = false)
+        assertEquals(1, f.calls); assertEquals(0, f.cleanups); assertEquals(pending, f.pending)
+    }
+
+    @Test fun openingTheAppStartsAMissingSessionInsideTheEnabledSchedule() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true, start = "12:00", end = "13:00"))
+        f.coordinator.restoreAlarms(refreshRunning = false, startScheduledIfActive = true)
+        assertEquals(TrackingMode.SCHEDULED, requireNotNull(f.sessions.value).mode)
+        assertNotNull(f.pending)
+        advanceTimeBy(1_000); runCurrent()
+        assertEquals(1, f.calls)
+        assertEquals(TrackingMode.SCHEDULED, (f.state as TrackingState.Collecting).mode)
+    }
+
+    @Test fun appEntryDoesNotEnableDisabledTrackingOrStartOutsideTheInterval() = runTest {
+        for (settings in listOf(defaults,
+            defaults.copy(isEnable = true, start = "13:00", end = "14:00"),
+            defaults.copy(isEnable = true, start = "11:00", end = "12:00"),
+            defaults.copy(isEnable = true, days = List(7) { "0" }))) {
+            val f = Fixture(this, settings)
+            f.coordinator.restoreAlarms(refreshRunning = false, startScheduledIfActive = true)
+            assertNull(f.sessions.value); assertNull(f.pending); assertEquals(0, f.calls)
+            assertEquals(settings, f.settings.values.value.getOrThrow())
+        }
+    }
+
+    @Test fun appEntryHonoursTheStartingWeekdayOfAnOvernightSchedule() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true, start = "22:00", end = "02:00",
+            days = listOf("1", "0", "0", "0", "0", "0", "0")), "2026-10-20T00:30:00Z")
+        f.coordinator.restoreAlarms(refreshRunning = false, startScheduledIfActive = true)
+        advanceTimeBy(1_000); runCurrent()
+        assertEquals(1, f.calls)
+        assertEquals(TrackingMode.SCHEDULED, (f.state as TrackingState.Collecting).mode)
+    }
+
+    @Test fun appEntryDoesNotRestartOrDowngradeAnActiveManualSession() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true))
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        val pending = f.pending
+        f.coordinator.restoreAlarms(refreshRunning = false, startScheduledIfActive = true)
+        assertEquals(1, f.calls); assertEquals(0, f.cleanups)
+        assertEquals(pending, f.pending)
+        assertEquals(TrackingMode.MANUAL, requireNotNull(f.sessions.value).mode)
+    }
+
+    @Test fun duplicateAppEntryDoesNotReplaceThePendingSessionOrShiftItsDeadline() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true))
+        f.autoDeliver = false
+        f.coordinator.restoreAlarms(refreshRunning = false, startScheduledIfActive = true)
+        val pending = f.pending
+        advanceTimeBy(500)
+        f.coordinator.restoreAlarms(refreshRunning = false, startScheduledIfActive = true)
+        assertEquals(pending, f.pending); assertEquals(0, f.calls)
+    }
+
+    @Test fun stopAfterAppEntryPreventsThePreparedAutomaticStart() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true))
+        f.coordinator.restoreAlarms(refreshRunning = false, startScheduledIfActive = true)
+        f.handle.stop(); runCurrent()
+        advanceTimeBy(2_000); runCurrent()
+        assertNull(f.sessions.value); assertNull(f.pending); assertEquals(0, f.calls)
+    }
+
+    @Test fun existingStoppedScheduleCanResumeOnTheNextExplicitAppEntry() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true))
+        f.handle.start(TrackingMode.SCHEDULED); runCurrent()
+        val previous = requireNotNull(f.sessions.value).id
+        f.handle.stop(); runCurrent()
+        advanceTimeBy(1_000); runCurrent()
+        assertEquals(1, f.calls) // Stop alone never resumes recording.
+        f.coordinator.restoreAlarms(refreshRunning = false, startScheduledIfActive = true)
+        assertNotEquals(previous, requireNotNull(f.sessions.value).id)
+        advanceTimeBy(1_000); runCurrent()
+        assertEquals(2, f.calls)
+    }
+
+    @Test fun bootAndSettingsRestoreDoNotCreateAMissingScheduledSession() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true))
+        f.coordinator.restoreAlarms()
+        f.coordinator.restoreAlarms(refreshRunning = false)
+        assertNull(f.pending); assertNull(f.sessions.value); assertEquals(0, f.calls)
+    }
 }

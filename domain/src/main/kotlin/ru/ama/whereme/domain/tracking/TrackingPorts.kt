@@ -19,3 +19,19 @@ fun interface PendingLocationUploader {
     /** Network failures retain pending rows; cancellation must stop the current attempt. */
     suspend fun uploadPending()
 }
+
+/** Durable recording intent. Service owner IDs and authentication generations are unrelated to this ID. */
+data class RecordingSession(val id: String, val mode: TrackingMode, val nextAtMillis: Long) {
+    init { require(id.isNotBlank() && nextAtMillis > 0) }
+}
+
+interface RecordingSessionStore {
+    suspend fun read(): RecordingSession?
+    suspend fun write(session: RecordingSession?)
+}
+
+/** Exactly one pending sampling alarm; implementations must wake the device, not use a process timer. */
+interface TrackingAlarm {
+    fun schedule(session: RecordingSession)
+    fun cancel()
+}

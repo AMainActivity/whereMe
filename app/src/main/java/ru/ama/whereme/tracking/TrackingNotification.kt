@@ -60,6 +60,7 @@ internal class TrackingNotification(private val context: Context, private val cl
                 is TrackingState.Uploading -> R.string.tracking_uploading
                 TrackingState.Stopping -> R.string.tracking_stopping
                 is TrackingState.Waiting -> when {
+                    state.failure != null -> R.string.tracking_sample_failed
                     state.syncFailed -> R.string.tracking_sync_failed
                     state.noFix -> R.string.tracking_no_fix
                     else -> R.string.tracking_waiting

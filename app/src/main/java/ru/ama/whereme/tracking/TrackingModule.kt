@@ -15,10 +15,15 @@ import ru.ama.whereme.domain.tracking.LocationRecorder
 import ru.ama.whereme.domain.tracking.PendingLocationUploader
 import ru.ama.whereme.domain.tracking.TrackingClock
 import ru.ama.whereme.domain.tracking.TrackingCoordinator
+import ru.ama.whereme.domain.tracking.RecordingSessionStore
+import ru.ama.whereme.domain.tracking.TrackingAlarm
 
 @Module
 @InstallIn(SingletonComponent::class)
 object TrackingModule {
+    @Provides @Singleton
+    fun alarm(impl: AlarmClockTrackingAlarm): TrackingAlarm = impl
+
     @Provides @Singleton
     fun clock(): TrackingClock = object : TrackingClock {
         override fun nowMillis() = System.currentTimeMillis()
@@ -28,6 +33,7 @@ object TrackingModule {
 
     @Provides @Singleton
     fun coordinator(settings: SettingsRepository, source: LocationSource, recorder: LocationRecorder,
-        uploader: PendingLocationUploader, clock: TrackingClock, @ApplicationScope scope: CoroutineScope) =
-        TrackingCoordinator(settings, source, recorder, uploader, clock, scope)
+        uploader: PendingLocationUploader, clock: TrackingClock, sessions: RecordingSessionStore,
+        alarm: TrackingAlarm, @ApplicationScope scope: CoroutineScope) =
+        TrackingCoordinator(settings, source, recorder, uploader, clock, scope, sessions, alarm)
 }

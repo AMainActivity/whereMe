@@ -25,8 +25,8 @@ data class TrackingCapabilities(
         !locationEnabled -> TrackingRequirement.LOCATION_ENABLED
         !provider && preciseWouldProvideLocation -> TrackingRequirement.PRECISE_LOCATION
         !provider -> TrackingRequirement.PROVIDER
-        action == TrackingAction.SCHEDULE && !background -> TrackingRequirement.BACKGROUND_LOCATION
-        action == TrackingAction.SCHEDULE && !exactAlarm -> TrackingRequirement.EXACT_ALARM
+        !background -> TrackingRequirement.BACKGROUND_LOCATION
+        !exactAlarm -> TrackingRequirement.EXACT_ALARM
         else -> TrackingRequirement.READY
     }
 }

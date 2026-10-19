@@ -10,6 +10,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import ru.ama.whereme.data.di.ApplicationScope
 import ru.ama.whereme.R
@@ -37,6 +39,13 @@ class SettingsViewModel @Inject constructor(
     private val failures = MutableLiveData<Int>()
     val errors: LiveData<Int> = failures
     private val commands = SettingsWriteQueue(applicationScope) { failures.postValue(R.string.storage_write_failed) }
+    init {
+        applicationScope.launch {
+            try { coordinator.restoreAlarms(refreshRunning = false)
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (_: Exception) { failures.postValue(R.string.tracking_restore_failed) }
+        }
+    }
     fun retrySettings() { retry.value++ }
     fun update(transform: (SettingsDomModel) -> SettingsDomModel) {
         commands.submit {

@@ -8,8 +8,7 @@ class LocationSampleTest {
     private val fix = LocationSample(0.0, 0.0, 50f, 0f, 1_700_000_000_000L, now)
 
     @Test fun zeroCoordinatesAreARealLocation() { assertTrue(fix.isUsable(now)) }
-    @Test fun oldAndFutureFixesAreRejected() {
-        assertFalse(fix.copy(elapsedRealtimeNanos = now - 30_000_000_001L).isUsable(now))
+    @Test fun futureAndMissingTimestampsAreRejected() {
         assertFalse(fix.copy(elapsedRealtimeNanos = now + 1).isUsable(now))
         assertFalse(fix.copy(elapsedRealtimeNanos = 0).isUsable(now))
     }
@@ -22,8 +21,9 @@ class LocationSampleTest {
         assertFalse(fix.copy(speedMetersPerSecond = Float.NaN).isUsable(now))
         assertFalse(fix.copy(timeMillis = 0).isUsable(now))
     }
-    @Test fun sampleExpiresWhileWaitingForBetterAccuracy() {
+    @Test fun sampleDoesNotExpireWhileWaitingForBetterAccuracy() {
         assertTrue(fix.isUsable(now + 30_000_000_000L))
-        assertFalse(fix.isUsable(now + 30_000_000_001L))
+        assertTrue(fix.isUsable(now + 30_000_000_001L))
+        assertTrue(fix.isUsable(now + 120_000_000_000L))
     }
 }

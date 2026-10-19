@@ -14,12 +14,7 @@ data class LocationSample(
             accuracyMeters.isFinite() && accuracyMeters >= 0 &&
             speedMetersPerSecond.isFinite() && speedMetersPerSecond >= 0 &&
             timeMillis > 0 && elapsedRealtimeNanos > 0 &&
-            nowElapsedRealtimeNanos >= elapsedRealtimeNanos &&
-            nowElapsedRealtimeNanos - elapsedRealtimeNanos <= MAX_AGE_NANOS
-
-    private companion object {
-        const val MAX_AGE_NANOS = 30_000_000_000L
-    }
+            nowElapsedRealtimeNanos >= elapsedRealtimeNanos
 }
 
 sealed interface LocationOutcome {

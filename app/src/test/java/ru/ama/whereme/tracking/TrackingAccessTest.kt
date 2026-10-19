@@ -8,8 +8,9 @@ class TrackingAccessTest {
     @Test fun foregroundDenialBlocksRecordingWithoutRequiringOtherPermissions() {
         assertEquals(TrackingRequirement.FOREGROUND_LOCATION, ready.copy(foreground = false).requirement(TrackingAction.MANUAL))
     }
-    @Test fun manualRecordingDoesNotRequireBackgroundOrAlarmAccess() {
-        assertEquals(TrackingRequirement.READY, ready.copy(background = false, exactAlarm = false).requirement(TrackingAction.MANUAL))
+    @Test fun manualPeriodicRecordingRequiresBackgroundAndAlarmAccess() {
+        assertEquals(TrackingRequirement.BACKGROUND_LOCATION, ready.copy(background = false).requirement(TrackingAction.MANUAL))
+        assertEquals(TrackingRequirement.EXACT_ALARM, ready.copy(exactAlarm = false).requirement(TrackingAction.MANUAL))
     }
     @Test fun backgroundAndAlarmAreSeparateScheduleRequirements() {
         assertEquals(TrackingRequirement.BACKGROUND_LOCATION, ready.copy(background = false, exactAlarm = false).requirement(TrackingAction.SCHEDULE))

@@ -145,31 +145,34 @@ class SettingsFragment : Fragment() {
 
     private fun renderTrackingState(state: TrackingState) {
         val scheduleEnabled = (viewModel.settings.value as? LoadState.Ready)?.value?.isEnable == true
-        if (state == TrackingState.Stopped && scheduleEnabled) {
+        if ((state == TrackingState.Stopped && scheduleEnabled) || state is TrackingState.Armed) {
             val message = when (requireContext().trackingCapabilities().requirement(TrackingAction.SCHEDULE)) {
                 TrackingRequirement.FOREGROUND_LOCATION, TrackingRequirement.PRECISE_LOCATION -> R.string.tracking_permission_required
                 TrackingRequirement.LOCATION_ENABLED -> R.string.tracking_location_disabled
                 TrackingRequirement.PROVIDER -> R.string.tracking_no_provider
                 TrackingRequirement.BACKGROUND_LOCATION -> R.string.tracking_background_required
                 TrackingRequirement.EXACT_ALARM -> R.string.tracking_alarm_required
-                TrackingRequirement.READY -> R.string.tracking_schedule_ready
+                TrackingRequirement.READY -> if (state is TrackingState.Armed) R.string.tracking_armed else R.string.tracking_schedule_ready
             }
             binding.trackingStatus.setText(message)
             return
         }
         binding.trackingStatus.setText(when (state) {
             is TrackingState.Starting -> R.string.tracking_starting
+            is TrackingState.Armed -> R.string.tracking_armed
             TrackingState.Stopped -> R.string.tracking_stopped
             is TrackingState.Collecting -> R.string.tracking_collecting
             is TrackingState.Saving -> R.string.tracking_saving
             is TrackingState.Uploading -> R.string.tracking_uploading
             TrackingState.Stopping -> R.string.tracking_stopping
             is TrackingState.Waiting -> when {
+                state.failure != null -> R.string.tracking_sample_failed
                 state.syncFailed -> R.string.tracking_sync_failed
                 state.noFix -> R.string.tracking_no_fix
                 else -> R.string.tracking_waiting
             }
-            is TrackingState.Failed -> R.string.tracking_failed
+            is TrackingState.Failed -> if (state.reason == ru.ama.whereme.domain.tracking.TrackingFailure.ALARM)
+                R.string.tracking_alarm_required else R.string.tracking_failed
             is TrackingState.LocationUnavailable -> when (state.reason) {
                 LocationOutcome.Reason.PERMISSION_REQUIRED -> R.string.tracking_permission_required
                 LocationOutcome.Reason.LOCATION_DISABLED -> R.string.tracking_location_disabled
