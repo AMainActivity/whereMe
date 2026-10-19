@@ -59,6 +59,15 @@
                             android:accessibilityLiveRegion="polite"
                             android:text="@string/tracking_stopped" />
 
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/operation_error"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="16dp"
+                            android:accessibilityLiveRegion="polite"
+                            android:textColor="?attr/colorError"
+                            android:visibility="gone" />
+
                         <com.google.android.material.switchmaterial.SwitchMaterial
                             android:id="@+id/frgmnt_set_switch_start"
                             android:layout_width="match_parent"
@@ -92,7 +101,6 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_margin="5dp"
-                                android:background="@android:color/white"
                                 android:orientation="horizontal">
 
                                 <LinearLayout
@@ -353,13 +361,18 @@
                                 android:maxLines="1"
                                 android:singleLine="true" />
                         </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/apply_measurements"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="16dp"
+                            android:text="@string/settings_apply_measurements" />
+
                     </LinearLayout>
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
-
     </ScrollView>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,4 +1,5 @@
 plugins {
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
@@ -26,6 +27,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures { buildConfig = true }
+    sourceSets {
+        getByName("test").java.srcDir("src/sharedTest/java")
+        getByName("androidTest").java.srcDir("src/sharedTest/java")
+    }
+    testOptions { unitTests.isIncludeAndroidResources = true }
     lint { abortOnError = true }
 }
 
@@ -46,8 +52,9 @@ dependencies {
     ksp(libs.room.compiler)
     implementation(platform(libs.okhttp.bom))
     implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
-    implementation(libs.gson)
+    implementation(libs.retrofit.serialization)
+    implementation(libs.serialization.json)
+    testImplementation(libs.robolectric)
     testImplementation(libs.junit)
     testImplementation(libs.datastore.core.okio)
     androidTestImplementation(libs.androidx.junit)

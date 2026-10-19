@@ -1,11 +1,10 @@
 package ru.ama.whereme.data.network.model
 
-import com.google.gson.annotations.Expose
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
+@Serializable
 data class JsonDto(
-    @Expose
-    @SerializedName("error") val error: Boolean,
-    @Expose
-    @SerializedName("message") val message: String
+    @SerialName("error") val error: Boolean,
+    @SerialName("message") val message: String
 )

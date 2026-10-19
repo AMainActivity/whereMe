@@ -1,10 +1,11 @@
 package ru.ama.whereme.data.database
 
+import androidx.room.Index
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import ru.ama.whereme.data.database.LocationDbModel.Companion.tabLocations
 
-@Entity(tableName = tabLocations)
+@Entity(tableName = tabLocations, indices = [Index("datestart"), Index(value = ["ownerKey", "isWrite"])])
 data class LocationDbModel(
     val datetime: String,
     val datestart: Long,
@@ -15,7 +16,8 @@ data class LocationDbModel(
     val sourceId: Int,
     val accuracy: Float,
     val velocity: Float,
-    val isWrite: Int
+    val isWrite: Int,
+    val ownerKey: String? = null
 ) {
     @PrimaryKey(autoGenerate = true)
     var _id: Long = 0

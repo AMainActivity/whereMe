@@ -34,7 +34,7 @@ class AndroidSessionStorageTest {
         try {
             val store = PreferenceDataStoreFactory.create(
                 scope = scope, produceFile = { path })
-            val repository = DataStoreSessionRepository(store, cipher)
+            val repository = DataStoreSessionRepository(store, cipher, ru.ama.whereme.data.database.LegacyHistoryAssignment {})
             assertEquals(SettingsUserInfoDomModel.EMPTY, repository.current().profile)
             repository.signIn(expected)
             val session = repository.current()
@@ -42,13 +42,13 @@ class AndroidSessionStorageTest {
             assertFalse(path.readBytes().toString(Charsets.ISO_8859_1).contains(expected.tokenJwt))
             scope.coroutineContext[Job]?.cancelAndJoin()
             scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-            val reopened = DataStoreSessionRepository(PreferenceDataStoreFactory.create(scope = scope, produceFile = { path }), cipher)
+            val reopened = DataStoreSessionRepository(PreferenceDataStoreFactory.create(scope = scope, produceFile = { path }), cipher, ru.ama.whereme.data.database.LegacyHistoryAssignment {})
             assertEquals(session, reopened.current())
             assertTrue(reopened.clearIfCurrent(session))
             val signedOut = reopened.current()
             scope.coroutineContext[Job]?.cancelAndJoin()
             scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-            val loggedOut = DataStoreSessionRepository(PreferenceDataStoreFactory.create(scope = scope, produceFile = { path }), cipher)
+            val loggedOut = DataStoreSessionRepository(PreferenceDataStoreFactory.create(scope = scope, produceFile = { path }), cipher, ru.ama.whereme.data.database.LegacyHistoryAssignment {})
             assertEquals(signedOut, loggedOut.current())
             assertEquals(SettingsUserInfoDomModel.EMPTY, loggedOut.current().profile)
         } finally {

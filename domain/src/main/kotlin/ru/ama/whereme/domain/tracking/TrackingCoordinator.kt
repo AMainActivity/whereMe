@@ -1,9 +1,11 @@
 package ru.ama.whereme.domain.tracking
 
+import ru.ama.whereme.domain.reportFailure
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
@@ -12,384 +14,461 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
 import ru.ama.whereme.domain.entity.LocationOutcome
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.repository.LocationSource
 import ru.ama.whereme.domain.repository.SettingsRepository
 import ru.ama.whereme.domain.usecase.SchedulePolicy
 
-/** Serial commands own the recording intent. Only OS alarms start subsequent sampling cycles. */
+/**
+ * Owns recording state on a single control thread (Main on Android).
+ * attach() and Handle calls belong to that same thread; restoration only enqueues commands and
+ * may be called from any dispatcher. Platform adapters must keep blocking work off the control thread.
+ */
 class TrackingCoordinator(
     private val settings: SettingsRepository,
-    private val source: LocationSource,
-    private val recorder: LocationRecorder,
+    source: LocationSource,
+    recorder: LocationRecorder,
     private val uploader: PendingLocationUploader,
     private val clock: TrackingClock,
     private val scope: CoroutineScope,
     private val sessions: RecordingSessionStore,
     private val alarm: TrackingAlarm
 ) {
+    private val measurement = TrackingMeasurement(source, recorder, clock)
     private val commands = Channel<Command>(Channel.UNLIMITED)
-    private val owners = AtomicLong()
-    private val mutableState = MutableStateFlow(TrackingSnapshot(null, 0, TrackingState.Stopped))
+    private val mutableState = MutableStateFlow<TrackingState>(TrackingState.Stopped)
     val state = mutableState.asStateFlow()
     private var current: Session? = null
 
     init {
         scope.launch {
             try {
-                // UI can be opened before the service is recreated by its next alarm.
-                try {
-                    sessions.read()?.let { saved ->
-                        mutableState.value = TrackingSnapshot(null, 0, TrackingState.Armed(saved.mode, saved.nextAtMillis))
-                    }
-                } catch (cancelled: CancellationException) { throw cancelled
-                } catch (_: Exception) {
-                    mutableState.value = TrackingSnapshot(null, 0, TrackingState.Failed(TrackingFailure.STORAGE))
-                }
+                loadSavedState()
                 for (command in commands) {
-                    try { accept(command)
-                    } catch (cancelled: CancellationException) { throw cancelled
+                    try {
+                        accept(command)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
                     } catch (failure: Exception) {
-                        val reason = (failure as? OperationFailure)?.reason ?: TrackingFailure.STORAGE
-                        val session = current
-                        if (session != null) {
-                            cancelRun(session)
-                            session.mode = null
-                            session.recording = null
-                            // Keep the consumer alive and expose persistence/alarm failure instead of success.
-                            try { sessions.write(null) } catch (cleanup: Exception) { failure.addSuppressed(cleanup) }
-                            try { alarm.cancel() } catch (cleanup: Exception) { failure.addSuppressed(cleanup) }
-                            publish(session, TrackingState.Failed(reason))
-                        } else mutableState.value = TrackingSnapshot(null, 0, TrackingState.Failed(reason))
+                        handleFailure(failure)
                         if (command is Command.Restore) command.done.completeExceptionally(failure)
                     }
                 }
             } finally {
-                current?.handle?.invalidate()
-                current?.job?.cancel()
-                current?.syncJob?.cancel()
-                current?.observer?.cancel()
+                current?.let {
+                    it.handle.closed = true
+                    it.job?.cancel()
+                    it.syncJob?.cancel()
+                    it.observer?.cancel()
+                }
                 commands.close()
             }
         }
     }
 
-    fun attach(): Handle = Handle(owners.incrementAndGet()).also { send(Command.Attach(it)) }
+    fun attach(): Handle = Handle().also { send(Command.Attach(it)) }
+    suspend fun restoreAfterSystemChange() = restore(RestoreReason.SYSTEM_CHANGE)
+    suspend fun resumeEnabledSchedule() = restore(RestoreReason.USER_REQUEST)
 
-    /** Recreate the OS alarm after boot/update/clock changes without depending on a visible screen. */
-    suspend fun restoreAlarms(refreshRunning: Boolean = true, startScheduledIfActive: Boolean = false) {
+    private suspend fun restore(reason: RestoreReason) {
         val done = CompletableDeferred<Unit>()
-        commands.send(Command.Restore(done, refreshRunning, startScheduledIfActive))
+        commands.send(Command.Restore(reason, done))
         done.await()
     }
 
-    inner class Handle internal constructor(val ownerId: Long) {
-        private val lock = Any()
-        private val closed = AtomicBoolean()
-        private val requests = AtomicLong()
-        val latestRequest: Long get() = requests.get()
-        val isClosed: Boolean get() = closed.get()
-        fun start(mode: TrackingMode): Long = request { Command.Start(this, it, mode) }
-        fun wake(id: String, dueAtMillis: Long): Long = request { Command.Wake(this, it, id, dueAtMillis) }
-        fun stop(): Long = request { Command.Stop(this, it, TrackingState.Stopped) }
-        fun block(reason: LocationOutcome.Reason): Long = request { Command.Stop(this, it, TrackingState.LocationUnavailable(reason)) }
-        fun fail(reason: TrackingFailure): Long = request { Command.Stop(this, it, TrackingState.Failed(reason)) }
-        fun timeChanged() = synchronized(lock) { if (!isClosed) send(Command.TimeChanged(this)) }
-        fun close() = synchronized(lock) {
-            if (closed.compareAndSet(false, true)) send(Command.Detach(this))
+    /** A service connection; startId comes directly from Android, without another request counter. */
+    inner class Handle internal constructor() {
+        internal var closed = false
+        private val mutableState = MutableStateFlow(TrackingServiceState(0, TrackingState.Stopped))
+        val state = mutableState.asStateFlow()
+
+        fun start(mode: TrackingMode, startId: Int = 0) = submit(Command.Start(this, startId, mode))
+        fun wake(id: String, dueAtMillis: Long, startId: Int = 0) = submit(Command.Wake(this, startId, id, dueAtMillis))
+        fun stop(startId: Int = 0) = submit(Command.Stop(this, startId, TrackingState.Stopped))
+        fun block(reason: LocationOutcome.Reason, startId: Int = 0) =
+            submit(Command.Stop(this, startId, TrackingState.LocationUnavailable(reason)))
+        fun fail(reason: TrackingFailure, startId: Int = 0) =
+            submit(Command.Stop(this, startId, TrackingState.Failed(reason)))
+
+        fun close() {
+            if (closed) return
+            closed = true // Immediately invalidates a Start still waiting in the command queue.
+            send(Command.Detach(this))
         }
-        internal fun invalidate() = synchronized(lock) { closed.set(true) }
-        private fun request(command: (Long) -> Command): Long = synchronized(lock) {
-            if (isClosed) return@synchronized requests.get()
-            requests.incrementAndGet().also { send(command(it)) }
+
+        internal fun publish(startId: Int, state: TrackingState) {
+            mutableState.value = TrackingServiceState(startId, state)
+        }
+
+        private fun submit(command: Command) {
+            if (!closed) send(command)
         }
     }
 
     private class Session(val handle: Handle) {
-        var request = 0L
-        var mode: TrackingMode? = null
+        var startId = 0
         var recording: RecordingSession? = null
+        val mode: TrackingMode? get() = recording?.mode
         var pendingDue: Long? = null
         var configuration: SettingsDomModel? = null
         var observer: Job? = null
-        var observerId = 0L
         var job: Job? = null
         var syncJob: Job? = null
-        var generation = 0L
+        var syncFailed = false
         var previousRowId: Long? = null
     }
 
+    private enum class RestoreReason { SYSTEM_CHANGE, USER_REQUEST }
     private sealed interface Command {
         data class Attach(val handle: Handle) : Command
-        data class Detach(val handle: Handle) : Command
-        data class Start(val handle: Handle, val request: Long, val mode: TrackingMode) : Command
-        data class Wake(val handle: Handle, val request: Long, val id: String, val due: Long) : Command
-        data class Stop(val handle: Handle, val request: Long, val terminal: TrackingState) : Command
-        data class TimeChanged(val handle: Handle) : Command
-        data class Configuration(val handle: Handle, val observer: Long, val value: SettingsDomModel) : Command
-        data class SettingsFailed(val handle: Handle, val observer: Long) : Command
-        data class Progress(val handle: Handle, val generation: Long, val value: TrackingState) : Command
-        data class Completed(val handle: Handle, val generation: Long, val noFix: Boolean, val failure: TrackingFailure?) : Command
-        data class SyncEnded(val handle: Handle, val generation: Long, val noFix: Boolean, val failed: Boolean) : Command
-        data class Ended(val handle: Handle, val generation: Long, val terminal: TrackingState) : Command
-        data class Restore(val done: CompletableDeferred<Unit>, val refreshRunning: Boolean,
-            val startScheduledIfActive: Boolean) : Command
+        data class Restore(val reason: RestoreReason, val done: CompletableDeferred<Unit>) : Command
+        sealed interface Connected : Command { val handle: Handle }
+        data class Detach(override val handle: Handle) : Connected
+        data class Start(override val handle: Handle, val startId: Int, val mode: TrackingMode) : Connected
+        data class Wake(override val handle: Handle, val startId: Int, val id: String, val due: Long) : Connected
+        data class Stop(override val handle: Handle, val startId: Int, val terminal: TrackingState) : Connected
+        data class Configuration(override val handle: Handle, val observer: Job, val value: Result<SettingsDomModel>) : Connected
+        data class Progress(override val handle: Handle, val worker: Job, val value: TrackingState) : Connected
+        data class Measured(override val handle: Handle, val worker: Job, val result: TrackingMeasurement.Result) : Connected
+        data class Uploaded(override val handle: Handle, val worker: Job, val result: UploadResult) : Connected
     }
 
-    private class OperationFailure(val reason: TrackingFailure, cause: Exception) : Exception(cause)
+    private class AlarmFailure(cause: Exception) : Exception(cause)
     private fun send(command: Command) { check(commands.trySend(command).isSuccess) }
-    private fun arm(value: RecordingSession) {
-        try { alarm.schedule(value) } catch (failure: Exception) { throw OperationFailure(TrackingFailure.ALARM, failure) }
+    private fun arm(recording: RecordingSession) {
+        try {
+            alarm.schedule(recording)
+        } catch (failure: Exception) {
+            throw AlarmFailure(failure)
+        }
     }
+
+    private suspend fun loadSavedState() {
+        try {
+            sessions.read()?.let { mutableState.value = TrackingState.Armed(it.mode, it.nextAtMillis) }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            mutableState.value = TrackingState.Failed(TrackingFailure.STORAGE)
+        }
+    }
+
+    private suspend fun handleFailure(failure: Exception) {
+        reportFailure("Tracking command", failure)
+        val reason = if (failure is AlarmFailure) TrackingFailure.ALARM else TrackingFailure.STORAGE
+        val session = current
+        if (session == null) {
+            mutableState.value = TrackingState.Failed(reason)
+            return
+        }
+        cancelRun(session)
+        session.recording = null
+        try { sessions.write(null) } catch (cancelled: CancellationException) { throw cancelled } catch (cleanup: Exception) { failure.addSuppressed(cleanup) }
+        try { alarm.cancel() } catch (cleanup: Exception) { failure.addSuppressed(cleanup) }
+        publish(session, TrackingState.Failed(reason))
+    }
+
     private suspend fun accept(command: Command) {
-        if (command is Command.Restore) {
-            val running = current?.takeIf { it.mode != null && !it.handle.isClosed }
-            if (running != null) {
-                if (command.refreshRunning) { cancelRun(running); beginRun(running) }
-            }
-            else {
-                val saved = sessions.read()
-                // Only an explicit app-foreground event may start a missing scheduled session.
-                // Boot/time changes and merely opening Settings restore existing intent only.
-                val value = saved ?: if (command.startScheduledIfActive) {
-                    val configuration = settings.settings.first()
-                    val now = clock.nowMillis()
-                    if (SchedulePolicy.activeUntil(configuration, now, clock.timeZone()) != null)
-                        RecordingSession(UUID.randomUUID().toString(), TrackingMode.SCHEDULED, now + 1_000)
-                    else null
-                } else null
-                if (value != null) {
-                    val configuration = settings.settings.first()
-                    val end = if (value.mode == TrackingMode.SCHEDULED)
-                        SchedulePolicy.activeUntil(configuration, clock.nowMillis(), clock.timeZone()) else null
-                    if (value.mode == TrackingMode.SCHEDULED && end == null) {
-                        sessions.write(null); alarm.cancel()
-                        if (current == null) mutableState.value = TrackingSnapshot(null, 0, TrackingState.Stopped)
-                    } else {
-                        val now = clock.nowMillis()
-                        val deadline = if (value.nextAtMillis >= now) value.nextAtMillis else now + 1_000
-                        val restored = value.copy(nextAtMillis = minOf(deadline, end ?: Long.MAX_VALUE))
-                        sessions.write(restored); arm(restored)
-                        if (current == null) mutableState.value = TrackingSnapshot(null, 0,
-                            TrackingState.Armed(restored.mode, restored.nextAtMillis))
-                    }
-                } else alarm.cancel()
-            }
-            command.done.complete(Unit)
-            return
-        }
-        if (command is Command.Attach) {
-            current?.let { old ->
-                old.handle.invalidate(); cancelRun(old); old.observer?.cancelAndJoin()
-            }
-            val session = Session(command.handle)
-            current = session
-            publish(session, TrackingState.Stopped)
-            if (!session.handle.isClosed) observeSettings(session)
-            return
-        }
-        val session = current ?: return
-        if (command is Command.Detach) {
-            if (command.handle !== session.handle) return
-            val wasRunning = state.value.state.isRunning
-            cancelRun(session)
-            session.observer?.cancelAndJoin()
-            // Service destruction is not a user Stop: the durable alarm must survive it.
-            if (wasRunning) {
-                val saved = session.recording
-                if (saved != null && session.mode != null) {
-                    mutableState.value = TrackingSnapshot(null, 0, TrackingState.Armed(saved.mode, saved.nextAtMillis))
-                } else publish(session, TrackingState.Stopped)
-            }
-            current = null
-            return
-        }
-        val handle = when (command) {
-            is Command.Start -> command.handle
-            is Command.Wake -> command.handle
-            is Command.Stop -> command.handle
-            is Command.TimeChanged -> command.handle
-            is Command.Configuration -> command.handle
-            is Command.SettingsFailed -> command.handle
-            is Command.Progress -> command.handle
-            is Command.Completed -> command.handle
-            is Command.SyncEnded -> command.handle
-            is Command.Ended -> command.handle
-            else -> return
-        }
-        if (handle !== session.handle || (handle.isClosed && command !is Command.Stop)) return
         when (command) {
-            is Command.Start -> {
-                session.request = command.request
-                val existing = session.recording ?: sessions.read()
-                val mode = if (existing?.mode == TrackingMode.MANUAL && command.mode == TrackingMode.SCHEDULED)
-                    TrackingMode.MANUAL else command.mode
-                if (session.mode == mode) { publish(session, state.value.state); return }
-                cancelRun(session)
-                session.mode = mode
-                session.pendingDue = null
-                session.previousRowId = null
-                session.recording = RecordingSession(UUID.randomUUID().toString(), mode, clock.nowMillis())
-                if (session.observer?.isActive != true) {
-                    session.configuration = null; observeSettings(session)
-                }
-                beginRun(session)
+            is Command.Restore -> {
+                restoreSession(command.reason)
+                command.done.complete(Unit)
             }
-            is Command.Wake -> {
-                session.request = command.request
-                val persisted = sessions.read()
-                if (persisted == null || persisted.id != command.id || persisted.nextAtMillis != command.due) {
-                    publish(session, state.value.state); return
-                }
-                if (clock.nowMillis() < command.due) { arm(persisted); publish(session, state.value.state); return }
-                cancelRun(session, cancelSync = false)
-                session.mode = persisted.mode
-                session.recording = persisted
-                session.pendingDue = command.due
-                if (session.configuration == null || session.observer?.isActive != true) {
-                    // Configuration will start the restored cycle after the actual DataStore read.
-                    session.configuration = null
-                    if (session.observer?.isActive != true) observeSettings(session)
-                    publish(session, TrackingState.Starting(persisted.mode))
-                } else { beginRun(session, command.due); session.pendingDue = null }
+            is Command.Attach -> attach(command.handle)
+            is Command.Connected -> {
+                val session = current ?: return
+                if (command.handle !== session.handle) return
+                if (command is Command.Detach) detach(session)
+                else if (!session.handle.closed || command is Command.Stop) accept(session, command)
             }
+        }
+    }
+
+    private suspend fun restoreSession(reason: RestoreReason) {
+        val running = current?.takeIf { it.mode != null && !it.handle.closed }
+        if (running != null) {
+            if (reason == RestoreReason.SYSTEM_CHANGE) {
+                cancelRun(running)
+                beginRun(running)
+            }
+            return
+        }
+        val saved = sessions.read()
+        if (saved == null && reason == RestoreReason.SYSTEM_CHANGE) {
+            alarm.cancel()
+            return
+        }
+        val configuration = settings.settings.first()
+        val now = clock.nowMillis()
+        val end = SchedulePolicy.activeUntil(configuration, now, clock.timeZone())
+        val value = saved ?: end?.let {
+            RecordingSession(UUID.randomUUID().toString(), TrackingMode.SCHEDULED, now + 1_000)
+        }
+        if (value == null || (value.mode == TrackingMode.SCHEDULED && end == null)) {
+            sessions.write(null)
+            alarm.cancel()
+            if (current == null) mutableState.value = TrackingState.Stopped
+            return
+        }
+        val deadline = if (value.nextAtMillis >= now) value.nextAtMillis else now + 1_000
+        val next = if (value.mode == TrackingMode.SCHEDULED) minOf(deadline, requireNotNull(end)) else deadline
+        val restored = value.copy(nextAtMillis = next)
+        sessions.write(restored)
+        arm(restored)
+        if (current == null) mutableState.value = TrackingState.Armed(restored.mode, restored.nextAtMillis)
+    }
+
+    private suspend fun attach(handle: Handle) {
+        current?.let {
+            it.handle.closed = true
+            cancelRun(it)
+            it.observer?.cancelAndJoin()
+        }
+        val session = Session(handle)
+        current = session
+        publish(session, TrackingState.Stopped)
+        if (!handle.closed) observeSettings(session)
+    }
+
+    private suspend fun detach(session: Session) {
+        val wasRunning = state.value.isRunning
+        cancelRun(session)
+        session.observer?.cancelAndJoin()
+        if (wasRunning) {
+            val saved = session.recording
+            mutableState.value = if (saved != null) TrackingState.Armed(saved.mode, saved.nextAtMillis)
+                else TrackingState.Stopped
+        }
+        current = null
+    }
+
+    private suspend fun accept(session: Session, command: Command.Connected) {
+        when (command) {
+            is Command.Start -> start(session, command)
+            is Command.Wake -> wake(session, command)
             is Command.Stop -> {
-                session.request = command.request
+                session.startId = command.startId
                 finish(session, command.terminal)
             }
-            is Command.Configuration -> {
-                if (command.observer != session.observerId || command.value == session.configuration) return
-                session.configuration = command.value
-                if (session.mode != null) {
-                    cancelRun(session); beginRun(session, session.pendingDue ?: clock.nowMillis())
-                    session.pendingDue = null
-                }
+            is Command.Configuration -> configure(session, command)
+            is Command.Progress -> if (command.worker === session.job) publish(session, command.value)
+            is Command.Measured -> if (command.worker === session.job) measured(session, command.result)
+            is Command.Uploaded -> if (command.worker === session.syncJob) uploaded(session, command.result)
+            is Command.Detach -> Unit
+        }
+    }
+
+    private suspend fun start(session: Session, command: Command.Start) {
+        session.startId = command.startId
+        val existing = session.recording ?: sessions.read()
+        val mode = if (existing?.mode == TrackingMode.MANUAL) TrackingMode.MANUAL else command.mode
+        if (session.mode == mode) {
+            publish(session, state.value)
+            return
+        }
+        cancelRun(session)
+        session.pendingDue = null
+        session.previousRowId = null
+        session.recording = RecordingSession(UUID.randomUUID().toString(), mode, clock.nowMillis())
+        if (session.observer?.isActive != true) {
+            session.configuration = null
+            observeSettings(session)
+        }
+        beginRun(session)
+    }
+
+    private suspend fun wake(session: Session, command: Command.Wake) {
+        session.startId = command.startId
+        val saved = sessions.read()
+        if (saved == null || saved.id != command.id || saved.nextAtMillis != command.due) {
+            publish(session, state.value)
+            return
+        }
+        if (clock.nowMillis() < command.due) {
+            arm(saved)
+            publish(session, state.value)
+            return
+        }
+        session.recording = saved
+        session.pendingDue = command.due
+        if (session.job != null) {
+            // A period boundary is not Stop. Let the bounded measurement return its best fix
+            // and commit it; Measured will start the pending period without overlapping jobs.
+            val configuration = session.configuration ?: return
+            val end = if (saved.mode == TrackingMode.SCHEDULED)
+                SchedulePolicy.activeUntil(configuration, clock.nowMillis(), clock.timeZone()) else null
+            if (saved.mode == TrackingMode.MANUAL || end != null) {
+                armNext(session, command.due, configuration, end)
             }
-            is Command.SettingsFailed -> if (command.observer == session.observerId) {
-                finish(session, TrackingState.Failed(TrackingFailure.SETTINGS))
+            publish(session, state.value)
+            return
+        }
+        if (session.configuration == null || session.observer?.isActive != true) {
+            session.configuration = null
+            if (session.observer?.isActive != true) observeSettings(session)
+            publish(session, TrackingState.Starting(saved.mode))
+        } else {
+            beginRun(session, command.due)
+            session.pendingDue = null
+        }
+    }
+
+    private suspend fun configure(session: Session, command: Command.Configuration) {
+        if (command.observer !== session.observer) return
+        val configuration = command.value.getOrNull()
+        if (configuration == null) {
+            finish(session, TrackingState.Failed(TrackingFailure.SETTINGS))
+        } else if (configuration != session.configuration) {
+            val previous = session.configuration
+            session.configuration = configuration
+            val measurementChanged = previous == null || previous.accuracy != configuration.accuracy ||
+                previous.minDist != configuration.minDist || previous.timeOfWaitAccuracy != configuration.timeOfWaitAccuracy ||
+                previous.timeOfWorkingWM != configuration.timeOfWorkingWM
+            if (session.mode != null && (measurementChanged || session.mode == TrackingMode.SCHEDULED)) {
+                cancelRun(session, cancelSync = false)
+                beginRun(session, session.pendingDue ?: clock.nowMillis())
+                session.pendingDue = null
             }
-            is Command.TimeChanged -> if (session.mode != null) { cancelRun(session); beginRun(session) }
-            is Command.Progress -> if (command.generation == session.generation) publish(session, command.value)
-            is Command.Completed -> if (command.generation == session.generation) {
-                session.job?.join(); session.job = null
-                val mode = session.mode ?: return
-                if (command.failure != null) {
-                    publish(session, TrackingState.Waiting(mode, command.noFix, false, command.failure))
-                } else if (session.syncJob?.isActive != true) {
-                    publish(session, TrackingState.Uploading(mode, command.noFix))
-                    session.syncJob = scope.launch {
-                        val failed = try { uploader.uploadPending(); false
-                        } catch (cancelled: CancellationException) { throw cancelled
-                        } catch (_: Exception) { true }
-                        send(Command.SyncEnded(handle, command.generation, command.noFix, failed))
-                    }
-                } else publish(session, TrackingState.Waiting(mode, command.noFix, false))
-            }
-            is Command.SyncEnded -> if (command.generation == session.generation && session.mode != null) {
-                publish(session, TrackingState.Waiting(requireNotNull(session.mode), command.noFix, command.failed))
-            }
-            is Command.Ended -> if (command.generation == session.generation) finish(session, command.terminal)
-            else -> Unit
         }
     }
 
     private fun observeSettings(session: Session) {
-        val observer = ++session.observerId
-        session.observer = scope.launch {
+        val handle = session.handle
+        // Register the Job before it can publish a result, including on Main.immediate.
+        session.observer = scope.launch(start = CoroutineStart.LAZY) {
+            val observer = currentCoroutineContext().job
             try {
                 var received = false
-                settings.settings.collect { value -> received = true; send(Command.Configuration(session.handle, observer, value)) }
-                if (!received) send(Command.SettingsFailed(session.handle, observer))
-            } catch (cancelled: CancellationException) { throw cancelled
-            } catch (_: Exception) { send(Command.SettingsFailed(session.handle, observer)) }
+                settings.settings.collect {
+                    received = true
+                    send(Command.Configuration(handle, observer, Result.success(it)))
+                }
+                check(received) { "Settings stream completed without a value" }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                send(Command.Configuration(handle, observer, Result.failure(failure)))
+            }
         }
+        session.observer?.start()
     }
 
     private suspend fun cancelRun(session: Session, cancelSync: Boolean = true) {
-        ++session.generation
-        if (session.job != null || (cancelSync && session.syncJob?.isActive == true)) publish(session, TrackingState.Stopping)
-        session.job?.cancelAndJoin(); session.job = null
-        if (cancelSync) { session.syncJob?.cancelAndJoin(); session.syncJob = null }
+        val worker = session.job
+        session.job = null
+        if (worker != null || (cancelSync && session.syncJob != null)) publish(session, TrackingState.Stopping)
+        worker?.cancelAndJoin()
+        if (cancelSync) {
+            val upload = session.syncJob
+            session.syncJob = null
+            upload?.cancelAndJoin()
+            session.syncFailed = false
+        }
     }
 
     private suspend fun finish(session: Session, terminal: TrackingState) {
         cancelRun(session)
-        // Persist Stop before canceling, so an already delivered wakeup cannot revive the session.
-        sessions.write(null)
+        sessions.write(null) // An already delivered alarm must see Stop before alarm cancellation.
         alarm.cancel()
-        session.mode = null; session.recording = null; session.pendingDue = null; session.previousRowId = null
+        session.recording = null
+        session.pendingDue = null
+        session.previousRowId = null
         publish(session, terminal)
     }
 
     private suspend fun beginRun(session: Session, due: Long = clock.nowMillis()) {
-        if (session.handle.isClosed) return
+        if (session.handle.closed) return
         val mode = session.mode ?: return
         publish(session, TrackingState.Starting(mode))
         val configuration = session.configuration ?: return
         val now = clock.nowMillis()
         val end = if (mode == TrackingMode.SCHEDULED) SchedulePolicy.activeUntil(configuration, now, clock.timeZone()) else null
-        if (mode == TrackingMode.SCHEDULED && end == null) { finish(session, TrackingState.Stopped); return }
+        if (mode == TrackingMode.SCHEDULED && end == null) {
+            finish(session, TrackingState.Stopped)
+            return
+        }
+        armNext(session, due, configuration, end)
+        val handle = session.handle
+        val request = TrackingMeasurement.Request(mode, configuration, end, session.previousRowId)
+        session.job = scope.launch(start = CoroutineStart.LAZY) {
+            val worker = currentCoroutineContext().job
+            val result = measurement.run(request, ensureOpen = {
+                currentCoroutineContext().ensureActive()
+                if (handle.closed) throw CancellationException("Tracking service closed")
+            }, progress = { send(Command.Progress(handle, worker, it)) })
+            send(Command.Measured(handle, worker, result))
+        }
+        session.job?.start()
+    }
+
+    private suspend fun armNext(session: Session, due: Long, configuration: SettingsDomModel, end: Long?) {
         val period = configuration.timeOfWorkingWM.toLong() * 1000
-        // Skip missed periods instead of replaying a burst after sleep or a clock change.
-        val next = due + ((now - due).coerceAtLeast(0) / period + 1) * period
+        val next = due + ((clock.nowMillis() - due).coerceAtLeast(0) / period + 1) * period
         val recording = requireNotNull(session.recording).copy(nextAtMillis = minOf(next, end ?: Long.MAX_VALUE))
         sessions.write(recording)
         session.recording = recording
-        arm(recording) // The next measurement exists before location/Room/network can suspend.
-        val generation = ++session.generation
-        session.job = scope.launch {
-            var stage = TrackingFailure.LOCATION
-            try {
-                suspend fun collectOne() {
-                    ensureOpen(session)
-                    val timeout = minOf(configuration.timeOfWaitAccuracy.toLong() * 1000, period,
-                        (end?.minus(clock.nowMillis()) ?: Long.MAX_VALUE).coerceAtLeast(1))
-                    send(Command.Progress(session.handle, generation,
-                        TrackingState.Collecting(mode, clock.elapsedRealtimeNanos() / 1_000_000 + timeout, timeout)))
-                    val result = source.locate(configuration.accuracy, timeout)
-                    ensureOpen(session)
-                    if (end != null && clock.nowMillis() >= end) {
-                        send(Command.Ended(session.handle, generation, TrackingState.Stopped)); return
-                    }
-                    if (result is LocationOutcome.Unavailable && result.reason != LocationOutcome.Reason.NO_FIX) {
-                        send(Command.Ended(session.handle, generation, TrackingState.LocationUnavailable(result.reason))); return
-                    }
-                    val sample = (result as? LocationOutcome.Fix)?.sample?.takeIf { it.isUsable(clock.elapsedRealtimeNanos()) }
-                    if (sample != null) {
-                        stage = TrackingFailure.STORAGE
-                        send(Command.Progress(session.handle, generation, TrackingState.Saving(mode)))
-                        ensureOpen(session)
-                        session.previousRowId = recorder.record(sample, configuration, session.previousRowId)
-                    }
-                    ensureOpen(session)
-                    send(Command.Completed(session.handle, generation, sample == null, null))
+        arm(recording)
+    }
+
+    private suspend fun measured(session: Session, result: TrackingMeasurement.Result) {
+        session.job?.join()
+        session.job = null
+        when (result) {
+            is TrackingMeasurement.Result.Ended -> finish(session, result.state)
+            is TrackingMeasurement.Result.Completed -> {
+                if (result.rowId != null) session.previousRowId = result.rowId
+                val mode = session.mode ?: return
+                if (mode == TrackingMode.SCHEDULED && session.configuration?.let {
+                        SchedulePolicy.activeUntil(it, clock.nowMillis(), clock.timeZone())
+                    } == null) {
+                    finish(session, TrackingState.Stopped)
+                    return
                 }
-                if (end == null) collectOne()
-                else if (withTimeoutOrNull((end - clock.nowMillis()).coerceAtLeast(1)) { collectOne(); true } == null) {
-                    send(Command.Ended(session.handle, generation, TrackingState.Stopped))
-                }
-            } catch (cancelled: CancellationException) { throw cancelled
-            } catch (_: SecurityException) {
-                val terminal = if (stage == TrackingFailure.LOCATION)
-                    TrackingState.LocationUnavailable(LocationOutcome.Reason.PERMISSION_REQUIRED) else TrackingState.Failed(stage)
-                send(Command.Ended(session.handle, generation, terminal))
-            } catch (_: Exception) {
-                // A temporary provider/Room failure does not erase the already armed next measurement.
-                send(Command.Completed(session.handle, generation, true, stage))
+                val waiting = TrackingState.Waiting(mode, result.rowId == null, session.syncFailed, result.failure)
+                if (result.failure != null || session.syncJob != null) publish(session, waiting)
+                else startUpload(session, waiting)
+                val pendingDue = session.pendingDue
+                session.pendingDue = null
+                if (pendingDue != null) beginRun(session, pendingDue)
             }
         }
     }
 
-    private suspend fun ensureOpen(session: Session) {
-        currentCoroutineContext().ensureActive()
-        if (session.handle.isClosed) throw CancellationException("Tracking owner closed")
+    private fun startUpload(session: Session, waiting: TrackingState.Waiting) {
+        val handle = session.handle
+        publish(session, TrackingState.Uploading(waiting.mode, waiting.noFix))
+        session.syncJob = scope.launch(start = CoroutineStart.LAZY) {
+            val worker = currentCoroutineContext().job
+            val result = try {
+                uploader.uploadPending()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                reportFailure("Upload locations", failure)
+                UploadResult.FAILED
+            }
+            send(Command.Uploaded(handle, worker, result))
+        }
+        session.syncJob?.start()
     }
+
+    private suspend fun uploaded(session: Session, result: UploadResult) {
+        session.syncJob?.join()
+        session.syncJob = null
+        session.syncFailed = result == UploadResult.FAILED
+        // Upload can span several measurements. Never replace a newer Collecting/Saving state.
+        when (val visible = state.value) {
+            is TrackingState.Uploading -> publish(session, TrackingState.Waiting(visible.mode, visible.noFix, session.syncFailed))
+            is TrackingState.Waiting -> publish(session, visible.copy(syncFailed = session.syncFailed))
+            else -> Unit
+        }
+    }
+
     private fun publish(session: Session, value: TrackingState) {
-        mutableState.value = TrackingSnapshot(session.handle.ownerId, session.request, value)
+        mutableState.value = value
+        session.handle.publish(session.startId, value)
     }
 }

@@ -2,8 +2,6 @@ package ru.ama.whereme.presentation
 
 import dagger.hilt.android.AndroidEntryPoint
 
-import android.annotation.SuppressLint
-import android.content.Context
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
@@ -12,7 +10,6 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentAboutBinding
 
@@ -23,10 +20,6 @@ class AboutFragment : Fragment() {
         get() = _binding ?: throw RuntimeException("FragmentAboutBinding == null")
 
 
-    override fun onAttach(context: Context) {
-
-        super.onAttach(context)
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -36,7 +29,6 @@ class AboutFragment : Fragment() {
         return binding.root
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =

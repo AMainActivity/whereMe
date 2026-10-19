@@ -20,7 +20,7 @@ data class TrackingCapabilities(
     val background: Boolean,
     val exactAlarm: Boolean
 ) {
-    fun requirement(action: TrackingAction): TrackingRequirement = when {
+    fun requirement(): TrackingRequirement = when {
         !foreground -> TrackingRequirement.FOREGROUND_LOCATION
         !locationEnabled -> TrackingRequirement.LOCATION_ENABLED
         !provider && preciseWouldProvideLocation -> TrackingRequirement.PRECISE_LOCATION

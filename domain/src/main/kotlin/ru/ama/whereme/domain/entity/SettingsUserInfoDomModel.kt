@@ -10,6 +10,8 @@ data class SettingsUserInfoDomModel(
     val url: String? = null,
     val isActivate: Boolean
 ) {
+    val ownerKey: String? get() = if (tokenJwt.isBlank()) null else "$famId:$posId"
+
     companion object {
         val EMPTY = SettingsUserInfoDomModel("", 0, 0, null, null, false)
     }

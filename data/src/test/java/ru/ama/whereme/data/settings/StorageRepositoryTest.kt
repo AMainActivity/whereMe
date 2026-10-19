@@ -35,7 +35,7 @@ class StorageRepositoryTest {
     }
     private fun file() = File(temporary.newFolder(), "test.preferences_pb")
     private fun settings(file: File) = DataStoreSettingsRepository(store(file))
-    private fun sessions(file: File, encryption: SessionCipher = cipher) = DataStoreSessionRepository(store(file), encryption)
+    private fun sessions(file: File, encryption: SessionCipher = cipher) = DataStoreSessionRepository(store(file), encryption, ru.ama.whereme.data.database.LegacyHistoryAssignment {})
     private suspend fun closeStores() {
         scopes.forEach { it.coroutineContext[Job]?.cancelAndJoin() }
         scopes.clear()
@@ -154,7 +154,7 @@ class StorageRepositoryTest {
     @Test fun corruptCiphertextIsNotReplacedWithAnonymousSession() = runBlocking {
         val path = file()
         val datastore = store(path)
-        val repository = DataStoreSessionRepository(datastore, cipher)
+        val repository = DataStoreSessionRepository(datastore, cipher, ru.ama.whereme.data.database.LegacyHistoryAssignment {})
         repository.signIn(profile)
         val broken = byteArrayOf(1, 2, 3)
         datastore.edit { it[byteArrayPreferencesKey("encrypted_profile")] = broken }
@@ -296,6 +296,17 @@ class StorageRepositoryTest {
         assertNotEquals(oldGeneration, recovered.current().generation)
         closeStores()
         assertEquals(newProfile, sessions(path, SessionCipher { replacementKey }).current().profile)
+    }
+
+    @Test fun legacyHistoryUsesThePreviousOwnerBeforeSignInChangesCredentials() = runBlocking {
+        val datastore = store(file())
+        datastore.edit { SessionPreferences(cipher).write(it, profile) }
+        val owners = mutableListOf<String?>()
+        val repository = DataStoreSessionRepository(datastore, cipher,
+            ru.ama.whereme.data.database.LegacyHistoryAssignment { owners.add(it) })
+        repository.signIn(profile.copy(posId = 99))
+        assertEquals(profile.ownerKey, owners.first())
+        assertEquals("34:99", repository.current().profile.ownerKey)
     }
 
 }

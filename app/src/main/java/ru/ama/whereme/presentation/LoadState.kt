@@ -1,5 +1,6 @@
 package ru.ama.whereme.presentation
 
+import ru.ama.whereme.domain.reportFailure
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -11,14 +12,17 @@ sealed interface LoadState<out T> {
     data object Failed : LoadState<Nothing>
 }
 
-/** Retry re-subscribes; a read failure is never disguised as default user settings. */
+/** Failures are state, never invented default data. Cancellation still belongs to the caller. */
+fun <T> Flow<T>.asLoadState(): Flow<LoadState<T>> =
+    map<T, LoadState<T>> { LoadState.Ready(it) }
+        .onStart { emit(LoadState.Loading) }
+        .catch { failure ->
+            if (failure is CancellationException) throw failure
+            reportFailure("Read screen data", failure)
+            emit(LoadState.Failed)
+        }
+
+/** Retry re-subscribes to the source. */
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <T> Flow<T>.loadState(scope: CoroutineScope, retry: Flow<Int>): StateFlow<LoadState<T>> =
-    retry.flatMapLatest {
-        map<T, LoadState<T>> { LoadState.Ready(it) }
-            .onStart { emit(LoadState.Loading) }
-            .catch { failure ->
-                if (failure is CancellationException) throw failure
-                emit(LoadState.Failed)
-            }
-    }.stateIn(scope, SharingStarted.Eagerly, LoadState.Loading)
+    retry.flatMapLatest { asLoadState() }.stateIn(scope, SharingStarted.Eagerly, LoadState.Loading)

@@ -15,15 +15,18 @@ class RoomPendingLocationStore @Inject constructor(
 ) : PendingLocationStore {
     override suspend fun snapshot(): PendingLocationBatch? {
         val session = sessions.current()
-        if (session.profile.tokenJwt.isBlank()) return null
+        val owner = session.profile.ownerKey ?: return null
         return database.withTransaction {
-            val originals = dao.getPendingLocations()
+            val originals = dao.getPendingLocations(owner, BATCH_SIZE)
             if (originals.isEmpty()) return@withTransaction null
             // Preserve the current server coordinate transform exactly until its contract is verified.
             val posId = session.profile.posId.toString()
             val offset = if (posId.length <= 8) session.profile.posId else posId.substring(0, 8).toInt()
-            val payload = dao.getLocations4Net(offset).map(mapper::mapDbModelToEntity)
-            check(originals.map { it._id } == payload.map { it._id })
+            val payload = mapper.mapDbModelsToEntities(originals).map { row ->
+                row.copy(
+                    latitude = row.latitude + coordinateOffset(offset),
+                    longitude = row.longitude + coordinateOffset(offset + 1))
+            }
             PendingLocationBatch(session, originals, payload)
         }
     }
@@ -36,11 +39,15 @@ class RoomPendingLocationStore @Inject constructor(
             var count = 0
             for (row in batch.originals) {
                 count += dao.acknowledgeUnchanged(
-                    row._id, row.datetime, row.datestart, row.dateend, row.info,
+                    row._id, requireNotNull(row.ownerKey), row.datetime, row.datestart, row.dateend, row.info,
                     row.latitude, row.longitude, row.sourceId, row.accuracy, row.velocity
                 )
             }
             count
         }
     } ?: 0
+    companion object {
+        const val BATCH_SIZE = 200
+        internal fun coordinateOffset(value: Int): Double = "${value.toString().first()}.$value".toDouble()
+    }
 }

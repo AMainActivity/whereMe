@@ -17,10 +17,13 @@ fun interface LocationRecorder {
 
 fun interface PendingLocationUploader {
     /** Network failures retain pending rows; cancellation must stop the current attempt. */
-    suspend fun uploadPending()
+    suspend fun uploadPending(): UploadResult
 }
 
-/** Durable recording intent. Service owner IDs and authentication generations are unrelated to this ID. */
+/** SENT means the server accepted the snapshot; local ACK still checks session and row identity. */
+enum class UploadResult { SKIPPED, SENT, FAILED }
+
+/** Durable recording intent, independent of the service instance and authentication session. */
 data class RecordingSession(val id: String, val mode: TrackingMode, val nextAtMillis: Long) {
     init { require(id.isNotBlank() && nextAtMillis > 0) }
 }

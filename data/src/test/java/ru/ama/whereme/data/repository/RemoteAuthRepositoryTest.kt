@@ -1,11 +1,11 @@
 package ru.ama.whereme.data.repository
 
-import com.google.gson.JsonParser
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import okhttp3.MediaType
-import okhttp3.RequestBody
+import ru.ama.whereme.data.network.model.CredentialRequest
+import ru.ama.whereme.data.network.model.DatasToJson
 import okhttp3.ResponseBody
 import okio.Buffer
 import okio.BufferedSource
@@ -23,7 +23,7 @@ import ru.ama.whereme.data.network.model.JsonJwtDto
 
 class RemoteAuthRepositoryTest {
     @Test
-    fun loginPreservesLegacyFieldAndEscapesCode() = runBlocking {
+    fun loginPassesTheUnmodifiedCodeToTheApi() = runBlocking {
         val api = FakeApi()
         val code = "код\"\\\n<&>"
         val result = RemoteAuthRepository(api, WmMapperJwt()).checkKod(code)
@@ -94,10 +94,8 @@ class RemoteAuthRepositoryTest {
         }
     }
 
-    private fun assertCredential(value: String, sent: String) {
-        val json = JsonParser.parseString(sent).asJsonObject
-        assertEquals(setOf("kod"), json.keySet())
-        assertEquals(value, json["kod"].asString)
+    private fun assertCredential(value: String, sent: CredentialRequest?) {
+        assertEquals(CredentialRequest(value), sent)
     }
 
     private class TrackedBody : ResponseBody() {
@@ -112,35 +110,35 @@ class RemoteAuthRepositoryTest {
 
     private class FakeApi : WmApiService {
         var operation = ""
-        var sent = ""
+        var sent: CredentialRequest? = null
         var error: ResponseBody? = null
         var failure: Exception? = null
         var emptyBody = false
 
-        private fun capture(operation: String, request: RequestBody) {
+        private fun capture(operation: String, request: CredentialRequest) {
             this.operation = operation
-            sent = Buffer().also(request::writeTo).readUtf8()
+            sent = request
             failure?.let { throw it }
         }
 
-        override suspend fun chekcKod(request: RequestBody): Response<JsonJwtDto> {
+        override suspend fun chekcKod(request: CredentialRequest): Response<JsonJwtDto> {
             capture("login", request)
             error?.let { return Response.error(401, it) }
             return Response.success(JsonJwtDto(false, "1", "test-token", 12, 34, "Test", null, 1))
         }
 
-        override suspend fun checkToken(request: RequestBody): Response<JsonDto> {
+        override suspend fun checkToken(request: CredentialRequest): Response<JsonDto> {
             capture("validate", request)
             error?.let { return Response.error(401, it) }
             return Response.success(if (emptyBody) null else JsonDto(false, "1"))
         }
 
-        override suspend fun logOut(request: RequestBody): Response<JsonDto> {
+        override suspend fun logOut(request: CredentialRequest): Response<JsonDto> {
             capture("logout", request)
             error?.let { return Response.error(401, it) }
             return Response.success(JsonDto(false, "1"))
         }
 
-        override suspend fun writeLocDatas(request: RequestBody): Response<JsonDto> = error("Unexpected upload")
+        override suspend fun writeLocDatas(request: DatasToJson): Response<JsonDto> = error("Unexpected upload")
     }
 }

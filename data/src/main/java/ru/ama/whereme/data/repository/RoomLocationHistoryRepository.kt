@@ -1,26 +1,22 @@
 package ru.ama.whereme.data.repository
 
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.CoroutineDispatcher
+import ru.ama.whereme.data.di.DefaultDispatcher
 import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.mapper.WmMapper
-import ru.ama.whereme.data.mapper.WmMapperByDays
 import ru.ama.whereme.domain.repository.LocationHistoryRepository
+import ru.ama.whereme.domain.usecase.DayRange
 import javax.inject.Inject
 
 class RoomLocationHistoryRepository @Inject constructor(
-    private val locationDao: LocationDao,
-    private val mapper: WmMapper,
-    private val mapperByDays: WmMapperByDays
+    private val dao: LocationDao, private val mapper: WmMapper,
+    @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher
 ) : LocationHistoryRepository {
-    override fun getLocationsFromBd() = locationDao.getLocations().map { rows ->
-        rows.map(mapper::mapDbModelToEntity)
-    }
-
-    override fun getLocationById(mDate: String) = locationDao.getLocationsById(mDate).map { rows ->
-        rows.map(mapper::mapDbModelToEntity)
-    }
-
-    override fun getGropingDays() = locationDao.getLocationsByDays().map { rows ->
-        rows.map(mapperByDays::mapDbModelToEntity)
+    override fun getLocationById(date: String) = DayRange.parse(date).let { range ->
+        dao.getLocations(range.start, range.end)
+            .map(mapper::mapDbModelsToEntities)
+            .flowOn(defaultDispatcher)
     }
 }

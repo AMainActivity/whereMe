@@ -8,6 +8,8 @@ import dagger.hilt.components.SingletonComponent
 import java.util.TimeZone
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.plus
 import ru.ama.whereme.data.di.ApplicationScope
 import ru.ama.whereme.domain.repository.LocationSource
 import ru.ama.whereme.domain.repository.SettingsRepository
@@ -35,5 +37,10 @@ object TrackingModule {
     fun coordinator(settings: SettingsRepository, source: LocationSource, recorder: LocationRecorder,
         uploader: PendingLocationUploader, clock: TrackingClock, sessions: RecordingSessionStore,
         alarm: TrackingAlarm, @ApplicationScope scope: CoroutineScope) =
-        TrackingCoordinator(settings, source, recorder, uploader, clock, scope, sessions, alarm)
+        TrackingCoordinator(
+            settings, source, recorder, uploader, clock,
+            // Same application Job; only the control dispatcher changes. Never cancel it on service stop.
+            scope + Dispatchers.Main.immediate,
+            sessions, alarm
+        )
 }

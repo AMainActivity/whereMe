@@ -29,7 +29,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.asLiveData
+import androidx.core.view.isVisible
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import ru.ama.whereme.R
@@ -44,10 +44,12 @@ class SettingsFragment : Fragment() {
     private lateinit var viewModel: SettingsViewModel
     private var rendering = false
     private var renderedSettings: SettingsDomModel? = null
+    private var timeDialog: TimePickerDialog? = null
     private var accessDialog: AlertDialog? = null
     private val foregroundPermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         viewModel.waitingForAccessResult = false
-        val requirement = requireContext().trackingCapabilities().requirement(viewModel.pendingTrackingAction ?: return@registerForActivityResult)
+        if (viewModel.pendingTrackingAction == null) return@registerForActivityResult
+        val requirement = requireContext().trackingCapabilities().requirement()
         if (requirement == TrackingRequirement.FOREGROUND_LOCATION || requirement == TrackingRequirement.PRECISE_LOCATION) {
             accessDenied(R.string.tracking_permission_required)
         } else continueTrackingRequest()
@@ -89,8 +91,7 @@ class SettingsFragment : Fragment() {
         val b = binding
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.tracking.collect { snapshot ->
-                    val state = snapshot.state
+                viewModel.tracking.collect { state ->
                     showServiceState(state.isRunning)
                     renderTrackingState(state)
                 }
@@ -122,31 +123,45 @@ class SettingsFragment : Fragment() {
         }
         b.frgmntSetButStart.setOnClickListener { pickTime(true) }
         b.frgmntSetButEnd.setOnClickListener { pickTime(false) }
-        number(b.frgmntSetMdEt, 10) { s, value -> s.copy(minDist = value) }
-        number(b.frgmntSetAccurEt, 50) { s, value -> s.copy(accuracy = value) }
-        number(b.frgmntSetTimeAcEt, 20) { s, value -> s.copy(timeOfWaitAccuracy = value) }
-        number(b.frgmntSetTimePovtorEt, 15) { s, value -> s.copy(timeOfWorkingWM = value) }
-        viewModel.settings.asLiveData().observe(viewLifecycleOwner) { state ->
-            when (state) {
-                is LoadState.Ready -> { enableSettings(true); render(state.value); renderTrackingState(viewModel.tracking.value.state) }
-                LoadState.Loading -> enableSettings(false)
-                LoadState.Failed -> {
-                    enableSettings(false)
-                    Snackbar.make(b.root, R.string.storage_read_failed, Snackbar.LENGTH_INDEFINITE)
-                        .setAction(R.string.storage_retry) { viewModel.retrySettings() }.show()
+        number(b.frgmntSetMdEt, MeasurementField.DISTANCE)
+        number(b.frgmntSetAccurEt, MeasurementField.ACCURACY)
+        number(b.frgmntSetTimeAcEt, MeasurementField.WAIT)
+        number(b.frgmntSetTimePovtorEt, MeasurementField.PERIOD)
+        b.applyMeasurements.setOnClickListener { viewModel.applyMeasurements() }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { viewModel.draft.collect { renderMeasurements() } }
+                launch { viewModel.isSaving.collect { renderMeasurements() } }
+                launch {
+                    viewModel.settings.collect { state ->
+                        when (state) {
+                            is LoadState.Ready -> { enableSettings(true); render(state.value); renderMeasurements(); renderTrackingState(viewModel.tracking.value) }
+                            LoadState.Loading -> enableSettings(false)
+                            LoadState.Failed -> {
+                                enableSettings(false)
+                                Snackbar.make(b.root, R.string.storage_read_failed, Snackbar.LENGTH_INDEFINITE)
+                                    .setAction(R.string.storage_retry) { viewModel.retrySettings() }.show()
+                            }
+                        }
+                    }
+                }
+                launch {
+                    viewModel.errorMessage.collect { error ->
+                        binding.operationError.isVisible = error != null
+                        if (error != null) {
+                            binding.operationError.setText(error)
+                            renderedSettings?.let(::render)
+                        }
+                    }
                 }
             }
-        }
-        viewModel.errors.observe(viewLifecycleOwner) {
-            Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
-            renderedSettings?.let(::render)
         }
     }
 
     private fun renderTrackingState(state: TrackingState) {
         val scheduleEnabled = (viewModel.settings.value as? LoadState.Ready)?.value?.isEnable == true
         if ((state == TrackingState.Stopped && scheduleEnabled) || state is TrackingState.Armed) {
-            val message = when (requireContext().trackingCapabilities().requirement(TrackingAction.SCHEDULE)) {
+            val message = when (requireContext().trackingCapabilities().requirement()) {
                 TrackingRequirement.FOREGROUND_LOCATION, TrackingRequirement.PRECISE_LOCATION -> R.string.tracking_permission_required
                 TrackingRequirement.LOCATION_ENABLED -> R.string.tracking_location_disabled
                 TrackingRequirement.PROVIDER -> R.string.tracking_no_provider
@@ -189,51 +204,58 @@ class SettingsFragment : Fragment() {
         (days() + binding.run { listOf(frgmntSetSwitchAc, frgmntSetButStart, frgmntSetButEnd,
             frgmntSetMdEt, frgmntSetAccurEt, frgmntSetTimeAcEt, frgmntSetTimePovtorEt) })
             .forEach { it.isEnabled = enabled }
-        binding.frgmntSetSwitchStart.isEnabled = enabled || viewModel.tracking.value.state.isRunning
+        binding.frgmntSetSwitchStart.isEnabled = enabled || viewModel.tracking.value.isRunning
     }
 
     private fun render(value: SettingsDomModel) {
-        val first = renderedSettings == null
         rendering = true
         try {
             days().forEachIndexed { index, checkBox -> checkBox.isChecked = value.days[index] == "1" }
             binding.frgmntSetSwitchAc.isChecked = value.isEnable
             binding.frgmntSetButStart.setText(value.start)
             binding.frgmntSetButEnd.setText(value.end)
-            fun field(view: EditText, number: Int) {
-                if ((first || !view.hasFocus()) && view.text.toString() != number.toString()) view.setText(number.toString())
-            }
-            field(binding.frgmntSetMdEt, value.minDist)
-            field(binding.frgmntSetAccurEt, value.accuracy)
-            field(binding.frgmntSetTimeAcEt, value.timeOfWaitAccuracy)
-            field(binding.frgmntSetTimePovtorEt, value.timeOfWorkingWM)
             renderedSettings = value
         } finally { rendering = false }
     }
 
-    private fun number(view: EditText, minimum: Int, change: (SettingsDomModel, Int) -> SettingsDomModel) {
+    private fun number(view: EditText, field: MeasurementField) {
         view.doAfterTextChanged { text ->
-            if (!rendering) {
-                val value = text.toString().toIntOrNull()
-                if (value == null || value < minimum) view.error = getString(R.string.set_format, minimum)
-                else { view.error = null; viewModel.update { change(it, value) } }
-            }
+            if (!rendering) viewModel.editMeasurement(field, text.toString())
         }
+    }
+
+    private fun renderMeasurements() {
+        val draft = viewModel.draft.value ?: return
+        rendering = true
+        try {
+            val fields = listOf(binding.frgmntSetMdEt, binding.frgmntSetAccurEt,
+                binding.frgmntSetTimeAcEt, binding.frgmntSetTimePovtorEt)
+            MeasurementField.entries.zip(fields).forEach { (field, view) ->
+                val text = draft.value(field)
+                if (view.text.toString() != text) view.setText(text)
+                view.error = if (draft.isValid(field)) null else getString(R.string.set_format,
+                    MeasurementDraft.minimum(field))
+            }
+            val stored = (viewModel.settings.value as? LoadState.Ready)?.value
+            binding.applyMeasurements.isEnabled = stored != null && draft.isValid &&
+                draft != MeasurementDraft.from(stored) && !viewModel.isSaving.value
+        } finally { rendering = false }
     }
 
     private fun pickTime(start: Boolean) {
         val current = renderedSettings ?: return
         val parts = (if (start) current.start else current.end).split(':')
-        TimePickerDialog(requireContext(), { _, hour, minute ->
+        timeDialog?.dismiss()
+        timeDialog = TimePickerDialog(requireContext(), { _, hour, minute ->
             val value = String.format(Locale.ROOT, "%02d:%02d", hour, minute)
             viewModel.update { if (start) it.copy(start = value) else it.copy(end = value) }
-        }, parts[0].toInt(), parts[1].toInt(), true).show()
+        }, parts[0].toInt(), parts[1].toInt(), true).also { it.show() }
     }
 
     override fun onResume() {
         super.onResume()
-        showServiceState(viewModel.tracking.value.state.isRunning)
-        renderTrackingState(viewModel.tracking.value.state)
+        showServiceState(viewModel.tracking.value.isRunning)
+        renderTrackingState(viewModel.tracking.value)
         if (viewModel.pendingTrackingAction != null && !viewModel.waitingForAccessResult) continueTrackingRequest()
     }
 
@@ -246,14 +268,14 @@ class SettingsFragment : Fragment() {
         }
         viewModel.pendingTrackingAction = action
         renderedSettings?.let(::render)
-        showServiceState(viewModel.tracking.value.state.isRunning)
+        showServiceState(viewModel.tracking.value.isRunning)
         continueTrackingRequest()
     }
 
     private fun continueTrackingRequest() {
-        val action = viewModel.pendingTrackingAction ?: return
+        if (viewModel.pendingTrackingAction == null) return
         if (viewModel.waitingForAccessResult || accessDialog?.isShowing == true) return
-        when (requireContext().trackingCapabilities().requirement(action)) {
+        when (requireContext().trackingCapabilities().requirement()) {
             TrackingRequirement.FOREGROUND_LOCATION, TrackingRequirement.PRECISE_LOCATION -> explain(R.string.tracking_location_explanation) {
                 viewModel.waitingForAccessResult = true
                 foregroundPermission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
@@ -296,7 +318,7 @@ class SettingsFragment : Fragment() {
     private fun completeTrackingRequest() {
         val action = viewModel.pendingTrackingAction ?: return
         viewModel.cancelTrackingRequest()
-        if (requireContext().trackingCapabilities().requirement(action) != TrackingRequirement.READY) {
+        if (requireContext().trackingCapabilities().requirement() != TrackingRequirement.READY) {
             accessDenied(R.string.tracking_requirements_changed)
             return
         }
@@ -309,7 +331,7 @@ class SettingsFragment : Fragment() {
 
     private fun accessDenied(message: Int) {
         viewModel.cancelTrackingRequest()
-        showServiceState(viewModel.tracking.value.state.isRunning)
+        showServiceState(viewModel.tracking.value.isRunning)
         renderedSettings?.let(::render)
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
             .setAction(R.string.tracking_app_settings) { startActivity(applicationSettingsIntent()) }.show()
@@ -329,6 +351,8 @@ class SettingsFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        timeDialog?.dismiss()
+        timeDialog = null
         accessDialog?.setOnCancelListener(null)
         accessDialog?.dismiss()
         accessDialog = null

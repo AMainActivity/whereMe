@@ -1,26 +1,22 @@
 package ru.ama.whereme.presentation
 
-import dagger.hilt.android.AndroidEntryPoint
-
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.asLiveData
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.snackbar.Snackbar
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.ActivityMainBinding
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-
     private lateinit var viewModel: MainViewModel
-
-    private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,55 +25,59 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
-        val mapFragment = MapFragment()
-        val setFragment = SettingsFragment()
-        val aboutFragment = AboutFragment()
-        viewModel.session.asLiveData().observe(this) { state ->
-            if (binding.contentMain.bottomNavigationView.selectedItemId == R.id.page_3) openProfile()
+        binding.contentMain.bottomNavigationView.setOnItemSelectedListener { item ->
+            if (item.itemId == R.id.page_3) openProfile()
+            else {
+                showScreen(item.itemId)
+                true
+            }
         }
-        setCurrentFragment(mapFragment)
-        binding.contentMain.bottomNavigationView.setOnItemSelectedListener {
-            setCurrentFragment(
-                when (it.itemId) {
-                    R.id.page_1 -> mapFragment
-                    R.id.page_2 -> setFragment
-                    R.id.page_3 -> {
-                        openProfile()
-                        return@setOnItemSelectedListener true
-                    }
-
-                    R.id.page_4 -> aboutFragment
-                    else -> mapFragment
+        if (savedInstanceState == null) showScreen(R.id.page_1)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                viewModel.session.collect {
+                    if (binding.contentMain.bottomNavigationView.selectedItemId == R.id.page_3) openProfile()
                 }
-            )
-            true
+            }
         }
     }
 
-    private fun openProfile() {
+    private fun showScreen(id: Int) {
+        val current = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main)
+        val next = when (id) {
+            R.id.page_2 -> if (current is SettingsFragment) return else SettingsFragment()
+            R.id.page_4 -> if (current is AboutFragment) return else AboutFragment()
+            else -> if (current is MapFragment) return else MapFragment()
+        }
+        setCurrentFragment(next)
+    }
+
+    private fun openProfile(): Boolean {
         when (val state = viewModel.session.value) {
             is LoadState.Ready -> {
                 val current = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main)
                 if (state.value.profile.tokenJwt.isNotBlank()) {
                     if (current !is ProfileOutFragment) setCurrentFragment(ProfileOutFragment())
                 } else if (current !is ProfileInFragment) setCurrentFragment(ProfileInFragment())
+                return true
             }
             LoadState.Loading -> Toast.makeText(this, R.string.storage_loading, Toast.LENGTH_SHORT).show()
-            LoadState.Failed -> Snackbar.make(binding.root, R.string.storage_read_failed, Snackbar.LENGTH_INDEFINITE)
-                .setAction(R.string.storage_retry) { viewModel.retrySession() }.show()
+            LoadState.Failed -> {
+                if (supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main) !is ProfileInFragment)
+                    setCurrentFragment(ProfileInFragment())
+                Snackbar.make(binding.root, R.string.profile_reenter, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.storage_retry) { viewModel.retrySession() }.show()
+                return true
+            }
         }
+        return false
     }
 
-    fun setCurrentFragment(fragment: Fragment) =
-        supportFragmentManager.beginTransaction().apply {
-            replace(R.id.nav_host_fragment_content_main, fragment)
-            commit()
-        }
+    fun onSessionReplaced() { viewModel.retrySession() }
 
-    override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        return navController.navigateUp(appBarConfiguration)
-                || super.onSupportNavigateUp()
+    private fun setCurrentFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.nav_host_fragment_content_main, fragment)
+            .commit()
     }
-
 }

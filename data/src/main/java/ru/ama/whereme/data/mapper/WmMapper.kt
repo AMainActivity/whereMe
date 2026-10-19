@@ -8,11 +8,17 @@ import javax.inject.Inject
 
 class WmMapper @Inject constructor() {
 
-    fun mapDbModelToEntity(dbModel: LocationDbModel) = LocationDb(
+    fun mapDbModelsToEntities(rows: List<LocationDbModel>): List<LocationDb> {
+        // One formatter per batch; it is never shared between concurrent queries/uploads.
+        val format = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.ROOT)
+        return rows.map { mapDbModelToEntity(it, format) }
+    }
+
+    private fun mapDbModelToEntity(dbModel: LocationDbModel, format: SimpleDateFormat) = LocationDb(
         _id = dbModel._id,
         datetime = dbModel.datetime,
-        datestart = convertLongToTime(dbModel.datestart),
-        dateend = dbModel.dateend?.let { convertLongToTime(it) },
+        datestart = format.format(Date(dbModel.datestart)),
+        dateend = dbModel.dateend?.let { format.format(Date(it)) },
         info = dbModel.info,
         latitude = dbModel.latitude,
         longitude = dbModel.longitude,
@@ -21,11 +27,5 @@ class WmMapper @Inject constructor() {
         velocity = dbModel.velocity,
         isWrite = dbModel.isWrite
     )
-
-    private fun convertLongToTime(time: Long): String {
-        val date = Date(time)
-        val format = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
-        return format.format(date)
-    }
 
 }

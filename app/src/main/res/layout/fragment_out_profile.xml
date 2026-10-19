@@ -7,6 +7,15 @@
     android:orientation="vertical"
     tools:context=".presentation.MainActivity">
 
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/operation_error"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:accessibilityLiveRegion="polite"
+        android:textColor="?attr/colorError"
+        android:visibility="gone" />
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"

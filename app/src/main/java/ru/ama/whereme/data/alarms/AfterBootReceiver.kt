@@ -26,7 +26,7 @@ class AfterBootReceiver : BroadcastReceiver() {
         // Boot restores the user's enabled schedule; it must not enable it itself.
         runTrackingWork(scope) {
             repo.scheduleNextAlarmClockIfEnabled()
-            coordinator.restoreAlarms()
+            coordinator.restoreAfterSystemChange()
         }
     }
 }

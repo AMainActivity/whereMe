@@ -30,11 +30,14 @@ internal object SettingsPreferences {
     fun write(p: MutablePreferences, value: SettingsDomModel) {
         validateVersion(p)
         p[VERSION] = 1
-        fun <T> put(key: Preferences.Key<T>, v: T) { p[key] = v }
-        put(DAYS, value.days.withIndex().sumOf { (i, day) -> if (day == "1") 1 shl i else 0 })
-        put(START, value.start); put(END, value.end); put(DISTANCE, value.minDist)
-        put(ACCURACY, value.accuracy); put(WAIT, value.timeOfWaitAccuracy)
-        put(PERIOD, value.timeOfWorkingWM); put(ENABLED, value.isEnable)
+        p[DAYS] = value.days.withIndex().sumOf { (i, day) -> if (day == "1") 1 shl i else 0 }
+        p[START] = value.start
+        p[END] = value.end
+        p[DISTANCE] = value.minDist
+        p[ACCURACY] = value.accuracy
+        p[WAIT] = value.timeOfWaitAccuracy
+        p[PERIOD] = value.timeOfWorkingWM
+        p[ENABLED] = value.isEnable
     }
     fun theme(p: Preferences): ThemeMode {
         validateVersion(p)

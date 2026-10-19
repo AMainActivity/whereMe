@@ -1,0 +1,139 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 4,
+    "identityHash": "eb9c0135932c2546b5ff1e0b3b126fea",
+    "entities": [
+      {
+        "tableName": "tab_locations",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`datetime` TEXT NOT NULL, `datestart` INTEGER NOT NULL, `dateend` INTEGER, `info` TEXT, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `sourceId` INTEGER NOT NULL, `accuracy` REAL NOT NULL, `velocity` REAL NOT NULL, `isWrite` INTEGER NOT NULL, `ownerKey` TEXT, `_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "datetime",
+            "columnName": "datetime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "datestart",
+            "columnName": "datestart",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateend",
+            "columnName": "dateend",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "info",
+            "columnName": "info",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceId",
+            "columnName": "sourceId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accuracy",
+            "columnName": "accuracy",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "velocity",
+            "columnName": "velocity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isWrite",
+            "columnName": "isWrite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerKey",
+            "columnName": "ownerKey",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "_id",
+            "columnName": "_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tab_locations_datestart",
+            "unique": false,
+            "columnNames": [
+              "datestart"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tab_locations_datestart` ON `${TABLE_NAME}` (`datestart`)"
+          },
+          {
+            "name": "index_tab_locations_ownerKey_isWrite",
+            "unique": false,
+            "columnNames": [
+              "ownerKey",
+              "isWrite"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tab_locations_ownerKey_isWrite` ON `${TABLE_NAME}` (`ownerKey`, `isWrite`)"
+          }
+        ]
+      },
+      {
+        "tableName": "legacy_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `lastRowId` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastRowId",
+            "columnName": "lastRowId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'eb9c0135932c2546b5ff1e0b3b126fea')"
+    ]
+  }
+}

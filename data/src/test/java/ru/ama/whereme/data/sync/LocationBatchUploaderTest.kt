@@ -1,6 +1,9 @@
 package ru.ama.whereme.data.sync
 
-import com.google.gson.JsonParser
+import kotlinx.serialization.json.*
+import kotlinx.serialization.encodeToString
+import ru.ama.whereme.data.network.model.DatasToJson
+import ru.ama.whereme.data.di.DataModule
 import java.io.IOException
 import java.lang.reflect.Proxy
 import kotlinx.coroutines.CancellationException
@@ -10,9 +13,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
-import okhttp3.RequestBody
 import okhttp3.ResponseBody.Companion.toResponseBody
-import okio.Buffer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -24,6 +25,7 @@ import ru.ama.whereme.data.network.model.JsonDto
 import ru.ama.whereme.domain.entity.LocationDb
 import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
 import ru.ama.whereme.domain.entity.SessionSnapshot
+import ru.ama.whereme.domain.tracking.UploadResult
 
 class LocationBatchUploaderTest {
     private val session = SessionSnapshot(SettingsUserInfoDomModel("test-token", 12, 34, "Test", null, true), "test-generation")
@@ -34,7 +36,7 @@ class LocationBatchUploaderTest {
     @Test
     fun missingSessionOrDataMakesNoRequest() = runBlocking {
         val fixture = Fixture(null)
-        fixture.uploader.uploadPending()
+        assertEquals(UploadResult.SKIPPED, fixture.uploader.uploadPending())
         assertEquals(0, fixture.requests)
         assertEquals(0, fixture.acks)
     }
@@ -42,7 +44,7 @@ class LocationBatchUploaderTest {
     @Test
     fun emptyPayloadMakesNoRequest() = runBlocking {
         val fixture = Fixture(batch.copy(payload = emptyList()))
-        fixture.uploader.uploadPending()
+        assertEquals(UploadResult.SKIPPED, fixture.uploader.uploadPending())
         assertEquals(0, fixture.requests)
     }
 
@@ -50,7 +52,7 @@ class LocationBatchUploaderTest {
     fun changedSessionBeforeRequestMakesNoRequest() = runBlocking {
         val fixture = Fixture(batch)
         fixture.current = false
-        fixture.uploader.uploadPending()
+        assertEquals(UploadResult.SKIPPED, fixture.uploader.uploadPending())
         assertEquals(0, fixture.requests)
         assertEquals(0, fixture.acks)
     }
@@ -58,7 +60,7 @@ class LocationBatchUploaderTest {
     @Test
     fun positiveResponseAcknowledgesExactSnapshot() = runBlocking {
         val fixture = Fixture(batch)
-        fixture.uploader.uploadPending()
+        assertEquals(UploadResult.SENT, fixture.uploader.uploadPending())
         assertEquals(1, fixture.requests)
         assertEquals(1, fixture.acks)
         assertTrue(fixture.acknowledged === batch)
@@ -76,21 +78,21 @@ class LocationBatchUploaderTest {
     fun legacyJsonNamesDatesAndTransformedCoordinatesArePreserved() = runBlocking {
         val fixture = Fixture(batch)
         fixture.uploader.uploadPending()
-        val body = JsonParser.parseString(fixture.sent).asJsonObject
-        assertEquals(setOf("tokenJWT", "mdata"), body.keySet())
-        assertEquals(session.profile.tokenJwt, body["tokenJWT"].asString)
-        val point = body["mdata"].asJsonArray.single().asJsonObject
-        assertEquals(7L, point["_id"].asLong)
-        assertEquals(wire.datestart, point["datestart"].asString)
-        assertEquals(wire.latitude, point["latitude"].asDouble, 0.0)
-        assertEquals(wire.longitude, point["longitude"].asDouble, 0.0)
+        val body = Json.parseToJsonElement(fixture.sent).jsonObject
+        assertEquals(setOf("tokenJWT", "mdata"), body.keys)
+        assertEquals(session.profile.tokenJwt, body.getValue("tokenJWT").jsonPrimitive.content)
+        val point = body.getValue("mdata").jsonArray.single().jsonObject
+        assertEquals(7L, point.getValue("_id").jsonPrimitive.long)
+        assertEquals(wire.datestart, point.getValue("datestart").jsonPrimitive.content)
+        assertEquals(wire.latitude, point.getValue("latitude").jsonPrimitive.double, 0.0)
+        assertEquals(wire.longitude, point.getValue("longitude").jsonPrimitive.double, 0.0)
     }
 
     @Test
     fun serverFailureLeavesSnapshotPending() = runBlocking {
         for (code in listOf(401, 403, 429, 500, 503)) {
             val fixture = Fixture(batch) { Response.error(code, "failure".toResponseBody()) }
-            fixture.uploader.uploadPending()
+            assertEquals(UploadResult.FAILED, fixture.uploader.uploadPending())
             assertEquals(0, fixture.acks)
         }
     }
@@ -99,7 +101,7 @@ class LocationBatchUploaderTest {
     fun emptyOrNegativeBodyLeavesSnapshotPending() = runBlocking {
         for (body in listOf(null, JsonDto(true, "1"), JsonDto(false, ""))) {
             val fixture = Fixture(batch) { Response.success(body) }
-            fixture.uploader.uploadPending()
+            assertEquals(UploadResult.FAILED, fixture.uploader.uploadPending())
             assertEquals(0, fixture.acks)
         }
     }
@@ -107,14 +109,14 @@ class LocationBatchUploaderTest {
     @Test
     fun networkFailureLeavesSnapshotPending() = runBlocking {
         val fixture = Fixture(batch) { throw IOException("offline") }
-        fixture.uploader.uploadPending()
+        assertEquals(UploadResult.FAILED, fixture.uploader.uploadPending())
         assertEquals(0, fixture.acks)
     }
 
     @Test
     fun malformedJsonLeavesSnapshotPending() = runBlocking {
         val fixture = Fixture(batch) { throw IllegalStateException("malformed JSON") }
-        fixture.uploader.uploadPending()
+        assertEquals(UploadResult.FAILED, fixture.uploader.uploadPending())
         assertEquals(0, fixture.acks)
     }
 
@@ -140,7 +142,7 @@ class LocationBatchUploaderTest {
         val fixture = Fixture(batch) {
             try { awaitCancellation() } finally { cancelled = true }
         }
-        fixture.uploader.uploadPending(timeoutMillis = 50)
+        assertEquals(UploadResult.FAILED, fixture.uploader.uploadPending(timeoutMillis = 50))
         assertTrue(cancelled)
         assertEquals(0, fixture.acks)
     }
@@ -248,9 +250,9 @@ class LocationBatchUploaderTest {
             WmApiService::class.java.classLoader, arrayOf(WmApiService::class.java)
         ) { _, method, _ -> throw AssertionError("Unexpected API call: ${method.name}") } as WmApiService
         private val api = object : WmApiService by unused {
-            override suspend fun writeLocDatas(request: RequestBody): Response<JsonDto> {
+            override suspend fun writeLocDatas(request: DatasToJson): Response<JsonDto> {
                 requests++
-                sent = Buffer().also(request::writeTo).readUtf8()
+                sent = DataModule.provideJson().encodeToString(request)
                 return reply()
             }
         }

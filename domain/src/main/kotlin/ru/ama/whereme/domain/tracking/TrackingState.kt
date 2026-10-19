@@ -22,5 +22,5 @@ sealed interface TrackingState {
     data class Failed(val reason: TrackingFailure) : TrackingState
 }
 
-/** Owner and request identify the service request to which a terminal state belongs. */
-data class TrackingSnapshot(val ownerId: Long?, val requestId: Long, val state: TrackingState)
+/** State for one service connection, correlated with the native Android startId. */
+data class TrackingServiceState(val startId: Int, val state: TrackingState)

@@ -1,5 +1,6 @@
 package ru.ama.whereme.presentation
 
+import ru.ama.whereme.domain.reportFailure
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -12,7 +13,7 @@ internal class SettingsWriteQueue(scope: CoroutineScope, private val onFailure: 
         for (command in commands) {
             try { command()
             } catch (cancelled: CancellationException) { throw cancelled
-            } catch (_: Exception) { onFailure() }
+            } catch (failure: Exception) { reportFailure("Save settings", failure); onFailure() }
         }
     }
     fun submit(command: suspend () -> Unit) { check(commands.trySend(command).isSuccess) }

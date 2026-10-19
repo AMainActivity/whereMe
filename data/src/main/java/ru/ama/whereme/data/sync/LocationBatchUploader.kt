@@ -1,18 +1,19 @@
 package ru.ama.whereme.data.sync
 
-import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
 import ru.ama.whereme.data.network.WmApiService
 import ru.ama.whereme.domain.tracking.PendingLocationUploader
+import ru.ama.whereme.domain.tracking.UploadResult
 import javax.inject.Singleton
 import ru.ama.whereme.data.network.model.DatasToJson
+import ru.ama.whereme.data.network.model.LocationDto
 import javax.inject.Inject
 
 @Singleton
@@ -25,11 +26,14 @@ class LocationBatchUploader @Inject constructor(
     /** Local data stays pending on every failure; cancellation belongs to the calling service. */
     override suspend fun uploadPending() = uploadPending(timeoutMillis = 30_000L)
 
-    suspend fun uploadPending(timeoutMillis: Long) = mutex.withLock {
-        val batch = store.snapshot() ?: return@withLock
-        if (batch.payload.isEmpty() || !store.isCurrent(batch)) return@withLock
-        val request = Gson().toJson(DatasToJson(batch.session.profile.tokenJwt, batch.payload))
-            .toRequestBody("application/json".toMediaType())
+    suspend fun uploadPending(timeoutMillis: Long): UploadResult = withContext(Dispatchers.IO) {
+        mutex.withLock { uploadBatch(timeoutMillis) }
+    }
+
+    private suspend fun uploadBatch(timeoutMillis: Long): UploadResult {
+        val batch = store.snapshot() ?: return UploadResult.SKIPPED
+        if (batch.payload.isEmpty() || !store.isCurrent(batch)) return UploadResult.SKIPPED
+        val request = DatasToJson(batch.session.profile.tokenJwt, batch.payload.map(LocationDto::from))
         val accepted = withTimeoutOrNull(timeoutMillis) {
             val response = try {
                 api.writeLocDatas(request)
@@ -48,9 +52,10 @@ class LocationBatchUploader @Inject constructor(
             }
         } ?: false
         currentCoroutineContext().ensureActive()
-        if (accepted && store.isCurrent(batch)) {
-            // Each original row is attempted once. Zero updated rows is a valid stale-snapshot result.
-            store.acknowledge(batch)
-        }
+        if (!accepted) return UploadResult.FAILED
+        if (!store.isCurrent(batch)) return UploadResult.SKIPPED
+        // Each original row is attempted once. Zero updated rows is a valid stale-snapshot result.
+        store.acknowledge(batch)
+        return UploadResult.SENT
     }
 }

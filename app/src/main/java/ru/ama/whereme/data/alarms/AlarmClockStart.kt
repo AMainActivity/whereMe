@@ -8,7 +8,6 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
 import ru.ama.whereme.tracking.TrackingScheduler
-import ru.ama.whereme.tracking.TrackingAction
 import ru.ama.whereme.tracking.TrackingRequirement
 import ru.ama.whereme.tracking.trackingCapabilities
 import ru.ama.whereme.presentation.MyForegroundService
@@ -29,7 +28,7 @@ class AlarmClockStart : BroadcastReceiver() {
             // An excluded weekday must not terminate the daily schedule chain.
             repo.scheduleNextAlarmClockIfEnabled()
             if (!repo.isTimeToGetLocation()) return@runTrackingWork
-            if (context.trackingCapabilities().requirement(TrackingAction.SCHEDULE) != TrackingRequirement.READY) {
+            if (context.trackingCapabilities().requirement() != TrackingRequirement.READY) {
                 Log.w("AlarmClockStart", "Scheduled tracking prerequisites are unavailable")
                 return@runTrackingWork
             }

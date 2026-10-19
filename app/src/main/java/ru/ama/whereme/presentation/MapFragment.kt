@@ -7,11 +7,13 @@ import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.LiveData
-import android.content.Context
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
+import androidx.core.view.isVisible
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.view.*
 import android.webkit.*
@@ -22,13 +24,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.google.gson.Gson
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.DatePickerDaysBinding
 import ru.ama.whereme.databinding.FragmentMapBinding
 import ru.ama.whereme.presentation.map.RouteRequest
 import ru.ama.whereme.presentation.map.DayLocations
-import ru.ama.whereme.domain.entity.LocationDbByDays
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -39,15 +39,13 @@ class MapFragment : Fragment() {
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding ?: throw RuntimeException("FragmentFirstBinding == null")
     private lateinit var viewModel: MapViewModel
-    lateinit var listDays: List<LocationDbByDays>
-    private var observedDay: LiveData<DayLocations>? = null
+    private enum class PageState { LOADING, READY, FAILED }
+    private var pageState = PageState.LOADING
+    private var datePopup: PopupWindow? = null
+    private var errorSnackbar: com.google.android.material.snackbar.Snackbar? = null
     private var routeDialog: AlertDialog? = null
-    var onDataSizeListener: ((Int) -> Unit)? = null
 
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,7 +67,8 @@ class MapFragment : Fragment() {
     }
 
     private fun showPopupDatePicker(anchor: View) {
-        val popupWindow = PopupWindow(requireContext())
+        datePopup?.dismiss()
+        val popupWindow = PopupWindow(requireContext()).also { datePopup = it }
         popupWindow.setBackgroundDrawable(
             ResourcesCompat.getDrawable(
                 resources,
@@ -83,15 +82,12 @@ class MapFragment : Fragment() {
         val binding2 = DatePickerDaysBinding.inflate(layoutInflater)
         val datePicker = binding2.frgmntMapDp
         datePicker.init(datePicker.year, datePicker.month, datePicker.dayOfMonth) { _, year, monthOfYear, dayOfMonth ->
-            val formatter = SimpleDateFormat("dd.MM.yyyy")
+            val formatter = SimpleDateFormat("dd.MM.yyyy", Locale.ROOT)
             val calendar: Calendar = Calendar.getInstance()
             calendar.set(year, monthOfYear, dayOfMonth)
             val s = formatter.format(calendar.getTime())
             viewModel.getDataByDate(s)
-            observeData()
-            onDataSizeListener = {
-                if (it > 0) popupWindow.dismiss()
-            }
+            popupWindow.dismiss()
         }
         popupWindow.contentView = binding2.root
         popupWindow.showAsDropDown(anchor)
@@ -106,6 +102,7 @@ class MapFragment : Fragment() {
     }
 
     private fun setUrl(url: String) {
+        pageState = PageState.LOADING
         if (viewModel.isInternetConnected()) {
             binding.frgmntLocations.loadUrl(url)
             binding.frgmntMapReply.visibility = View.GONE
@@ -125,14 +122,13 @@ class MapFragment : Fragment() {
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =
             getString(R.string.menu_map)
         viewModel = ViewModelProvider(this)[MapViewModel::class.java]
-        viewModel.ld_days.observe(viewLifecycleOwner) {
-            listDays = it
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.locations.collect(::renderLocations)
+            }
         }
-        if (Build.VERSION.SDK_INT >= 11) {
-            val settings: WebSettings = binding.frgmntLocations.settings
-            settings.builtInZoomControls = false
-            settings.displayZoomControls = false
-        }
+        binding.frgmntLocations.settings.builtInZoomControls = false
+        binding.frgmntLocations.settings.displayZoomControls = false
         binding.frgmntLocations.setBackgroundColor(0)
         binding.frgmntLocations.settings.setGeolocationEnabled(true)
         binding.frgmntLocations.webChromeClient = object : WebChromeClient() {
@@ -160,10 +156,24 @@ class MapFragment : Fragment() {
                 return true
             }
 
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                pageState = PageState.LOADING
+            }
+
+            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                if (request.isForMainFrame) showMapLoadFailure()
+            }
+            override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
+                if (request.isForMainFrame) showMapLoadFailure()
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                if (_binding != null && url != null && isMapPage(Uri.parse(url))) {
-                    observeData()
+                if (_binding != null && pageState != PageState.FAILED && url != null && isMapPage(Uri.parse(url))) {
+                    pageState = PageState.READY
+                    if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                        renderLocations(viewModel.locations.value)
+                    }
                 }
             }
         }
@@ -185,19 +195,25 @@ class MapFragment : Fragment() {
         setUrl(url)
     }
 
-    private fun observeData() {
-        val source = viewModel.lldByDay
-        observedDay?.removeObservers(viewLifecycleOwner)
-        observedDay = source
-        source.observe(viewLifecycleOwner) {
-            if (_binding == null || it.date != viewModel.selectedDate) return@observe
-            onDataSizeListener?.invoke(it.locations.size)
-            val postData = Gson().toJson(it.locations)
-            binding.frgmntLocations.evaluateJavascript(
-                String.format(getString(R.string.map_js), postData), null
-            )
-            (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = it.date
+    private fun showMapLoadFailure() {
+        pageState = PageState.FAILED
+        _binding?.frgmntMapReply?.isVisible = true
+    }
+
+    private fun renderLocations(state: LoadState<DayLocations>) {
+        val day = (state as? LoadState.Ready)?.value
+        if (day != null && day.date != viewModel.selectedDate) return
+        errorSnackbar?.dismiss()
+        errorSnackbar = null
+        if (state == LoadState.Failed) {
+            errorSnackbar = com.google.android.material.snackbar.Snackbar.make(binding.root, R.string.storage_read_failed,
+                com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE)
+                .setAction(R.string.storage_retry) { viewModel.retryLocations() }.also { it.show() }
         }
+        if (pageState != PageState.READY) return
+        val postData = day?.json ?: "[]"
+        binding.frgmntLocations.evaluateJavascript(String.format(getString(R.string.map_js), postData), null)
+        (requireActivity() as AppCompatActivity).supportActionBar?.subtitle = viewModel.selectedDate
     }
 
     private fun isMapOrigin(uri: Uri): Boolean {
@@ -238,9 +254,11 @@ class MapFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        observedDay?.removeObservers(viewLifecycleOwner)
-        observedDay = null
-        onDataSizeListener = null
+        pageState = PageState.LOADING
+        datePopup?.dismiss()
+        datePopup = null
+        errorSnackbar?.dismiss()
+        errorSnackbar = null
         routeDialog?.dismiss()
         routeDialog = null
         val webView = binding.frgmntLocations

@@ -21,7 +21,6 @@ import ru.ama.whereme.domain.tracking.TrackingCoordinator
 import ru.ama.whereme.domain.tracking.TrackingFailure
 import ru.ama.whereme.domain.tracking.TrackingMode
 import ru.ama.whereme.domain.tracking.RecordingSession
-import ru.ama.whereme.tracking.TrackingAction
 import ru.ama.whereme.tracking.TrackingNotification
 import ru.ama.whereme.tracking.TrackingRequirement
 import ru.ama.whereme.tracking.trackingCapabilities
@@ -29,6 +28,7 @@ import ru.ama.whereme.tracking.trackingCapabilities
 @AndroidEntryPoint
 class MyForegroundService : LifecycleService() {
     @Inject lateinit var coordinator: TrackingCoordinator
+    @Inject lateinit var sync: ru.ama.whereme.sync.LocationSyncScheduler
     @Inject lateinit var clock: TrackingClock
     private lateinit var handle: TrackingCoordinator.Handle
     private val notification by lazy { TrackingNotification(this, clock) }
@@ -40,12 +40,10 @@ class MyForegroundService : LifecycleService() {
         handle = coordinator.attach()
         ContextCompat.registerReceiver(this, environmentChanged, IntentFilter().apply {
             addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
-            addAction(Intent.ACTION_TIME_CHANGED)
-            addAction(Intent.ACTION_TIMEZONE_CHANGED)
         }, ContextCompat.RECEIVER_NOT_EXPORTED)
         lifecycleScope.launch {
-            coordinator.state.collectLatest { snapshot ->
-                if (snapshot.ownerId != handle.ownerId || snapshot.requestId != handle.latestRequest || lastStartId == 0) return@collectLatest
+            handle.state.collectLatest { snapshot ->
+                if (snapshot.startId != lastStartId || lastStartId == 0) return@collectLatest
                 Log.d("TrackingService", "State: ${snapshot.state}")
                 if (snapshot.state.isRunning) {
                     notification.render(snapshot.state)
@@ -61,7 +59,7 @@ class MyForegroundService : LifecycleService() {
         super.onStartCommand(intent, flags, startId)
         lastStartId = startId
         when {
-            intent?.action == ACTION_STOP -> handle.stop()
+            intent?.action == ACTION_STOP -> handle.stop(startId)
             intent == null -> stopSelfResult(startId)
             intent.action == ACTION_WAKE && promoteToForeground() -> {
                 val id = intent.getStringExtra(EXTRA_RECORDING)
@@ -69,23 +67,23 @@ class MyForegroundService : LifecycleService() {
                 if (id.isNullOrBlank() || due <= 0) stopSelfResult(startId)
                 else {
                     Log.d("TrackingAlarm", "Sampling alarm delivered; due=$due")
-                    handle.wake(id, due)
+                    handle.wake(id, due, startId)
                 }
             }
             intent.action == ACTION_WAKE -> stopSelfResult(startId)
             promoteToForeground() -> handle.start(if (intent.getBooleanExtra(EXTRA_SCHEDULED, false))
-                TrackingMode.SCHEDULED else TrackingMode.MANUAL)
+                TrackingMode.SCHEDULED else TrackingMode.MANUAL, startId)
             else -> stopSelfResult(startId)
         }
         return START_NOT_STICKY
     }
 
     private fun promoteToForeground(): Boolean {
-        if (trackingCapabilities().requirement(TrackingAction.MANUAL) == TrackingRequirement.EXACT_ALARM) {
-            handle.fail(TrackingFailure.ALARM); return false
+        if (trackingCapabilities().requirement() == TrackingRequirement.EXACT_ALARM) {
+            handle.fail(TrackingFailure.ALARM, lastStartId); return false
         }
         val unavailable = unavailableLocation()
-        if (unavailable != null) { handle.block(unavailable); return false }
+        if (unavailable != null) { handle.block(unavailable, lastStartId); return false }
         if (foregroundStarted) return true
         return try {
             val initial = notification.initial()
@@ -94,15 +92,15 @@ class MyForegroundService : LifecycleService() {
             foregroundStarted = true
             true
         } catch (_: SecurityException) {
-            handle.block(LocationOutcome.Reason.PERMISSION_REQUIRED)
+            handle.block(LocationOutcome.Reason.PERMISSION_REQUIRED, lastStartId)
             false
         } catch (_: IllegalStateException) {
-            handle.fail(TrackingFailure.FOREGROUND)
+            handle.fail(TrackingFailure.FOREGROUND, lastStartId)
             false
         }
     }
 
-    private fun unavailableLocation(): LocationOutcome.Reason? = when (trackingCapabilities().requirement(TrackingAction.MANUAL)) {
+    private fun unavailableLocation(): LocationOutcome.Reason? = when (trackingCapabilities().requirement()) {
         TrackingRequirement.FOREGROUND_LOCATION, TrackingRequirement.PRECISE_LOCATION, TrackingRequirement.BACKGROUND_LOCATION -> LocationOutcome.Reason.PERMISSION_REQUIRED
         TrackingRequirement.LOCATION_ENABLED -> LocationOutcome.Reason.LOCATION_DISABLED
         TrackingRequirement.PROVIDER -> LocationOutcome.Reason.NO_PROVIDER
@@ -112,8 +110,7 @@ class MyForegroundService : LifecycleService() {
     private val environmentChanged = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent?) {
             when (intent?.action) {
-                Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> handle.timeChanged()
-                LocationManager.PROVIDERS_CHANGED_ACTION -> unavailableLocation()?.let { handle.block(it) }
+                LocationManager.PROVIDERS_CHANGED_ACTION -> unavailableLocation()?.let { handle.block(it, lastStartId) }
             }
         }
     }
@@ -128,6 +125,7 @@ class MyForegroundService : LifecycleService() {
         unregisterReceiver(environmentChanged)
         removeForeground()
         notification.remove()
+        sync.schedule()
         super.onDestroy()
     }
 

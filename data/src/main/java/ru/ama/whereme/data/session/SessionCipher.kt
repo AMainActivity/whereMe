@@ -23,8 +23,8 @@ class SessionCipher(private val keys: SessionKeyProvider) {
         cipher.updateAAD(AAD)
         cipher.doFinal(envelope.copyOfRange(13, envelope.size))
     }
-    private fun <T> checked(block: () -> T): T = try { block() } catch (_: Exception) {
-        throw IOException("Session storage is unavailable; stored data retained")
+    private fun <T> checked(block: () -> T): T = try { block() } catch (failure: Exception) {
+        throw IOException("Session storage is unavailable; stored data retained", failure)
     }
     companion object {
         private val AAD = "ru.ama.whereme.session.v1".toByteArray(Charsets.UTF_8)

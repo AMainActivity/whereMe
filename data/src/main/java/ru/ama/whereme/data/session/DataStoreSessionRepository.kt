@@ -7,6 +7,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.first
+import ru.ama.whereme.data.database.LegacyHistoryAssignment
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -19,13 +22,21 @@ import javax.inject.Singleton
 
 @Singleton
 class DataStoreSessionRepository @Inject constructor(
-    @SessionStore private val store: DataStore<Preferences>, cipher: SessionCipher
+    @SessionStore private val store: DataStore<Preferences>, cipher: SessionCipher,
+    private val legacyHistory: LegacyHistoryAssignment
 ) : SessionRepository {
     private val codec = SessionPreferences(cipher)
     private val mutex = Mutex()
-    override val session = store.data.map(codec::read).distinctUntilChanged().flowOn(Dispatchers.IO)
+    override val session = store.data.map(codec::read).distinctUntilChanged()
+        .onEach { legacyHistory.apply(it.profile.ownerKey) }.flowOn(Dispatchers.IO)
     override suspend fun signIn(profile: SettingsUserInfoDomModel) = withContext(Dispatchers.IO) {
-        mutex.withLock { store.edit { codec.write(it, profile) }; Unit }
+        mutex.withLock {
+            // Assign old history before changing credentials; unreadable credentials stay recoverable.
+            val oldOwner = try { codec.read(store.data.first()).profile.ownerKey }
+                catch (failure: java.io.IOException) { null }
+            legacyHistory.apply(oldOwner)
+            store.edit { codec.write(it, profile) }; Unit
+        }
     }
     override suspend fun clearIfCurrent(expected: SessionSnapshot): Boolean = change(expected) { p, _ ->
         codec.write(p, SettingsUserInfoDomModel.EMPTY)

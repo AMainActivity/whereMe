@@ -10,45 +10,44 @@ import ru.ama.whereme.data.database.LocationDbModel
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.entity.LocationSample
 import ru.ama.whereme.domain.tracking.LocationRecorder
+import ru.ama.whereme.domain.usecase.DayRange
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
+import ru.ama.whereme.domain.repository.SessionRepository
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class RoomLocationRecorder @Inject constructor(
     private val database: AppDatabase,
-    private val locationDao: LocationDao
+    private val locationDao: LocationDao,
+    private val sessions: SessionRepository
 ) : LocationRecorder {
     private fun getDate(milliSeconds: Long): String {
-        val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
-        val calendar: Calendar = Calendar.getInstance()
-        calendar.timeInMillis = milliSeconds
-        return formatter.format(calendar.time)
-    }
-    private fun getCurrentDate(): String {
-        val formatter = SimpleDateFormat("dd.MM.yyyy")
-        return formatter.format(Date())
+        val formatter = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", java.util.Locale.ROOT)
+        return formatter.format(java.util.Date(milliSeconds))
     }
 
     override suspend fun record(sample: LocationSample, settings: SettingsDomModel, previousRowId: Long?): Long =
         withContext(Dispatchers.IO) {
+            val owner = try { sessions.current().profile.ownerKey }
+                catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: java.io.IOException) { null }
             val lTime = sample.timeMillis
             val location = Location("platform").apply {
                 latitude = sample.latitude; longitude = sample.longitude
-                accuracy = sample.accuracyMeters; speed = sample.speedMetersPerSecond
-                time = sample.timeMillis; elapsedRealtimeNanos = sample.elapsedRealtimeNanos
             }
+            val day = DayRange.containing(lTime)
             database.withTransaction {
-                val last = locationDao.getLastValue(getCurrentDate())
+                val last = previousRowId?.let { locationDao.getLocation(it) }
+                    ?.takeIf { it.ownerKey == owner && it.datestart >= day.start && it.datestart < day.end }
                 val previous = last?.let {
-                    Location(LOCATION_A).apply { latitude = it.latitude; longitude = it.longitude }
+                    Location("previous").apply { latitude = it.latitude; longitude = it.longitude }
                 }
                 val gap = last?.let { lTime - (it.dateend ?: it.datestart) }
-                val maxGap = (settings.timeOfWorkingWM.toLong().coerceAtLeast(1L) +
-                    settings.timeOfWaitAccuracy.toLong().coerceAtLeast(1L)) * ONE_SECOND
-                if (last != null && last._id == previousRowId && previous != null &&
+                val maxGap = (settings.timeOfWorkingWM.toLong() +
+                    settings.timeOfWaitAccuracy.toLong()) * ONE_SECOND
+                if (last != null && previous != null &&
                     gap != null && gap in 0..maxGap && previous.distanceTo(location) <= settings.minDist
                 ) {
                     locationDao.updateInterval(
@@ -58,8 +57,10 @@ class RoomLocationRecorder @Inject constructor(
                 } else {
                     locationDao.insertLocation(
                         LocationDbModel(
-                            lTime.toString(), lTime, null, getDate(lTime), location.latitude,
-                            location.longitude, ONE_INT, location.accuracy, location.speed, EMPTY_INT
+                            datetime = lTime.toString(), datestart = lTime, info = getDate(lTime),
+                            latitude = sample.latitude, longitude = sample.longitude,
+                            sourceId = 1, accuracy = sample.accuracyMeters, velocity = sample.speedMetersPerSecond,
+                            isWrite = 0, ownerKey = owner
                         )
                     )
                 }
@@ -67,9 +68,6 @@ class RoomLocationRecorder @Inject constructor(
         }
 
     private companion object {
-        const val LOCATION_A = "lastValue"
         const val ONE_SECOND = 1000L
-        const val EMPTY_INT = 0
-        const val ONE_INT = 1
     }
 }

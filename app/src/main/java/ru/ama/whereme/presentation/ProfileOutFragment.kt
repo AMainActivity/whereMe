@@ -2,20 +2,21 @@ package ru.ama.whereme.presentation
 
 import dagger.hilt.android.AndroidEntryPoint
 
-import android.annotation.SuppressLint
-import android.content.Context
+import android.widget.Toast
 import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings
 import android.text.method.LinkMovementMethod
 import android.view.*
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.asLiveData
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
+import androidx.core.view.isVisible
 import com.google.android.material.snackbar.Snackbar
 import ru.ama.whereme.R
 import ru.ama.whereme.databinding.FragmentOutProfileBinding
@@ -27,12 +28,10 @@ class ProfileOutFragment : Fragment() {
     private var _binding: FragmentOutProfileBinding? = null
     private val binding
         get() = _binding ?: throw RuntimeException("FragmentOutProfileBinding == null")
+    private var actionDialog: AlertDialog? = null
     private lateinit var viewModel: ProfileOutViewModel
 
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +57,8 @@ class ProfileOutFragment : Fragment() {
     }
 
     private fun shereUrlAlertDialog() {
-        AlertDialog.Builder(requireContext())
+        actionDialog?.dismiss()
+        actionDialog = AlertDialog.Builder(requireContext())
             .setTitle(getString(R.string.profile_out_alert_title))
             .setMessage(
                 getString(R.string.profile_out_alert_text)
@@ -68,10 +68,9 @@ class ProfileOutFragment : Fragment() {
                 val res = viewModel.getSetUserInfo() ?: return@setPositiveButton
                 val name = res.name
                 val url = res.url
-                if (name != null && url != null) sharetext(
+                if (name != null && url != null) shareText(
                     name,
-                    getString(R.string.profile_out_urd_body) + url,
-                    false
+                    getString(R.string.profile_out_urd_body) + url
                 )
                 else
                     Toast.makeText(
@@ -84,7 +83,8 @@ class ProfileOutFragment : Fragment() {
     }
 
     private fun logOutAlertDialog() {
-        AlertDialog.Builder(requireContext())
+        actionDialog?.dismiss()
+        actionDialog = AlertDialog.Builder(requireContext())
             .setTitle(getString(R.string.profile_logout_title))
             .setMessage(getString(R.string.profile_logout_text))
             .setCancelable(true)
@@ -105,7 +105,6 @@ class ProfileOutFragment : Fragment() {
         return binding.root
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         (requireActivity() as AppCompatActivity).supportActionBar?.subtitle =
@@ -113,58 +112,47 @@ class ProfileOutFragment : Fragment() {
         viewModel = ViewModelProvider(this)[ProfileOutViewModel::class.java]
         binding.frgmntProOutTv.linksClickable = true
         binding.frgmntProOutTv.movementMethod = LinkMovementMethod.getInstance()
-        viewModel.session.asLiveData().observe(viewLifecycleOwner) { state ->
-            when (state) {
-                is LoadState.Ready -> {
-                    val res = state.value.profile
-                    binding.frgmntProOutTv.text = HtmlCompat.fromHtml(
-                        getString(R.string.frgmnt_out_tv, res.name.orEmpty(), res.url.orEmpty()),
-                        HtmlCompat.FROM_HTML_MODE_LEGACY)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.session.collect { state ->
+                        when (state) {
+                            is LoadState.Ready -> {
+                                val res = state.value.profile
+                                binding.frgmntProOutTv.text = HtmlCompat.fromHtml(
+                                    getString(R.string.frgmnt_out_tv, res.name.orEmpty(), res.url.orEmpty()),
+                                    HtmlCompat.FROM_HTML_MODE_LEGACY)
+                            }
+                            LoadState.Loading -> binding.frgmntProOutTv.setText(R.string.storage_loading)
+                            LoadState.Failed -> Snackbar.make(binding.root, R.string.storage_read_failed, Snackbar.LENGTH_INDEFINITE)
+                                .setAction(R.string.storage_retry) { viewModel.retrySession() }.show()
+                        }
+                    }
                 }
-                LoadState.Loading -> binding.frgmntProOutTv.setText(R.string.storage_loading)
-                LoadState.Failed -> Snackbar.make(binding.root, R.string.storage_read_failed, Snackbar.LENGTH_INDEFINITE)
-                    .setAction(R.string.storage_retry) { viewModel.retrySession() }.show()
+                launch {
+                    viewModel.errorMessage.collect { error ->
+                        binding.operationError.isVisible = error != null
+                        if (error != null) binding.operationError.setText(error)
+                    }
+                }
             }
         }
-        viewModel.isError.observe(viewLifecycleOwner) { Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show() }
     }
 
-    private fun sharetext(
-        textZagol: String,
-        textBody: String,
-        isEmail: Boolean
-    ) {
-        val sharingIntent = Intent(Intent.ACTION_SEND)
-        if (isEmail) {
-            sharingIntent.putExtra(
-                Intent.EXTRA_EMAIL,
-                arrayOf(getString(R.string.frgmnt_menu_share_mail))
-            )
-            sharingIntent.type = SHARE_MAIL_TYPE
-        } else
-            sharingIntent.type = SHARE_TEXT_TYPE
-        sharingIntent.putExtra(
-            Intent.EXTRA_SUBJECT,
-            textZagol
-        )
-        sharingIntent.putExtra(
-            Intent.EXTRA_TEXT,
-            textBody
-        )
-        val d = Intent.createChooser(
-            sharingIntent,
-            getString(R.string.frgmnt_menu_share_use)
-        )
-        requireActivity().startActivity(d)
+    private fun shareText(title: String, body: String) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, title)
+            putExtra(Intent.EXTRA_TEXT, body)
+        }
+        startActivity(Intent.createChooser(intent, getString(R.string.frgmnt_menu_share_use)))
     }
 
     override fun onDestroyView() {
+        actionDialog?.dismiss()
+        actionDialog = null
         super.onDestroyView()
         _binding = null
     }
 
-    companion object {
-        private const val SHARE_MAIL_TYPE = "message/rfc822"
-        private const val SHARE_TEXT_TYPE = "text/plain"
-    }
 }

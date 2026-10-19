@@ -24,13 +24,13 @@ class TrackingStartup @Inject constructor(
     override fun onStart(owner: LifecycleOwner) {
         // Enqueue before a subsequent user Stop; initialization/network must not postpone this intent.
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            val requirement = application.trackingCapabilities().requirement(TrackingAction.SCHEDULE)
+            val requirement = application.trackingCapabilities().requirement()
             if (requirement != TrackingRequirement.READY) {
                 Log.d("TrackingStartup", "Automatic start unavailable: $requirement")
                 return@launch
             }
             try {
-                coordinator.restoreAlarms(refreshRunning = false, startScheduledIfActive = true)
+                coordinator.resumeEnabledSchedule()
                 scheduler.scheduleNextAlarmClockIfEnabled()
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (failure: Exception) {

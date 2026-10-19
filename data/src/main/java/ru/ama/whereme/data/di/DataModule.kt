@@ -16,7 +16,12 @@ import ru.ama.whereme.domain.tracking.PendingLocationUploader
 import ru.ama.whereme.data.network.WmApiService
 import ru.ama.whereme.data.database.AppDatabase
 import ru.ama.whereme.data.database.LocationDao
-import ru.ama.whereme.data.network.WmApiFactory
+import androidx.room.Room
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import retrofit2.Retrofit
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import ru.ama.whereme.data.BuildConfig
 import ru.ama.whereme.data.sync.PendingLocationStore
 import ru.ama.whereme.data.sync.RoomPendingLocationStore
 import ru.ama.whereme.data.repository.*
@@ -28,6 +33,9 @@ import ru.ama.whereme.domain.repository.*
 @Module
 @InstallIn(SingletonComponent::class)
 interface DataModule {
+    @Binds
+    fun bindLegacyHistory(impl: ru.ama.whereme.data.database.RoomLegacyHistoryAssignment): ru.ama.whereme.data.database.LegacyHistoryAssignment
+
     @Binds
     fun bindRecordingStore(impl: DataStoreRecordingSessionStore): RecordingSessionStore
 
@@ -63,7 +71,8 @@ interface DataModule {
 
         @Provides
         @Singleton
-        fun provideDatabase(application: Application): AppDatabase = AppDatabase.getInstance(application)
+        fun provideDatabase(application: Application): AppDatabase = Room.databaseBuilder(application, AppDatabase::class.java, "main.db")
+            .addMigrations(AppDatabase.MIGRATION_3_4).build()
 
         @Provides
         @Singleton
@@ -71,9 +80,17 @@ interface DataModule {
 
         @Provides
         @Singleton
-        fun provideApiService(): WmApiService {
-            return WmApiFactory.apiService
+        fun provideJson(): Json = Json {
+            // Preserve the existing backend parser tolerance; stored profiles use strict JSON.
+            isLenient = true
+            ignoreUnknownKeys = true
+            explicitNulls = false
         }
+
+        @Provides @Singleton
+        fun provideApiService(json: Json): WmApiService = Retrofit.Builder()
+            .baseUrl(BuildConfig.BASE_URL).addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build().create(WmApiService::class.java)
 
     }
 }

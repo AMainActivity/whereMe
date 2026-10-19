@@ -1,8 +1,9 @@
 package ru.ama.whereme.data.network.model
 
-import ru.ama.whereme.domain.entity.LocationDb
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class DatasToJson(
     val tokenJWT: String,
-    val mdata: List<LocationDb>
+    val mdata: List<LocationDto>
 )
