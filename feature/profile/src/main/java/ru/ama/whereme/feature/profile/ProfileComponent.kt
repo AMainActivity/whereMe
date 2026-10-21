@@ -28,14 +28,14 @@ class ProfileComponent(
     private val retry = MutableStateFlow(0)
     private val mutable =
         MutableStateFlow(
-            ProfileState(code = stateKeeper.consume("code", String.serializer()).orEmpty())
+            ProfileState(code = stateKeeper.consume(CODE_STATE_KEY, String.serializer()).orEmpty())
         )
     val state = mutable.asStateFlow()
 
     private val session = sessions.session.loadState(scope, retry)
 
     init {
-        stateKeeper.register("code", String.serializer()) { state.value.code }
+        stateKeeper.register(CODE_STATE_KEY, String.serializer()) { state.value.code }
         scope.launch {
             session.collect { session ->
                 mutable.update { it.copy(session = session) }
@@ -107,6 +107,10 @@ class ProfileComponent(
                 mutable.update { it.copy(busy = false) }
             }
         }
+    }
+
+    private companion object {
+        const val CODE_STATE_KEY = "code"
     }
 }
 

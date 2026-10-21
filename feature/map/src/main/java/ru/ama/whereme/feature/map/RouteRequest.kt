@@ -1,5 +1,7 @@
 package ru.ama.whereme.feature.map
 
+import ru.ama.whereme.domain.entity.LocationSample
+
 /** Legacy web contract: fromLatitude#fromLongitude#toLatitude#toLongitude. */
 @ConsistentCopyVisibility
 data class RouteRequest
@@ -10,20 +12,24 @@ private constructor(
     val toLongitude: Double,
 ) {
     companion object {
+        private const val MAX_PAYLOAD_LENGTH = 256
+        private const val COORDINATE_COUNT = 4
+
         fun parse(payload: String): RouteRequest? {
-            if (payload.length > 256) return null
+            if (payload.length > MAX_PAYLOAD_LENGTH) return null
             val parts = payload.split('#')
-            if (parts.size != 4) return null
+            if (parts.size != COORDINATE_COUNT) return null
             val values = parts.map { it.toDoubleOrNull() ?: return null }
+            val (fromLatitude, fromLongitude, toLatitude, toLongitude) = values
             if (values.any { !it.isFinite() }) return null
             if (
-                values[0] !in -90.0..90.0 ||
-                    values[2] !in -90.0..90.0 ||
-                    values[1] !in -180.0..180.0 ||
-                    values[3] !in -180.0..180.0
+                fromLatitude !in LocationSample.LATITUDE_RANGE ||
+                    toLatitude !in LocationSample.LATITUDE_RANGE ||
+                    fromLongitude !in LocationSample.LONGITUDE_RANGE ||
+                    toLongitude !in LocationSample.LONGITUDE_RANGE
             )
                 return null
-            return RouteRequest(values[0], values[1], values[2], values[3])
+            return RouteRequest(fromLatitude, fromLongitude, toLatitude, toLongitude)
         }
     }
 }

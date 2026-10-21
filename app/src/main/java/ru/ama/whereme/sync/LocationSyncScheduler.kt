@@ -11,9 +11,13 @@ class LocationSyncScheduler @Inject constructor(private val application: Applica
     private val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
     fun schedule() {
         val manager = WorkManager.getInstance(application)
-        manager.enqueueUniquePeriodicWork("location-sync-periodic", ExistingPeriodicWorkPolicy.KEEP,
-            PeriodicWorkRequestBuilder<LocationSyncWorker>(15, TimeUnit.MINUTES).setConstraints(constraints).build())
-        manager.enqueueUniqueWork("location-sync", ExistingWorkPolicy.KEEP,
+        manager.enqueueUniquePeriodicWork(PERIODIC_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<LocationSyncWorker>(PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).setConstraints(constraints).build())
+        manager.enqueueUniqueWork(IMMEDIATE_WORK_NAME, ExistingWorkPolicy.KEEP,
             OneTimeWorkRequestBuilder<LocationSyncWorker>().setConstraints(constraints).build())
+    }
+    private companion object {
+        const val PERIODIC_WORK_NAME = "location-sync-periodic"
+        const val IMMEDIATE_WORK_NAME = "location-sync"
     }
 }

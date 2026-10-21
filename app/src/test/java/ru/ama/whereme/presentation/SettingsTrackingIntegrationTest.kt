@@ -41,6 +41,7 @@ class SettingsTrackingIntegrationTest {
     private val lifecycles = mutableListOf<LifecycleRegistry>()
     private val writes = mutableListOf<SettingsDomModel>()
     private var fail = false
+    private lateinit var scheduler: TrackingScheduler
     private lateinit var coordinator: TrackingCoordinator
     private var recording: RecordingSession? = null
     private var pending: RecordingSession? = null
@@ -116,13 +117,14 @@ class SettingsTrackingIntegrationTest {
                 lifecycles.add(it)
             }
         val app = RuntimeEnvironment.getApplication()
+        scheduler = TrackingScheduler(app, repository, coordinator, clock)
         return SettingsComponent(
             DefaultComponentContext(lifecycle, stateKeeper = saved),
             repository,
             AndroidTrackingControl(
                 app,
                 coordinator,
-                TrackingScheduler(app, repository, coordinator, clock),
+                scheduler,
             ),
             backgroundScope,
         )
@@ -131,6 +133,40 @@ class SettingsTrackingIntegrationTest {
     private fun SettingsComponent.setSchedule(enabled: Boolean) {
         accept(SettingsIntent.Schedule(enabled))
         if (enabled) accept(SettingsIntent.AccessFinished())
+    }
+
+    @Test
+    fun dailyAlarmStartsServiceAtPeriodBeginningAndArmsNextSelectedDay() = runTest(dispatcher) {
+        model()
+        repository.settings.value = SettingsDomModel.DEFAULT.copy(
+            isEnable = true, start = "12:01", end = "13:00",
+            days = listOf("1", "0", "1", "0", "0", "0", "0"),
+        )
+        val app = RuntimeEnvironment.getApplication()
+        val alarms = app.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        scheduler.scheduleNextAlarmClockIfEnabled()
+        assertEquals(noon + 60_000, alarms.nextAlarmClock.triggerTime)
+        val receiver = ru.ama.whereme.data.alarms.AlarmClockStart().apply { repo = scheduler }
+        advanceTimeBy(60_000)
+        receiver.startScheduledTracking(app)
+        val started = requireNotNull(shadowOf(app).nextStartedService)
+        assertEquals(MyForegroundService::class.java.name, started.component?.className)
+        assertTrue(started.getBooleanExtra("scheduled", false))
+        assertEquals(Instant.parse("2026-10-21T12:01:00Z").toEpochMilli(), alarms.nextAlarmClock.triggerTime)
+        coordinator.attach().start(TrackingMode.SCHEDULED)
+        runCurrent()
+        assertEquals(1, sourceCalls)
+    }
+
+    @Test
+    fun lateDailyAlarmAfterPeriodEndDoesNotStartServiceButKeepsNextDay() = runTest(dispatcher) {
+        model()
+        repository.settings.value = SettingsDomModel.DEFAULT.copy(isEnable = true, start = "11:00", end = "12:00")
+        val app = RuntimeEnvironment.getApplication()
+        ru.ama.whereme.data.alarms.AlarmClockStart().apply { repo = scheduler }.startScheduledTracking(app)
+        assertNull(shadowOf(app).nextStartedService)
+        val alarms = app.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        assertEquals(Instant.parse("2026-10-20T11:00:00Z").toEpochMilli(), alarms.nextAlarmClock.triggerTime)
     }
 
     @Before
@@ -237,7 +273,7 @@ class SettingsTrackingIntegrationTest {
         }
 
     @Test
-    fun enablingAndDisablingScheduleDoesNotRestartManualMeasurement() =
+    fun enablingAndDisablingScheduleReconfiguresManualMeasurement() =
         runTest(dispatcher) {
             val vm = model()
             runCurrent()
@@ -250,7 +286,7 @@ class SettingsTrackingIntegrationTest {
             runCurrent()
             assertEquals(start, pending)
             assertEquals(TrackingMode.MANUAL, recording?.mode)
-            assertEquals(1, sourceCalls)
+            assertEquals(3, sourceCalls)
         }
 
     @Test

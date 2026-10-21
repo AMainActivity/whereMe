@@ -1,16 +1,16 @@
 package ru.ama.whereme.data.mapper
 
-import ru.ama.whereme.data.database.LocationDbModel
-import ru.ama.whereme.domain.entity.LocationDb
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
+import ru.ama.whereme.data.database.LocationDbModel
+import ru.ama.whereme.domain.entity.LocationDb
 
 class WmMapper @Inject constructor() {
 
     fun mapDbModelsToEntities(rows: List<LocationDbModel>): List<LocationDb> {
         // One formatter per batch; it is never shared between concurrent queries/uploads.
-        val format = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.ROOT)
+        val format = SimpleDateFormat(LocationDb.DATE_TIME_PATTERN, Locale.ROOT)
         return rows.map { mapDbModelToEntity(it, format) }
     }
 

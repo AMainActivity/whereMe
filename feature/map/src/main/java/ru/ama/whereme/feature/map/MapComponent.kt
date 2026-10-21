@@ -13,6 +13,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import ru.ama.whereme.domain.repository.LocationHistoryRepository
 import ru.ama.whereme.domain.state.*
+import ru.ama.whereme.domain.usecase.DayRange
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapComponent(
@@ -22,7 +23,7 @@ class MapComponent(
 ) : ComponentContext by context {
     private val scope = coroutineScope(Dispatchers.Main.immediate + SupervisorJob())
     private val date =
-        MutableStateFlow(stateKeeper.consume("selected_date", String.serializer()) ?: today())
+        MutableStateFlow(stateKeeper.consume(DATE_STATE_KEY, String.serializer()) ?: today())
     private val retry = MutableStateFlow(0)
     private val json = Json { explicitNulls = false }
     private val mutable = MutableStateFlow(MapState(date.value, LoadState.Loading))
@@ -42,7 +43,7 @@ class MapComponent(
             }
 
     init {
-        stateKeeper.register("selected_date", String.serializer()) { date.value }
+        stateKeeper.register(DATE_STATE_KEY, String.serializer()) { date.value }
         scope.launch {
             // Retaining the tab must not keep preparing map data while another tab is visible
             // or the Activity is in the background.
@@ -59,7 +60,11 @@ class MapComponent(
         }
     }
 
-    private fun today() = SimpleDateFormat("dd.MM.yyyy", Locale.ROOT).format(Date())
+    private fun today() = SimpleDateFormat(DayRange.DATE_PATTERN, Locale.ROOT).format(Date())
+
+    private companion object {
+        const val DATE_STATE_KEY = "selected_date"
+    }
 }
 
 data class MapState(val date: String, val locations: LoadState<String>)

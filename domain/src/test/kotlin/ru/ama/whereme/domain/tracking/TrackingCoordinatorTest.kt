@@ -840,14 +840,47 @@ class TrackingCoordinatorTest {
         assertNull(f.pending)
     }
 
-    @Test fun manualSamplingIgnoresChangesToTheDailySchedule() = runTest {
+    @Test fun enablingScheduleBoundsAnAlreadyRunningManualRecording() = runTest {
         val f = Fixture(this, defaults)
         f.handle.start(TrackingMode.MANUAL); runCurrent()
-        val alarm = f.pending
-        f.settings.set(defaults.copy(start = "11:00", end = "13:00", isEnable = true)); runCurrent()
+        f.settings.set(defaults.copy(start = "11:00", end = "12:01", isEnable = true)); runCurrent()
+        assertEquals(2, f.calls)
+        assertEquals(1, f.cleanups)
+        advanceTimeBy(60_000); runCurrent()
+        assertEquals(TrackingState.Stopped, f.state)
+        assertNull(f.pending)
+    }
+
+    @Test fun manualRecordingStopsAtEnabledScheduleEndAfterSavingLastFix() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true, start = "12:00", end = "12:01"), "2026-10-19T12:00:50Z")
+        f.sourceHandler = { LocationOutcome.Fix(f.fix().sample.copy(accuracyMeters = 80f)) }
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        assertEquals(10_000L, f.timeouts.single())
+        advanceTimeBy(10_000); runCurrent()
+        assertEquals(1, f.writes)
+        assertEquals(TrackingState.Stopped, f.state)
+        assertNull(f.pending)
+        assertNull(f.sessions.value)
         assertEquals(1, f.calls)
-        assertEquals(0, f.cleanups)
-        assertEquals(alarm, f.pending)
+    }
+
+    @Test fun manualStartOutsideEnabledScheduleDoesNotCollect() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true, start = "09:00", end = "12:00"))
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        assertEquals(TrackingState.Stopped, f.state)
+        assertEquals(0, f.calls)
+        assertNull(f.pending)
+    }
+
+    @Test fun restoredManualSessionCannotRunPastEnabledScheduleEnd() = runTest {
+        val f = Fixture(this, defaults.copy(isEnable = true, start = "11:00", end = "12:01"))
+        f.handle.start(TrackingMode.MANUAL); runCurrent()
+        f.handle.close(); runCurrent()
+        f.wallShift = 60_000
+        f.coordinator.restoreAfterSystemChange(); runCurrent()
+        assertNull(f.sessions.value)
+        assertNull(f.pending)
+        assertEquals(TrackingState.Stopped, f.state)
     }
 
     @Test fun lateWakeCanCrossTheNextDeadlineWithoutLosingItsBestFix() = runTest {

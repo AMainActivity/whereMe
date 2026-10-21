@@ -1,13 +1,14 @@
 package ru.ama.whereme.domain.usecase
 
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withTimeoutOrNull
+import ru.ama.whereme.domain.entity.JsonEntity
 import ru.ama.whereme.domain.entity.SessionSnapshot
 import ru.ama.whereme.domain.repository.AuthRepository
 import ru.ama.whereme.domain.repository.SessionRepository
-import javax.inject.Inject
 
 /** Best-effort validation; transport failures are not a logout decision. */
 class RefreshSessionUseCase @Inject constructor(
@@ -16,7 +17,7 @@ class RefreshSessionUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         expectedSession: SessionSnapshot,
-        timeoutMillis: Long = 5_000L
+        timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS
     ) {
         try {
             refresh(expectedSession, timeoutMillis)
@@ -46,8 +47,8 @@ class RefreshSessionUseCase @Inject constructor(
                     null
                 } else {
                     when (body.message) {
-                        "1" -> true
-                        "0" -> false
+                        JsonEntity.POSITIVE_MESSAGE -> true
+                        JsonEntity.NEGATIVE_MESSAGE -> false
                         else -> null
                     }
                 }
@@ -56,5 +57,8 @@ class RefreshSessionUseCase @Inject constructor(
 
         currentCoroutineContext().ensureActive()
         sessions.updateActivation(expectedSession, activation)
+    }
+    private companion object {
+        const val DEFAULT_TIMEOUT_MILLIS = 5_000L
     }
 }

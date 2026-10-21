@@ -25,7 +25,7 @@ class DataStoreRecordingSessionStore @Inject constructor(
     override suspend fun write(session: RecordingSession?) {
         store.edit { p ->
             decode(p) // Never overwrite an unknown or damaged format with defaults.
-            p[VERSION] = 1
+            p[VERSION] = FORMAT_VERSION
             if (session == null) {
                 p.remove(ID); p.remove(MODE); p.remove(NEXT)
             } else {
@@ -36,7 +36,7 @@ class DataStoreRecordingSessionStore @Inject constructor(
 
     private fun decode(p: Preferences): RecordingSession? {
         if (p.asMap().isEmpty()) return null
-        if (p[VERSION] != 1) throw IOException("Unsupported recording state format")
+        if (p[VERSION] != FORMAT_VERSION) throw IOException("Unsupported recording state format")
         val id = p[ID]
         val mode = p[MODE]
         val next = p[NEXT]
@@ -49,6 +49,7 @@ class DataStoreRecordingSessionStore @Inject constructor(
     }
 
     private companion object {
+        private const val FORMAT_VERSION = 1
         val VERSION = intPreferencesKey("version")
         val ID = stringPreferencesKey("recording_id")
         val MODE = stringPreferencesKey("mode")

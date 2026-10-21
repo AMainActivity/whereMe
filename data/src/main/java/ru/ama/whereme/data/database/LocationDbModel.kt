@@ -1,7 +1,7 @@
 package ru.ama.whereme.data.database
 
-import androidx.room.Index
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import ru.ama.whereme.data.database.LocationDbModel.Companion.tabLocations
 
@@ -24,5 +24,8 @@ data class LocationDbModel(
 
     companion object {
         const val tabLocations = "tab_locations"
+        const val SOURCE_DEVICE = 1
+        const val UPLOAD_PENDING = 0
+        const val UPLOAD_SENT = 1
     }
 }

@@ -53,7 +53,7 @@ class RootComponent(
         childPages(
             source = navigation,
             serializer = Tab.serializer(),
-            initialPages = { Pages(items = Tab.entries.toList(), selectedIndex = 0) },
+            initialPages = { Pages(items = Tab.entries.toList(), selectedIndex = Tab.MAP.ordinal) },
             // Four fixed tabs retain their components; only the selected tab is resumed.
             pageStatus = { index, pages ->
                 if (index == pages.selectedIndex) ChildNavState.Status.RESUMED
@@ -63,7 +63,7 @@ class RootComponent(
         )
 
     init {
-        val subscription = pages.subscribe { back.isEnabled = it.selectedIndex != 0 }
+        val subscription = pages.subscribe { back.isEnabled = it.selectedIndex != Tab.MAP.ordinal }
         lifecycle.doOnDestroy { subscription.cancel() }
     }
 

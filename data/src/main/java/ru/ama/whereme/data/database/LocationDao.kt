@@ -2,13 +2,18 @@ package ru.ama.whereme.data.database
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+import ru.ama.whereme.data.database.LocationDbModel.Companion.UPLOAD_PENDING
+import ru.ama.whereme.data.database.LocationDbModel.Companion.UPLOAD_SENT
 
 @Dao
 interface LocationDao {
-    @Query("SELECT * FROM tab_locations WHERE ownerKey=:owner AND isWrite=0 ORDER BY _id ASC LIMIT :limit")
+    @Query("SELECT MAX(COALESCE(dateend, datestart)) FROM tab_locations")
+    fun observeLastRecordedTime(): Flow<Long?>
+
+    @Query("SELECT * FROM tab_locations WHERE ownerKey=:owner AND isWrite=$UPLOAD_PENDING ORDER BY _id ASC LIMIT :limit")
     suspend fun getPendingLocations(owner: String, limit: Int): List<LocationDbModel>
 
-    @Query("UPDATE tab_locations SET isWrite=1 WHERE _id=:id AND ownerKey=:owner AND isWrite=0 " +
+    @Query("UPDATE tab_locations SET isWrite=$UPLOAD_SENT WHERE _id=:id AND ownerKey=:owner AND isWrite=$UPLOAD_PENDING " +
         "AND datetime=:datetime AND datestart=:datestart AND dateend IS :dateend " +
         "AND info IS :info AND latitude=:latitude AND longitude=:longitude " +
         "AND sourceId=:sourceId AND accuracy=:accuracy AND velocity=:velocity")
@@ -23,7 +28,7 @@ interface LocationDao {
     @Query("SELECT * FROM tab_locations WHERE _id=:id")
     suspend fun getLocation(id: Long): LocationDbModel?
 
-    @Query("UPDATE tab_locations SET dateend=:newTime, info=:newInfo, isWrite=0 WHERE _id=:id")
+    @Query("UPDATE tab_locations SET dateend=:newTime, info=:newInfo, isWrite=$UPLOAD_PENDING WHERE _id=:id")
     suspend fun updateInterval(id: Long, newTime: Long, newInfo: String): Int
 
     @Insert(onConflict = OnConflictStrategy.ABORT)

@@ -21,8 +21,11 @@ class LocationSyncWorker(context: Context, parameters: WorkerParameters,
         }
     } catch (cancelled: CancellationException) { throw cancelled
     } catch (failure: Exception) {
-        android.util.Log.w("LocationSync", "Storage unavailable: ${failure.javaClass.simpleName}")
+        android.util.Log.w(TAG, "Storage unavailable: ${failure.javaClass.simpleName}")
         return Result.retry()
       }
+    }
+    private companion object {
+        const val TAG = "LocationSync"
     }
 }

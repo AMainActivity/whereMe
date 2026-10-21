@@ -8,8 +8,9 @@ import java.util.TimeZone
 /** Local calendar day, including 23/25-hour DST days. SQL compares indexed epoch timestamps. */
 data class DayRange(val start: Long, val end: Long) {
     companion object {
+        const val DATE_PATTERN = "dd.MM.yyyy"
         fun parse(date: String, zone: TimeZone = TimeZone.getDefault()): DayRange {
-            val format = SimpleDateFormat("dd.MM.yyyy", Locale.ROOT).apply { timeZone = zone; isLenient = false }
+            val format = SimpleDateFormat(DATE_PATTERN, Locale.ROOT).apply { timeZone = zone; isLenient = false }
             val value = requireNotNull(format.parse(date))
             require(format.format(value) == date)
             return containing(value.time, zone)

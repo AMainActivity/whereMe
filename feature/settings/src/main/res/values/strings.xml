@@ -27,15 +27,11 @@
   <string name="tracking_sample_failed">Не удалось выполнить замер. Повторим по следующему будильнику</string>
   <string name="tracking_sync_failed">Отправить точки пока не удалось. Запись продолжается</string>
   <string name="tracking_stop_restricted">Не удалось передать команду остановки. Вернитесь в приложение и повторите</string>
-  <string name="settings_title">Настройки</string>
   <string name="settings_recording">Запись местоположений</string>
-  <string name="settings_start">Начать запись</string>
-  <string name="settings_stop">Остановить запись</string>
   <string name="settings_schedule">Расписание</string>
   <string name="settings_schedule_hint">Запись запускается в выбранные дни. Интервал через полночь тоже поддерживается.</string>
   <string name="settings_start_time">Начало: %1$s</string>
   <string name="settings_end_time">Окончание: %1$s</string>
-  <string name="settings_time_title">Время записи</string>
   <string name="settings_measurements">Параметры замера</string>
   <string name="settings_distance">Минимальное перемещение, м</string>
   <string name="settings_accuracy">Желаемая точность, м</string>
@@ -70,4 +66,8 @@
   </string-array>
   <string name="settings_write_error">Не удалось сохранить настройки. Повторите действие.</string>
   <string name="settings_theme_error">Не удалось прочитать тему. Повторите загрузку настроек.</string>
+  <string name="settings_time_start_title">Начало записи</string>
+  <string name="settings_time_end_title">Окончание записи</string>
+  <string name="settings_time_dial">Выбрать на часах</string>
+  <string name="settings_time_keyboard">Ввести время вручную</string>
 </resources>

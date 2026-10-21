@@ -1,11 +1,12 @@
 package ru.ama.whereme.ui
 
+import android.Manifest
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -27,6 +28,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import ru.ama.whereme.domain.entity.*
@@ -34,6 +37,7 @@ import ru.ama.whereme.domain.repository.SettingsRepository
 import ru.ama.whereme.domain.tracking.*
 import ru.ama.whereme.feature.settings.SettingsComponent
 import ru.ama.whereme.feature.settings.SettingsScreen
+import ru.ama.whereme.navigation.Screen
 import ru.ama.whereme.ui.theme.WhereMeTheme
 import ru.ama.whereme.ui.theme.isDark
 
@@ -47,6 +51,8 @@ class SettingsScreenTest {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var contentView: View
     private var writes = 0
+    private var starts = 0
+    private var stops = 0
     private val repository =
         object : SettingsRepository {
             override val settings = MutableStateFlow(SettingsDomModel.DEFAULT)
@@ -72,9 +78,15 @@ class SettingsScreenTest {
 
             override suspend fun refreshSchedule() = Unit
 
-            override fun start() = Unit
+            override fun start() {
+                starts++
+                state.value = TrackingState.Starting(TrackingMode.MANUAL)
+            }
 
-            override fun stop() = Unit
+            override fun stop() {
+                stops++
+                state.value = TrackingState.Stopped
+            }
         }
 
     @Before
@@ -107,7 +119,9 @@ class SettingsScreenTest {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                 WhereMeTheme(mode.isDark()) {
-                    Surface(Modifier.fillMaxSize()) { SettingsScreen(component) }
+                    Scaffold(topBar = { ScreenToolbar(Screen.Settings(component)) }) { padding ->
+                        SettingsScreen(component, Modifier.padding(padding))
+                    }
                 }
             }
         }
@@ -152,7 +166,7 @@ class SettingsScreenTest {
     @Test
     fun lightScreenRendersWithLargeText() {
         show(false, 1.3f)
-        compose.onNodeWithText("Начать запись").assertIsDisplayed()
+        compose.onNodeWithText("Запись местоположений").assertIsDisplayed()
         snapshot("settings-light")
         compose.onNodeWithText("Тёмная").performScrollTo().assertIsDisplayed()
     }
@@ -160,9 +174,57 @@ class SettingsScreenTest {
     @Test
     fun darkScreenRendersWithLargeText() {
         show(true, 1.3f)
-        compose.onNodeWithText("Начать запись").assertIsDisplayed()
+        compose.onNodeWithText("Запись местоположений").assertIsDisplayed()
         snapshot("settings-dark")
         compose.onNodeWithText("Как на устройстве").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun recordingSwitchStartsAndStopsWithoutEnablingSchedule() {
+        shadowOf(RuntimeEnvironment.getApplication())
+            .grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        show(false)
+        compose.onNodeWithText("Запись местоположений").assertIsOff().performClick()
+        compose.onNodeWithText("Запись местоположений").assertIsOn().performClick()
+        compose.onNodeWithText("Запись местоположений").assertIsOff()
+        compose.runOnIdle {
+            assertEquals(1, starts)
+            assertEquals(1, stops)
+            assertFalse(repository.settings.value.isEnable)
+        }
+    }
+
+    @Test
+    fun timeCanBeEditedWithKeyboardAndDialBeforeSaving() {
+        show(false)
+        compose.onNodeWithText("Начало:", substring = true).performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Ввести время вручную").performClick()
+        val inputs = compose.onAllNodes(hasSetTextAction() and hasAnyAncestor(isDialog()))
+        inputs[0].performTextReplacement("09")
+        inputs[1].performTextReplacement("45")
+        compose.onNodeWithContentDescription("Выбрать на часах").performClick()
+        compose.onNodeWithContentDescription("Ввести время вручную").assertIsDisplayed()
+        compose.onNodeWithText("Готово").performClick()
+        compose.runOnIdle {
+            assertEquals("09:45", repository.settings.value.start)
+            assertEquals(1, writes)
+        }
+    }
+
+    @Test
+    fun cancellingTimePickerDoesNotChangeSchedule() {
+        show(true)
+        val before = repository.settings.value
+        compose.onNodeWithText("Окончание:", substring = true).performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Ввести время вручную").performClick()
+        compose
+            .onAllNodes(hasSetTextAction() and hasAnyAncestor(isDialog()))[0]
+            .performTextReplacement("22")
+        compose.onNodeWithText("Отмена").performClick()
+        compose.runOnIdle {
+            assertEquals(before, repository.settings.value)
+            assertEquals(0, writes)
+        }
     }
 
     private fun snapshot(name: String) {

@@ -1,9 +1,10 @@
 package ru.ama.whereme.domain.tracking
 
-import ru.ama.whereme.domain.reportFailure
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import ru.ama.whereme.domain.entity.LocationOutcome
 import ru.ama.whereme.domain.entity.SettingsDomModel
+import ru.ama.whereme.domain.reportFailure
 import ru.ama.whereme.domain.repository.LocationSource
 
 /** One bounded measurement. It never mutates the coordinator's session or schedules another alarm. */
@@ -36,11 +37,11 @@ internal class TrackingMeasurement(
             suspend fun collect(): Result {
                 ensureOpen()
                 val timeout = minOf(
-                    request.settings.timeOfWaitAccuracy.toLong() * 1000,
-                    request.settings.timeOfWorkingWM.toLong() * 1000,
+                    TimeUnit.SECONDS.toMillis(request.settings.timeOfWaitAccuracy.toLong()),
+                    TimeUnit.SECONDS.toMillis(request.settings.timeOfWorkingWM.toLong()),
                     (end?.minus(clock.nowMillis()) ?: Long.MAX_VALUE).coerceAtLeast(1)
                 )
-                progress(TrackingState.Collecting(request.mode, clock.elapsedRealtimeNanos() / 1_000_000 + timeout, timeout))
+                progress(TrackingState.Collecting(request.mode, TimeUnit.NANOSECONDS.toMillis(clock.elapsedRealtimeNanos()) + timeout, timeout))
                 val result = source.locate(request.settings.accuracy, timeout)
                 ensureOpen()
                 if (result is LocationOutcome.Unavailable && result.reason != LocationOutcome.Reason.NO_FIX) {

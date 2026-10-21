@@ -11,7 +11,14 @@ import android.webkit.*
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 
-internal const val MAP_URL = "https://kol.hhos.ru/map/i.php"
+private const val MAP_SCHEME = "https"
+private const val MAP_HOST = "kol.hhos.ru"
+private const val MAP_PATH = "/map/i.php"
+private const val HTTPS_PORT = 443
+private const val IMPLICIT_PORT = -1
+private const val JS_BRIDGE_NAME = "Android"
+private const val JS_RENDER_FUNCTION = "fromAndroid"
+internal const val MAP_URL = "$MAP_SCHEME://$MAP_HOST$MAP_PATH"
 
 internal enum class MapPage {
     LOADING,
@@ -113,19 +120,19 @@ internal class MapWebView(
                     if (isAttachedToWindow && isMapPage(url.orEmpty().toUri())) onRoute(request)
                 }
             },
-            "Android",
+            JS_BRIDGE_NAME,
         )
     }
 
     fun render(json: String) {
         if (page == MapPage.READY && renderedJson != json) {
-            evaluateJavascript("javascript:fromAndroid($json)", null)
+            evaluateJavascript("javascript:$JS_RENDER_FUNCTION($json)", null)
             renderedJson = json
         }
     }
 
     fun release() {
-        removeJavascriptInterface("Android")
+        removeJavascriptInterface(JS_BRIDGE_NAME)
         stopLoading()
         webChromeClient = null
         destroy()
@@ -142,6 +149,6 @@ internal class MapWebView(
 }
 
 internal fun isMapOrigin(uri: Uri): Boolean =
-    uri.scheme == "https" && uri.host == "kol.hhos.ru" && uri.port in listOf(-1, 443)
+    uri.scheme == MAP_SCHEME && uri.host == MAP_HOST && uri.port in listOf(IMPLICIT_PORT, HTTPS_PORT)
 
-internal fun isMapPage(uri: Uri): Boolean = isMapOrigin(uri) && uri.path == "/map/i.php"
+internal fun isMapPage(uri: Uri): Boolean = isMapOrigin(uri) && uri.path == MAP_PATH

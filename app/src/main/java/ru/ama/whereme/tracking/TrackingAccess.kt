@@ -8,7 +8,6 @@ import android.location.LocationManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
-
 import ru.ama.whereme.domain.tracking.TrackingCapabilities
 
 fun Context.trackingCapabilities(): TrackingCapabilities {
@@ -21,6 +20,6 @@ fun Context.trackingCapabilities(): TrackingCapabilities {
     val gps = provider(LocationManager.GPS_PROVIDER)
     val network = provider(LocationManager.NETWORK_PROVIDER)
     return TrackingCapabilities(fine || coarse, enabled, (fine && gps) || ((fine || coarse) && network),
-        !fine && gps, Build.VERSION.SDK_INT < 29 || granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
-        Build.VERSION.SDK_INT < 31 || (getSystemService(Context.ALARM_SERVICE) as AlarmManager).canScheduleExactAlarms())
+        !fine && gps, Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || (getSystemService(Context.ALARM_SERVICE) as AlarmManager).canScheduleExactAlarms())
 }

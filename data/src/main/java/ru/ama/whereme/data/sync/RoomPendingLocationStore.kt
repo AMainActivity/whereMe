@@ -1,11 +1,11 @@
 package ru.ama.whereme.data.sync
 
 import androidx.room.withTransaction
+import javax.inject.Inject
 import ru.ama.whereme.data.database.AppDatabase
 import ru.ama.whereme.data.database.LocationDao
 import ru.ama.whereme.data.mapper.WmMapper
 import ru.ama.whereme.domain.repository.SessionRepository
-import javax.inject.Inject
 
 class RoomPendingLocationStore @Inject constructor(
     private val database: AppDatabase,
@@ -21,11 +21,11 @@ class RoomPendingLocationStore @Inject constructor(
             if (originals.isEmpty()) return@withTransaction null
             // Preserve the current server coordinate transform exactly until its contract is verified.
             val posId = session.profile.posId.toString()
-            val offset = if (posId.length <= 8) session.profile.posId else posId.substring(0, 8).toInt()
+            val offset = if (posId.length <= OFFSET_ID_DIGITS) session.profile.posId else posId.substring(0, OFFSET_ID_DIGITS).toInt()
             val payload = mapper.mapDbModelsToEntities(originals).map { row ->
                 row.copy(
                     latitude = row.latitude + coordinateOffset(offset),
-                    longitude = row.longitude + coordinateOffset(offset + 1))
+                    longitude = row.longitude + coordinateOffset(offset + LONGITUDE_OFFSET_INCREMENT))
             }
             PendingLocationBatch(session, originals, payload)
         }
@@ -48,6 +48,8 @@ class RoomPendingLocationStore @Inject constructor(
     } ?: 0
     companion object {
         const val BATCH_SIZE = 200
+        private const val OFFSET_ID_DIGITS = 8
+        private const val LONGITUDE_OFFSET_INCREMENT = 1
         internal fun coordinateOffset(value: Int): Double = "${value.toString().first()}.$value".toDouble()
     }
 }

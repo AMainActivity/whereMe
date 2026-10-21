@@ -58,7 +58,7 @@ internal fun TrackingAccessRequest(component: SettingsComponent, action: Trackin
         TrackingRequirement.READY ->
             LaunchedEffect(action, requirement) {
                 if (
-                    Build.VERSION.SDK_INT >= 33 &&
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                         ContextCompat.checkSelfPermission(
                             context,
                             Manifest.permission.POST_NOTIFICATIONS,
@@ -115,7 +115,7 @@ internal fun TrackingAccessRequest(component: SettingsComponent, action: Trackin
                                         AccessRequest.LOCATION_SETTINGS,
                                     )
                                 TrackingRequirement.BACKGROUND_LOCATION ->
-                                    if (Build.VERSION.SDK_INT >= 30) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                         openSettings(
                                             Intent(
                                                 Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -123,14 +123,14 @@ internal fun TrackingAccessRequest(component: SettingsComponent, action: Trackin
                                             ),
                                             AccessRequest.BACKGROUND_LOCATION,
                                         )
-                                    } else if (Build.VERSION.SDK_INT >= 29) {
+                                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                                         waiting = AccessRequest.BACKGROUND_LOCATION
                                         permissions.launch(
                                             arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
                                         )
                                     }
                                 TrackingRequirement.EXACT_ALARM ->
-                                    if (Build.VERSION.SDK_INT >= 31) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                         openSettings(
                                             Intent(
                                                 Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,

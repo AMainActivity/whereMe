@@ -10,4 +10,8 @@ data class JsonJwt(
     val name: String? = null,
     val url: String? = null,
     val isActivate: Int
-)
+) {
+    companion object {
+        const val ACTIVE = 1
+    }
+}

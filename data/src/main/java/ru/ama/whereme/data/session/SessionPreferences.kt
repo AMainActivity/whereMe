@@ -10,7 +10,7 @@ internal class SessionPreferences(private val cipher: SessionCipher) {
     fun read(p: Preferences): SessionSnapshot {
         validateVersion(p)
         // An empty file is a new, signed-out installation; no key or write is needed to read it.
-        if (p.asMap().isEmpty()) return SessionSnapshot(SettingsUserInfoDomModel.EMPTY, "empty-session")
+        if (p.asMap().isEmpty()) return SessionSnapshot(SettingsUserInfoDomModel.EMPTY, EMPTY_SESSION_ID)
         val generation = p[GENERATION] ?: throw IOException("Missing session generation")
         val encrypted = p[PROFILE] ?: throw IOException("Missing encrypted session")
         return SessionSnapshot(SessionProfileCodec.decode(cipher.decrypt(encrypted).toString(Charsets.UTF_8)), generation)
@@ -20,14 +20,16 @@ internal class SessionPreferences(private val cipher: SessionCipher) {
         validateVersion(p)
         p[PROFILE] = cipher.encrypt(SessionProfileCodec.encode(profile).toByteArray(Charsets.UTF_8))
         p[GENERATION] = generation
-        p[VERSION] = 1
+        p[VERSION] = FORMAT_VERSION
     }
     private fun validateVersion(p: Preferences) {
-        if (p.asMap().isNotEmpty() && p[VERSION] != 1) {
+        if (p.asMap().isNotEmpty() && p[VERSION] != FORMAT_VERSION) {
             throw IOException("Unsupported or missing session format; stored data retained")
         }
     }
     companion object {
+        private const val FORMAT_VERSION = 1
+        private const val EMPTY_SESSION_ID = "empty-session"
         // Keep the established on-disk key so the existing DataStore installation remains readable.
         val VERSION = intPreferencesKey("migration_version")
         private val PROFILE = byteArrayPreferencesKey("encrypted_profile")

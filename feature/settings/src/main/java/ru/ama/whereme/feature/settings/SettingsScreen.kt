@@ -6,6 +6,7 @@ import android.provider.Settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -14,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -21,11 +23,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.util.Locale
 import ru.ama.whereme.domain.entity.LocationOutcome
+import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.entity.ThemeMode
 import ru.ama.whereme.domain.state.LoadState
 import ru.ama.whereme.domain.tracking.*
@@ -55,14 +60,14 @@ internal fun SettingsContent(
     var systemSettingsFailed by remember { mutableStateOf(false) }
     var editingStart by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val settings = (state.settings as? LoadState.Ready)?.value
+    val canToggleRecording =
+        state.tracking != TrackingState.Stopping &&
+            state.accessRequest == null &&
+            (state.tracking.isRunning || settings != null)
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            stringResource(R.string.settings_title),
-            style = MaterialTheme.typography.headlineMedium,
-        )
         Card(
             colors =
                 CardDefaults.cardColors(
@@ -73,10 +78,30 @@ internal fun SettingsContent(
                 Modifier.fillMaxWidth().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    stringResource(R.string.settings_recording),
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Row(
+                    Modifier.fillMaxWidth()
+                        .toggleable(
+                            value = state.tracking.isRunning,
+                            enabled = canToggleRecording,
+                            role = Role.Switch,
+                            onValueChange = {
+                                onIntent(if (it) SettingsIntent.Start else SettingsIntent.Stop)
+                            },
+                        )
+                        .heightIn(min = 48.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(R.string.settings_recording),
+                        Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Switch(
+                        checked = state.tracking.isRunning,
+                        onCheckedChange = null,
+                        enabled = canToggleRecording,
+                    )
+                }
                 Text(
                     stringResource(
                         if (
@@ -87,22 +112,6 @@ internal fun SettingsContent(
                         else trackingText(state.tracking, settings?.isEnable == true)
                     )
                 )
-                Button(
-                    onClick = {
-                        onIntent(
-                            if (state.tracking.isRunning) SettingsIntent.Stop
-                            else SettingsIntent.Start
-                        )
-                    },
-                    enabled = state.tracking.isRunning || settings != null,
-                ) {
-                    Text(
-                        stringResource(
-                            if (state.tracking.isRunning) R.string.settings_stop
-                            else R.string.settings_start
-                        )
-                    )
-                }
             }
         }
         state.error?.let { message ->
@@ -171,150 +180,224 @@ internal fun SettingsContent(
             is LoadState.Ready -> Unit
         }
         if (settings != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            SettingsCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.settings_schedule),
+                        Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Switch(
+                        modifier = Modifier.semantics { contentDescription = scheduleLabel },
+                        checked = settings.isEnable,
+                        onCheckedChange = { onIntent(SettingsIntent.Schedule(it)) },
+                    )
+                }
                 Text(
-                    stringResource(R.string.settings_schedule),
-                    Modifier.weight(1f),
+                    stringResource(R.string.settings_schedule_hint),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    stringArrayResource(R.array.settings_days).forEachIndexed { index, label ->
+                        FilterChip(
+                            selected = settings.days[index] == SettingsDomModel.DAY_ENABLED,
+                            onClick = { onIntent(SettingsIntent.Day(index)) },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = { editingStart = true }) {
+                        Text(stringResource(R.string.settings_start_time, settings.start))
+                    }
+                    OutlinedButton(onClick = { editingStart = false }) {
+                        Text(stringResource(R.string.settings_end_time, settings.end))
+                    }
+                }
+            }
+            SettingsCard {
+                Text(
+                    stringResource(R.string.settings_measurements),
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Switch(
-                    modifier = Modifier.semantics { contentDescription = scheduleLabel },
-                    checked = settings.isEnable,
-                    onCheckedChange = { onIntent(SettingsIntent.Schedule(it)) },
+                Text(
+                    stringResource(R.string.settings_measurements_hint),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-            Text(
-                stringResource(R.string.settings_schedule_hint),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                stringArrayResource(R.array.settings_days).forEachIndexed { index, label ->
-                    FilterChip(
-                        selected = settings.days[index] == "1",
-                        onClick = { onIntent(SettingsIntent.Day(index)) },
-                        label = { Text(label) },
-                    )
-                }
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = { editingStart = true }) {
-                    Text(stringResource(R.string.settings_start_time, settings.start))
-                }
-                OutlinedButton(onClick = { editingStart = false }) {
-                    Text(stringResource(R.string.settings_end_time, settings.end))
-                }
-            }
-            HorizontalDivider()
-            Text(
-                stringResource(R.string.settings_measurements),
-                style = MaterialTheme.typography.titleLarge,
-            )
-            Text(
-                stringResource(R.string.settings_measurements_hint),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            state.draft?.let { draft ->
-                MeasurementField.entries.forEach { field ->
-                    OutlinedTextField(
-                        value = draft.value(field),
-                        onValueChange = { onIntent(SettingsIntent.Edit(field, it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        label = {
-                            Text(
-                                stringResource(
-                                    when (field) {
-                                        MeasurementField.DISTANCE -> R.string.settings_distance
-                                        MeasurementField.ACCURACY -> R.string.settings_accuracy
-                                        MeasurementField.WAIT -> R.string.settings_wait
-                                        MeasurementField.PERIOD -> R.string.settings_period
-                                    }
-                                )
-                            )
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        isError = !draft.isValid(field),
-                        supportingText = {
-                            if (!draft.isValid(field))
+                state.draft?.let { draft ->
+                    MeasurementField.entries.forEach { field ->
+                        OutlinedTextField(
+                            value = draft.value(field),
+                            onValueChange = { onIntent(SettingsIntent.Edit(field, it)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = {
                                 Text(
                                     stringResource(
-                                        R.string.settings_minimum,
-                                        MeasurementDraft.minimum(field),
+                                        when (field) {
+                                            MeasurementField.DISTANCE -> R.string.settings_distance
+                                            MeasurementField.ACCURACY -> R.string.settings_accuracy
+                                            MeasurementField.WAIT -> R.string.settings_wait
+                                            MeasurementField.PERIOD -> R.string.settings_period
+                                        }
                                     )
                                 )
-                        },
-                    )
-                }
-                Button(
-                    onClick = { onIntent(SettingsIntent.Apply) },
-                    enabled =
-                        draft.isValid && !state.saving && draft != MeasurementDraft.from(settings),
-                ) {
-                    Text(
-                        stringResource(
-                            if (state.saving) R.string.settings_saving else R.string.settings_apply
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = !draft.isValid(field),
+                            supportingText = {
+                                if (!draft.isValid(field))
+                                    Text(
+                                        stringResource(
+                                            R.string.settings_minimum,
+                                            MeasurementDraft.minimum(field),
+                                        )
+                                    )
+                            },
                         )
-                    )
+                    }
+                    Button(
+                        onClick = { onIntent(SettingsIntent.Apply) },
+                        enabled =
+                            draft.isValid &&
+                                !state.saving &&
+                                draft != MeasurementDraft.from(settings),
+                    ) {
+                        Text(
+                            stringResource(
+                                if (state.saving) R.string.settings_saving
+                                else R.string.settings_apply
+                            )
+                        )
+                    }
                 }
             }
         }
-        HorizontalDivider()
-        Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleLarge)
-        ThemeMode.entries.forEach { mode ->
-            Row(
-                Modifier.fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .selectable(
-                        selected = state.theme == mode,
-                        role = Role.RadioButton,
-                        onClick = { onIntent(SettingsIntent.Theme(mode)) },
+        SettingsCard {
+            Text(
+                stringResource(R.string.settings_theme),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            ThemeMode.entries.forEach { mode ->
+                Row(
+                    Modifier.fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .selectable(
+                            selected = state.theme == mode,
+                            role = Role.RadioButton,
+                            onClick = { onIntent(SettingsIntent.Theme(mode)) },
+                        )
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = state.theme == mode, onClick = null)
+                    Text(
+                        stringResource(
+                            when (mode) {
+                                ThemeMode.SYSTEM -> R.string.settings_system
+                                ThemeMode.LIGHT -> R.string.settings_light
+                                ThemeMode.DARK -> R.string.settings_dark
+                            }
+                        ),
+                        Modifier.padding(start = 12.dp),
                     )
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                RadioButton(selected = state.theme == mode, onClick = null)
-                Text(
-                    stringResource(
-                        when (mode) {
-                            ThemeMode.SYSTEM -> R.string.settings_system
-                            ThemeMode.LIGHT -> R.string.settings_light
-                            ThemeMode.DARK -> R.string.settings_dark
-                        }
-                    ),
-                    Modifier.padding(start = 12.dp),
-                )
+                }
             }
         }
     }
     val start = editingStart
     if (start != null && settings != null) {
-        val parts = (if (start) settings.start else settings.end).split(':').map(String::toInt)
-        val picker = rememberTimePickerState(parts[0], parts[1], is24Hour = true)
-        AlertDialog(
-            onDismissRequest = { editingStart = null },
-            title = { Text(stringResource(R.string.settings_time_title)) },
-            text = { TimeInput(picker) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onIntent(
-                            SettingsIntent.Time(
-                                start,
-                                String.format(Locale.ROOT, "%02d:%02d", picker.hour, picker.minute),
-                            )
-                        )
-                        editingStart = null
-                    }
-                ) {
-                    Text(stringResource(R.string.settings_done))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { editingStart = null }) {
-                    Text(stringResource(R.string.settings_cancel))
-                }
-            },
+        key(start) {
+            RecordingTimeDialog(
+                value = if (start) settings.start else settings.end,
+                title =
+                    stringResource(
+                        if (start) R.string.settings_time_start_title
+                        else R.string.settings_time_end_title
+                    ),
+                onDismiss = { editingStart = null },
+                onConfirm = {
+                    onIntent(SettingsIntent.Time(start, it))
+                    editingStart = null
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            content = content,
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecordingTimeDialog(
+    value: String,
+    title: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    val parts = value.split(':').map(String::toInt)
+    val (hour, minute) = parts
+    val picker = rememberTimePickerState(hour, minute, is24Hour = true)
+    var keyboard by rememberSaveable { mutableStateOf(false) }
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier.padding(16.dp).widthIn(max = TimeDialogMaxWidth).imePadding(),
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 6.dp,
+        ) {
+            Column(
+                Modifier.width(IntrinsicSize.Min)
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                Text(title, style = MaterialTheme.typography.titleLarge)
+                if (keyboard) TimeInput(picker) else TimePicker(picker)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { keyboard = !keyboard }) {
+                        Icon(
+                            painterResource(
+                                if (keyboard) R.drawable.ic_clock else R.drawable.ic_keyboard
+                            ),
+                            stringResource(
+                                if (keyboard) R.string.settings_time_dial
+                                else R.string.settings_time_keyboard
+                            ),
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.settings_cancel))
+                    }
+                    TextButton(
+                        onClick = {
+                            onConfirm(
+                                String.format(
+                                    Locale.ROOT,
+                                    SettingsDomModel.TIME_FORMAT,
+                                    picker.hour,
+                                    picker.minute,
+                                )
+                            )
+                        }
+                    ) {
+                        Text(stringResource(R.string.settings_done))
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -357,3 +440,5 @@ private fun requirementText(requirement: TrackingRequirement): Int =
         TrackingRequirement.EXACT_ALARM -> R.string.tracking_alarm_required
         TrackingRequirement.READY -> R.string.tracking_armed
     }
+
+private val TimeDialogMaxWidth = 560.dp

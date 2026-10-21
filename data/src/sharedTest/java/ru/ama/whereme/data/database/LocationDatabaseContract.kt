@@ -59,6 +59,25 @@ abstract class LocationDatabaseContract {
     )
 
     @Test
+    fun lastRecordedTimeObservesInsertsAndStationaryIntervalUpdates() = runBlocking {
+        assertNull(dao.observeLastRecordedTime().first())
+        val id = insert()
+        assertEquals(1000L, dao.observeLastRecordedTime().first())
+        val observed = CompletableDeferred<Unit>()
+        val update = async {
+            withTimeout(5_000) {
+                dao.observeLastRecordedTime().onEach { observed.complete(Unit) }.first { it == 3000L }
+            }
+        }
+        observed.await()
+        dao.updateInterval(id, 3000, "extended")
+        assertEquals(3000L, update.await())
+        // A later insertion with an older fix must not make the displayed time go backwards.
+        dao.insertLocation(LocationDbModel("2000", 2000, null, null, 1.0, 2.0, 1, 5f, 0f, 0))
+        assertEquals(3000L, dao.observeLastRecordedTime().first())
+    }
+
+    @Test
     fun emptyHistoryReturnsNull() = runBlocking {
         assertNull(dao.getLocation(1))
         assertNull(store.snapshot())

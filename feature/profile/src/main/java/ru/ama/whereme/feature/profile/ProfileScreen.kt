@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,9 +21,6 @@ import ru.ama.whereme.domain.state.LoadState
 fun ProfileScreen(component: ProfileComponent, modifier: Modifier = Modifier) {
     val state by component.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val shareChooser = stringResource(R.string.profile_share_chooser)
-    var share by rememberSaveable { mutableStateOf(false) }
-    var logout by rememberSaveable { mutableStateOf(false) }
     var externalError by rememberSaveable { mutableStateOf(false) }
     fun open(intent: Intent) {
         try {
@@ -38,10 +36,6 @@ fun ProfileScreen(component: ProfileComponent, modifier: Modifier = Modifier) {
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            stringResource(R.string.profile_title),
-            style = MaterialTheme.typography.headlineMedium,
-        )
         if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         state.error?.let { error ->
             Text(
@@ -80,7 +74,7 @@ fun ProfileScreen(component: ProfileComponent, modifier: Modifier = Modifier) {
                 )
                 OutlinedButton(
                     onClick = {
-                        open(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/myTestInfoBot")))
+                        open(Intent(Intent.ACTION_VIEW, Uri.parse(SIGN_IN_BOT_URL)))
                     }
                 ) {
                     Text(stringResource(R.string.profile_bot))
@@ -120,12 +114,6 @@ fun ProfileScreen(component: ProfileComponent, modifier: Modifier = Modifier) {
                         )
                     }
                 }
-                Button(onClick = { share = true }, enabled = !profile.url.isNullOrBlank()) {
-                    Text(stringResource(R.string.profile_share))
-                }
-                OutlinedButton(onClick = { logout = true }, enabled = !state.busy) {
-                    Text(stringResource(R.string.profile_logout))
-                }
             }
         }
     }
@@ -146,7 +134,33 @@ fun ProfileScreen(component: ProfileComponent, modifier: Modifier = Modifier) {
             },
         )
     }
-    if (share && profile != null)
+}
+
+@Composable
+fun ProfileToolbarActions(component: ProfileComponent) {
+    val state by component.state.collectAsStateWithLifecycle()
+    val profile =
+        (state.session as? LoadState.Ready)?.value?.profile?.takeIf { it.tokenJwt.isNotBlank() }
+            ?: return
+    val context = LocalContext.current
+    val shareChooser = stringResource(R.string.profile_share_chooser)
+    var share by rememberSaveable { mutableStateOf(false) }
+    var logout by rememberSaveable { mutableStateOf(false) }
+    var externalError by rememberSaveable { mutableStateOf(false) }
+    fun open(intent: Intent) {
+        try {
+            context.startActivity(intent)
+        } catch (_: ActivityNotFoundException) {
+            externalError = true
+        }
+    }
+    IconButton(onClick = { share = true }, enabled = !state.busy && !profile.url.isNullOrBlank()) {
+        Icon(painterResource(R.drawable.ic_share), stringResource(R.string.profile_share))
+    }
+    IconButton(onClick = { logout = true }, enabled = !state.busy) {
+        Icon(painterResource(R.drawable.ic_logout), stringResource(R.string.profile_logout))
+    }
+    if (share)
         AlertDialog(
             onDismissRequest = { share = false },
             title = { Text(stringResource(R.string.profile_share_title)) },
@@ -157,17 +171,12 @@ fun ProfileScreen(component: ProfileComponent, modifier: Modifier = Modifier) {
                         share = false
                         val intent =
                             Intent(Intent.ACTION_SEND)
-                                .setType("text/plain")
+                                .setType(SHARE_MEDIA_TYPE)
                                 .putExtra(
                                     Intent.EXTRA_TEXT,
-                                    "https://kol.hhos.ru/gkk/map.php?wm=${profile.url}",
+                                    SHARED_MAP_URL_PREFIX + profile.url,
                                 )
-                        open(
-                            Intent.createChooser(
-                                intent,
-                                shareChooser,
-                            )
-                        )
+                        open(Intent.createChooser(intent, shareChooser))
                     }
                 ) {
                     Text(stringResource(R.string.profile_share))
@@ -179,7 +188,7 @@ fun ProfileScreen(component: ProfileComponent, modifier: Modifier = Modifier) {
                 }
             },
         )
-    if (logout && profile != null)
+    if (logout)
         AlertDialog(
             onDismissRequest = { logout = false },
             title = { Text(stringResource(R.string.profile_logout_title)) },
@@ -200,4 +209,19 @@ fun ProfileScreen(component: ProfileComponent, modifier: Modifier = Modifier) {
                 }
             },
         )
+
+    if (externalError)
+        AlertDialog(
+            onDismissRequest = { externalError = false },
+            text = { Text(stringResource(R.string.profile_no_handler)) },
+            confirmButton = {
+                TextButton(onClick = { externalError = false }) {
+                    Text(stringResource(R.string.profile_close))
+                }
+            },
+        )
 }
+
+private const val SIGN_IN_BOT_URL = "https://t.me/myTestInfoBot"
+private const val SHARED_MAP_URL_PREFIX = "https://kol.hhos.ru/gkk/map.php?wm="
+private const val SHARE_MEDIA_TYPE = "text/plain"

@@ -12,6 +12,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.location.LocationListenerCompat
 import androidx.core.location.LocationManagerCompat
 import androidx.core.location.LocationRequestCompat
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
@@ -20,8 +22,6 @@ import ru.ama.whereme.domain.entity.LocationOutcome
 import ru.ama.whereme.domain.entity.LocationSample
 import ru.ama.whereme.domain.repository.LocationSource
 import ru.ama.whereme.domain.usecase.selectLocationFix
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /** GNSS works without GMS or a network connection; NETWORK_PROVIDER is optional. */
 @Singleton
@@ -51,8 +51,8 @@ class PlatformLocationSource @Inject constructor(private val application: Applic
                 val updates = callbackFlow<LocationOutcome> {
                     val listeners = mutableListOf<LocationListenerCompat>()
                     val registered = mutableSetOf<String>()
-                    val request = LocationRequestCompat.Builder(1_000L)
-                        .setMinUpdateIntervalMillis(1_000L)
+                    val request = LocationRequestCompat.Builder(UPDATE_INTERVAL_MILLIS)
+                        .setMinUpdateIntervalMillis(UPDATE_INTERVAL_MILLIS)
                         .setQuality(LocationRequestCompat.QUALITY_HIGH_ACCURACY).build()
                     try {
                         for (provider in providers) {
@@ -97,4 +97,7 @@ class PlatformLocationSource @Inject constructor(private val application: Applic
         }
 
     private fun unavailable(reason: LocationOutcome.Reason) = LocationOutcome.Unavailable(reason)
+    private companion object {
+        const val UPDATE_INTERVAL_MILLIS = 1_000L
+    }
 }

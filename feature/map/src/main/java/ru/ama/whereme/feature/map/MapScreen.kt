@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -23,14 +24,13 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 import ru.ama.whereme.domain.state.LoadState
+import ru.ama.whereme.domain.usecase.DayRange
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(component: MapComponent, modifier: Modifier = Modifier) {
     val state by component.state.collectAsStateWithLifecycle()
-    val date = state.date
     val locations = state.locations
-    var datePicker by rememberSaveable { mutableStateOf(false) }
     var page by remember { mutableStateOf(MapPage.LOADING) }
     var webView by remember { mutableStateOf<MapWebView?>(null) }
     var route by remember { mutableStateOf<RouteRequest?>(null) }
@@ -65,19 +65,6 @@ fun MapScreen(component: MapComponent, modifier: Modifier = Modifier) {
         onDispose { lifecycle.removeObserver(observer) }
     }
     Column(modifier.fillMaxSize()) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(R.string.map_title),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            TextButton(onClick = { datePicker = true }) {
-                Text(stringResource(R.string.map_date, date))
-            }
-        }
         if (locations == LoadState.Failed) {
             Text(
                 stringResource(R.string.map_storage_failed),
@@ -112,7 +99,7 @@ fun MapScreen(component: MapComponent, modifier: Modifier = Modifier) {
             }
         }
         val points = (locations as? LoadState.Ready)?.value
-        if (points == "[]")
+        if (points == EMPTY_POINTS_JSON)
             Text(
                 stringResource(R.string.map_empty),
                 Modifier.padding(horizontal = 16.dp),
@@ -142,7 +129,7 @@ fun MapScreen(component: MapComponent, modifier: Modifier = Modifier) {
                 view.setBackgroundColor(background)
                 // Native loading/error UI owns these states, including TalkBack visibility.
                 view.visibility = if (page == MapPage.READY) View.VISIBLE else View.INVISIBLE
-                if (page == MapPage.READY) view.render(points ?: "[]")
+                if (page == MapPage.READY) view.render(points ?: EMPTY_POINTS_JSON)
             },
             onRelease = { view ->
                 view.release()
@@ -150,10 +137,62 @@ fun MapScreen(component: MapComponent, modifier: Modifier = Modifier) {
             },
         )
     }
+    route?.let { request ->
+        AlertDialog(
+            onDismissRequest = { route = null },
+            title = { Text(stringResource(R.string.map_route)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.map_route_coordinates,
+                        request.fromLatitude.toString(),
+                        request.fromLongitude.toString(),
+                        request.toLatitude.toString(),
+                        request.toLongitude.toString(),
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        route = null
+                        open(
+                            String.format(
+                                    Locale.ROOT,
+                                    ROUTE_URI_FORMAT,
+                                    request.fromLongitude,
+                                    request.fromLatitude,
+                                    request.toLongitude,
+                                    request.toLatitude,
+                                )
+                                .toUri(),
+                            ROUTE_APP_STORE_URI.toUri(),
+                        )
+                    }
+                ) {
+                    Text(stringResource(R.string.map_done))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { route = null }) { Text(stringResource(R.string.map_cancel)) }
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MapToolbarActions(component: MapComponent) {
+    val state by component.state.collectAsStateWithLifecycle()
+    val date = state.date
+    var datePicker by rememberSaveable { mutableStateOf(false) }
+    IconButton(onClick = { datePicker = true }) {
+        Icon(painterResource(R.drawable.ic_calendar), stringResource(R.string.map_choose_date))
+    }
     if (datePicker) {
         val formatter = remember {
-            SimpleDateFormat("dd.MM.yyyy", Locale.ROOT).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
+            SimpleDateFormat(DayRange.DATE_PATTERN, Locale.ROOT).apply {
+                timeZone = TimeZone.getTimeZone(DATE_PICKER_TIME_ZONE)
             }
         }
         val picker =
@@ -184,32 +223,9 @@ fun MapScreen(component: MapComponent, modifier: Modifier = Modifier) {
             DatePicker(picker)
         }
     }
-    route?.let { request ->
-        AlertDialog(
-            onDismissRequest = { route = null },
-            title = { Text(stringResource(R.string.map_route)) },
-            text = {
-                Text(
-                    "${request.fromLatitude}, ${request.fromLongitude} → ${request.toLatitude}, ${request.toLongitude}"
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        route = null
-                        open(
-                            "dgis://2gis.ru/routeSearch/rsType/car/from/${request.fromLongitude},${request.fromLatitude}/to/${request.toLongitude},${request.toLatitude}"
-                                .toUri(),
-                            "market://details?id=ru.dublgis.dgismobile".toUri(),
-                        )
-                    }
-                ) {
-                    Text(stringResource(R.string.map_done))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { route = null }) { Text(stringResource(R.string.map_cancel)) }
-            },
-        )
-    }
 }
+
+private const val ROUTE_URI_FORMAT = "dgis://2gis.ru/routeSearch/rsType/car/from/%s,%s/to/%s,%s"
+private const val ROUTE_APP_STORE_URI = "market://details?id=ru.dublgis.dgismobile"
+private const val EMPTY_POINTS_JSON = "[]"
+private const val DATE_PICKER_TIME_ZONE = "UTC"

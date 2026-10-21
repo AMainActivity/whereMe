@@ -40,6 +40,7 @@ class MapComponentTest {
     private var rows = emptyList<LocationDb>()
     private val history =
         object : LocationHistoryRepository {
+            override val lastRecordedTime = kotlinx.coroutines.flow.flowOf<Long?>(null)
             override fun getLocationById(date: String): Flow<List<LocationDb>> = flow {
                 queries.add(date)
                 if (fail) throw IOException("unavailable")

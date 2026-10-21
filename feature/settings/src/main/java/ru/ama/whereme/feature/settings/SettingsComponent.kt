@@ -20,14 +20,9 @@ class SettingsComponent(
     applicationScope: CoroutineScope,
 ) : ComponentContext by context {
     private val scope = coroutineScope(Dispatchers.Main.immediate + SupervisorJob())
-    private val restored = stateKeeper.consume("settings", Snapshot.serializer())
+    private val restored = stateKeeper.consume(SETTINGS_STATE_KEY, Snapshot.serializer())
     private val mutable =
-        MutableStateFlow(
-            SettingsState(
-                draft = restored?.draft,
-                accessRequest = restored?.action,
-            )
-        )
+        MutableStateFlow(SettingsState(draft = restored?.draft, accessRequest = restored?.action))
     val state = mutable.asStateFlow()
     private val retry = MutableStateFlow(0)
     private val commands =
@@ -41,16 +36,14 @@ class SettingsComponent(
         }
 
     init {
-        stateKeeper.register("settings", Snapshot.serializer()) {
+        stateKeeper.register(SETTINGS_STATE_KEY, Snapshot.serializer()) {
             Snapshot(state.value.draft, state.value.accessRequest)
         }
         lifecycle.doOnDestroy { commands.close() }
         scope.launch {
             retry
                 .flatMapLatest { repository.settings.asLoadState() }
-                .collect {
-                    dispatch(SettingsResult.Loaded(it))
-                }
+                .collect { dispatch(SettingsResult.Loaded(it)) }
         }
         scope.launch { control.state.collect { dispatch(SettingsResult.Tracking(it)) } }
         scope.launch {
@@ -92,7 +85,11 @@ class SettingsComponent(
                     old.copy(
                         days =
                             old.days.mapIndexed { index, day ->
-                                if (index == intent.index) if (day == "1") "0" else "1" else day
+                                if (index == intent.index)
+                                    if (day == SettingsDomModel.DAY_ENABLED)
+                                        SettingsDomModel.DAY_DISABLED
+                                    else SettingsDomModel.DAY_ENABLED
+                                else day
                             }
                     )
                 }
@@ -167,7 +164,7 @@ class SettingsComponent(
         val value = (state.value.settings as? LoadState.Ready)?.value ?: return
         if (
             action == TrackingAction.SCHEDULE &&
-                (value.start == value.end || value.days.none { it == "1" })
+                (value.start == value.end || value.days.none { it == SettingsDomModel.DAY_ENABLED })
         ) {
             dispatch(SettingsResult.Error(R.string.tracking_invalid_schedule))
             return
@@ -175,15 +172,21 @@ class SettingsComponent(
         dispatch(SettingsResult.Access(action))
     }
 
-    private fun update(transform: (SettingsDomModel) -> SettingsDomModel) = commands.submit {
-        val value = repository.updateSettings { current ->
-            transform(current).also {
-                require(!it.isEnable || (it.start != it.end && it.days.any { day -> day == "1" }))
-            }
+    private fun update(transform: (SettingsDomModel) -> SettingsDomModel) =
+        commands.submit {
+            val value =
+                repository.updateSettings { current ->
+                    transform(current).also {
+                        require(
+                            !it.isEnable ||
+                                (it.start != it.end &&
+                                    it.days.any { day -> day == SettingsDomModel.DAY_ENABLED })
+                        )
+                    }
+                }
+            if (value.isEnable) control.refreshSchedule()
+            dispatch(SettingsResult.ClearError)
         }
-        if (value.isEnable) control.refreshSchedule()
-        dispatch(SettingsResult.ClearError)
-    }
 
     private fun dispatch(result: SettingsResult) {
         mutable.value = reduceSettings(mutable.value, result)
@@ -191,6 +194,10 @@ class SettingsComponent(
 
     @Serializable
     private data class Snapshot(val draft: MeasurementDraft?, val action: TrackingAction?)
+
+    private companion object {
+        const val SETTINGS_STATE_KEY = "settings"
+    }
 }
 
 @Serializable

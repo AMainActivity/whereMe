@@ -13,12 +13,25 @@ data class SettingsDomModel(
     val isEnable: Boolean
 ) {
     init {
-        require(days.size == 7 && days.all { it == "0" || it == "1" })
+        require(days.size == DAYS_PER_WEEK && days.all { it == DAY_DISABLED || it == DAY_ENABLED })
         require(TIME.matches(start) && TIME.matches(end))
         require(minDist >= 0 && accuracy > 0 && timeOfWaitAccuracy > 0 && timeOfWorkingWM > 0)
     }
     companion object {
+        const val DAYS_PER_WEEK = 7
+        const val DAY_ENABLED = "1"
+        const val DAY_DISABLED = "0"
+        const val TIME_FORMAT = "%02d:%02d"
         private val TIME = Regex("(?:[01][0-9]|2[0-3]):[0-5][0-9]")
-        val DEFAULT = SettingsDomModel(List(7) { "1" }, "09:00", "17:00", 20, 50, 55, 100, false)
+        val DEFAULT = SettingsDomModel(
+            days = List(DAYS_PER_WEEK) { DAY_ENABLED },
+            start = "09:00",
+            end = "17:00",
+            minDist = 20,
+            accuracy = 50,
+            timeOfWaitAccuracy = 55,
+            timeOfWorkingWM = 100,
+            isEnable = false
+        )
     }
 }

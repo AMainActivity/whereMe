@@ -9,12 +9,17 @@ data class LocationSample(
     val elapsedRealtimeNanos: Long
 ) {
     fun isUsable(nowElapsedRealtimeNanos: Long): Boolean =
-        latitude.isFinite() && latitude in -90.0..90.0 &&
-            longitude.isFinite() && longitude in -180.0..180.0 &&
+        latitude.isFinite() && latitude in LATITUDE_RANGE &&
+            longitude.isFinite() && longitude in LONGITUDE_RANGE &&
             accuracyMeters.isFinite() && accuracyMeters >= 0 &&
             speedMetersPerSecond.isFinite() && speedMetersPerSecond >= 0 &&
             timeMillis > 0 && elapsedRealtimeNanos > 0 &&
             nowElapsedRealtimeNanos >= elapsedRealtimeNanos
+
+    companion object {
+        val LATITUDE_RANGE = -90.0..90.0
+        val LONGITUDE_RANGE = -180.0..180.0
+    }
 }
 
 sealed interface LocationOutcome {

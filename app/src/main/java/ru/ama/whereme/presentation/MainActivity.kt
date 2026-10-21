@@ -22,6 +22,7 @@ import ru.ama.whereme.domain.entity.ThemeMode
 import ru.ama.whereme.domain.state.LoadState
 import ru.ama.whereme.navigation.RootFactory
 import ru.ama.whereme.ui.RootScreen
+import ru.ama.whereme.ui.StartupScreen
 import ru.ama.whereme.ui.theme.WhereMeTheme
 import ru.ama.whereme.ui.theme.isDark
 
@@ -38,18 +39,12 @@ class MainActivity : ComponentActivity() {
             SideEffect {
                 val bars =
                     if (dark) SystemBarStyle.dark(Color.TRANSPARENT)
-                    else SystemBarStyle.light(Color.TRANSPARENT, Color.rgb(16, 25, 20))
+                    else SystemBarStyle.light(Color.TRANSPARENT, LegacySystemBarScrim)
                 enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
             }
             WhereMeTheme(dark) {
                 Surface(Modifier.fillMaxSize()) {
-                    if (theme == LoadState.Loading)
-                        Box(
-                            Modifier.fillMaxSize(),
-                            contentAlignment = androidx.compose.ui.Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
+                    if (theme == LoadState.Loading) StartupScreen()
                     else if (theme == LoadState.Failed)
                         Column(Modifier.safeDrawingPadding().padding(16.dp)) {
                             Text(
@@ -70,5 +65,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    private companion object {
+        val LegacySystemBarScrim = Color.rgb(16, 25, 20)
     }
 }

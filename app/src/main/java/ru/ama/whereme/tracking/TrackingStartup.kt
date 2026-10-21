@@ -1,6 +1,5 @@
 package ru.ama.whereme.tracking
 
-import ru.ama.whereme.domain.tracking.TrackingRequirement
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -13,6 +12,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import ru.ama.whereme.data.di.ApplicationScope
 import ru.ama.whereme.domain.tracking.TrackingCoordinator
+import ru.ama.whereme.domain.tracking.TrackingRequirement
 
 /** Process foreground entry, not individual screens or Activity recreation, resumes the enabled schedule. */
 @Singleton
@@ -27,7 +27,7 @@ class TrackingStartup @Inject constructor(
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
             val requirement = application.trackingCapabilities().requirement()
             if (requirement != TrackingRequirement.READY) {
-                Log.d("TrackingStartup", "Automatic start unavailable: $requirement")
+                Log.d(TAG, "Automatic start unavailable: $requirement")
                 return@launch
             }
             try {
@@ -35,8 +35,11 @@ class TrackingStartup @Inject constructor(
                 scheduler.scheduleNextAlarmClockIfEnabled()
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (failure: Exception) {
-                Log.w("TrackingStartup", "Unable to reconcile tracking: " + failure.javaClass.simpleName)
+                Log.w(TAG, "Unable to reconcile tracking: " + failure.javaClass.simpleName)
             }
         }
+    }
+    private companion object {
+        const val TAG = "TrackingStartup"
     }
 }

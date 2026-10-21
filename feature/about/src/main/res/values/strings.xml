@@ -1,6 +1,4 @@
 <resources>
-  <string name="about_title">О приложении</string>
-  <string name="about_name">whereMe</string>
   <string name="about_version">Версия %1$s</string>
   <string name="about_description">История ваших местоположений. Приложение записывает точки по заданному расписанию и сохраняет их на устройстве даже без интернета.</string>
   <string name="about_network">Для загрузки карты и отправки точек в профиль нужен интернет. Запись местоположений работает независимо от открытой карты.</string>
@@ -14,4 +12,5 @@
   <string name="about_license_error">Не удалось прочитать список лицензий.</string>
   <string name="about_link_error">Не удалось открыть ссылку.</string>
   <string name="about_license_close">Закрыть</string>
+  <string name="about_information">Информация и поддержка</string>
 </resources>

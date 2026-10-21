@@ -1,20 +1,20 @@
 package ru.ama.whereme.data.sync
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import ru.ama.whereme.data.network.WmApiService
-import ru.ama.whereme.domain.tracking.PendingLocationUploader
-import ru.ama.whereme.domain.tracking.UploadResult
-import javax.inject.Singleton
 import ru.ama.whereme.data.network.model.DatasToJson
 import ru.ama.whereme.data.network.model.LocationDto
-import javax.inject.Inject
+import ru.ama.whereme.domain.tracking.PendingLocationUploader
+import ru.ama.whereme.domain.tracking.UploadResult
 
 @Singleton
 class LocationBatchUploader @Inject constructor(
@@ -24,7 +24,7 @@ class LocationBatchUploader @Inject constructor(
     private val mutex = Mutex()
 
     /** Local data stays pending on every failure; cancellation belongs to the calling service. */
-    override suspend fun uploadPending() = uploadPending(timeoutMillis = 30_000L)
+    override suspend fun uploadPending() = uploadPending(timeoutMillis = DEFAULT_TIMEOUT_MILLIS)
 
     suspend fun uploadPending(timeoutMillis: Long): UploadResult = withContext(Dispatchers.IO) {
         mutex.withLock { uploadBatch(timeoutMillis) }
@@ -57,5 +57,8 @@ class LocationBatchUploader @Inject constructor(
         // Each original row is attempted once. Zero updated rows is a valid stale-snapshot result.
         store.acknowledge(batch)
         return UploadResult.SENT
+    }
+    private companion object {
+        const val DEFAULT_TIMEOUT_MILLIS = 30_000L
     }
 }

@@ -2,6 +2,8 @@ package ru.ama.whereme.domain.usecase
 
 import java.io.IOException
 import javax.inject.Inject
+import ru.ama.whereme.domain.entity.JsonEntity
+import ru.ama.whereme.domain.entity.JsonJwt
 import ru.ama.whereme.domain.entity.SettingsUserInfoDomModel
 import ru.ama.whereme.domain.repository.AuthRepository
 
@@ -11,8 +13,8 @@ class CheckSignInCode @Inject constructor(private val auth: AuthRepository) {
         val response = auth.checkKod(code)
         if (!response.respIsSuccess) throw IOException("Code check HTTP ${response.respCode}")
         val body = response.mBody ?: throw IOException("Empty code check response")
-        if (body.message == "0") return null
-        if (body.error || body.message != "1" || body.tokenJwt.isBlank())
+        if (body.message == JsonEntity.NEGATIVE_MESSAGE) return null
+        if (body.error || body.message != JsonEntity.POSITIVE_MESSAGE || body.tokenJwt.isBlank())
             throw IOException("Invalid code check response")
         return SettingsUserInfoDomModel(
             body.tokenJwt,
@@ -20,7 +22,7 @@ class CheckSignInCode @Inject constructor(private val auth: AuthRepository) {
             body.famId,
             body.name,
             body.url,
-            body.isActivate == 1,
+            body.isActivate == JsonJwt.ACTIVE,
         )
     }
 }

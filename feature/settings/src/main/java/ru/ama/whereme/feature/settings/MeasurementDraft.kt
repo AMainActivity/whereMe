@@ -51,13 +51,17 @@ data class MeasurementDraft(
     }
 
     companion object {
+        private const val MIN_DISTANCE_METERS = 10
+        private const val MIN_ACCURACY_METERS = 50
+        private const val MIN_WAIT_SECONDS = 20
+        private const val MIN_PERIOD_SECONDS = 15
         // Preserve the existing editor limits; storage accepts older positive configurations.
         fun minimum(field: MeasurementField): Int =
             when (field) {
-                MeasurementField.DISTANCE -> 10
-                MeasurementField.ACCURACY -> 50
-                MeasurementField.WAIT -> 20
-                MeasurementField.PERIOD -> 15
+                MeasurementField.DISTANCE -> MIN_DISTANCE_METERS
+                MeasurementField.ACCURACY -> MIN_ACCURACY_METERS
+                MeasurementField.WAIT -> MIN_WAIT_SECONDS
+                MeasurementField.PERIOD -> MIN_PERIOD_SECONDS
             }
 
         fun from(settings: SettingsDomModel) =

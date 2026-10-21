@@ -1,6 +1,4 @@
 <resources>
-  <string name="map_title">Карта</string>
-  <string name="map_date">Дата: %1$s</string>
   <string name="map_choose_date">Выбрать дату</string>
   <string name="map_done">Выбрать</string>
   <string name="map_cancel">Отмена</string>
@@ -11,4 +9,5 @@
   <string name="map_empty">За этот день пока нет точек.</string>
   <string name="map_route">Построить маршрут в 2ГИС?</string>
   <string name="map_external_failed">Не удалось открыть приложение для этого действия.</string>
+    <string name="map_route_coordinates">%1$s, %2$s → %3$s, %4$s</string>
 </resources>

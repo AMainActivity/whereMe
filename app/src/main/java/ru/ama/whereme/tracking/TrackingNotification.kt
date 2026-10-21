@@ -9,77 +9,130 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.text.format.DateFormat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import ru.ama.whereme.R
-import ru.ama.whereme.domain.tracking.TrackingClock
+import ru.ama.whereme.domain.state.LoadState
+import ru.ama.whereme.domain.tracking.TrackingFailure
 import ru.ama.whereme.domain.tracking.TrackingState
 import ru.ama.whereme.presentation.MyForegroundService
 import ru.ama.whereme.presentation.SplashActivity
 
-/** Notification timing is presentation only; recording deadlines belong to the coordinator. */
-internal class TrackingNotification(private val context: Context, private val clock: TrackingClock) {
-    private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+/** Displays persisted fix time; acquisition and upload progress do not change it. */
+internal class TrackingNotification(private val context: Context) {
+    private val manager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val builder: NotificationCompat.Builder by lazy {
-        if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, context.getString(R.string.service_notify_title), NotificationManager.IMPORTANCE_LOW))
-        val open = Intent(context, SplashActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    CHANNEL_ID,
+                    context.getString(R.string.service_notify_title),
+                    NotificationManager.IMPORTANCE_LOW,
+                )
+            )
+        val open =
+            Intent(context, SplashActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
         NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle(context.getString(R.string.app_name))
-            .setSmallIcon(R.drawable.ic_stat_location).setOnlyAlertOnce(true).setOngoing(true)
-            .setContentIntent(PendingIntent.getActivity(context, 0, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-            .addAction(0, context.getString(R.string.tracking_stop), PendingIntent.getService(context, 1,
-                MyForegroundService.stopIntent(context), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+            .setSmallIcon(R.drawable.ic_stat_location)
+            .setOnlyAlertOnce(true)
+            .setOngoing(true)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    context,
+                    OPEN_APP_REQUEST_CODE,
+                    open,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            )
+            .addAction(
+                0,
+                context.getString(R.string.tracking_stop),
+                PendingIntent.getService(
+                    context,
+                    STOP_REQUEST_CODE,
+                    MyForegroundService.stopIntent(context),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
     }
 
-    fun initial(): Notification = builder.setContentText(context.getString(R.string.tracking_starting))
-        .setProgress(0, 0, true).build()
+    fun initial(): Notification =
+        builder
+            .setContentText(context.getString(R.string.tracking_recording))
+            .setShowWhen(false)
+            .build()
 
-    suspend fun render(state: TrackingState) {
-        if (state is TrackingState.Collecting) {
-            val maximum = ((state.timeoutMillis + 999) / 1000).toInt().coerceAtLeast(1)
-            while (currentCoroutineContext().isActive) {
-                val left = (state.deadlineElapsedMillis - clock.elapsedRealtimeNanos() / 1_000_000).coerceAtLeast(0)
-                val seconds = (left + 999) / 1000
-                val text = context.getString(R.string.tracking_collecting) + " " +
-                    String.format(Locale.getDefault(), "%02d:%02d", seconds / 60, seconds % 60)
-                post(builder.setContentText(text).setProgress(maximum, seconds.toInt(), false).build())
-                if (left == 0L) return
-                delay(minOf(1000, left))
+    fun render(state: TrackingState, lastRecorded: LoadState<Long?>) {
+        if (!state.isRunning) return
+        post(build(state, lastRecorded))
+    }
+
+    private fun build(state: TrackingState, lastRecorded: LoadState<Long?>): Notification {
+        val text =
+            when (lastRecorded) {
+                LoadState.Loading -> context.getString(R.string.tracking_recording)
+                LoadState.Failed -> context.getString(R.string.tracking_history_failed)
+                is LoadState.Ready ->
+                    lastRecorded.value?.let { time ->
+                        val locale = Locale.getDefault()
+                        val skeleton =
+                            if (DateFormat.is24HourFormat(context)) DATE_TIME_24_HOUR
+                            else DATE_TIME_12_HOUR
+                        val formatter =
+                            SimpleDateFormat(
+                                DateFormat.getBestDateTimePattern(locale, skeleton),
+                                locale,
+                            )
+                        context.getString(R.string.tracking_last_fix, formatter.format(Date(time)))
+                    } ?: context.getString(R.string.tracking_no_recorded_fix)
             }
-        } else {
-            val text = when (state) {
-                is TrackingState.Starting -> R.string.tracking_starting
-                is TrackingState.Saving -> R.string.tracking_saving
-                is TrackingState.Uploading -> R.string.tracking_uploading
-                TrackingState.Stopping -> R.string.tracking_stopping
-                is TrackingState.Waiting -> when {
-                    state.failure != null -> R.string.tracking_sample_failed
-                    state.syncFailed -> R.string.tracking_sync_failed
-                    state.noFix -> R.string.tracking_no_fix
-                    else -> R.string.tracking_waiting
-                }
-                else -> return
-            }
-            post(builder.setContentText(context.getString(text)).setProgress(0, 0, state is TrackingState.Starting).build())
-        }
+        val problem =
+            when {
+                state == TrackingState.Stopping -> R.string.tracking_stopping
+                state is TrackingState.Waiting && state.failure == TrackingFailure.STORAGE ->
+                    R.string.tracking_storage_failed
+                state is TrackingState.Waiting && (state.failure != null || state.noFix) ->
+                    R.string.tracking_fix_failed
+                state is TrackingState.Uploading && state.noFix -> R.string.tracking_fix_failed
+                else -> null
+            }?.let(context::getString)
+        val content = if (problem == null) text else "$text\n$problem"
+        return builder
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
+            .setShowWhen(false)
+            .build()
     }
 
     private fun post(notification: Notification) {
-        if (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context,
-                Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) manager.notify(ID, notification)
+        if (
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) == PackageManager.PERMISSION_GRANTED
+        )
+            manager.notify(ID, notification)
     }
 
-    fun remove() { manager.cancel(ID) }
+    fun remove() {
+        manager.cancel(ID)
+    }
 
     companion object {
         const val ID = 1
         private const val CHANNEL_ID = "channel_id"
+        private const val OPEN_APP_REQUEST_CODE = 0
+        private const val STOP_REQUEST_CODE = 1
+        private const val DATE_TIME_24_HOUR = "yMdHms"
+        private const val DATE_TIME_12_HOUR = "yMdhms"
     }
 }

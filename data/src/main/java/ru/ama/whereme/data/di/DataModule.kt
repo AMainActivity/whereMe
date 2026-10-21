@@ -1,34 +1,34 @@
 package ru.ama.whereme.data.di
 
 import android.app.Application
+import androidx.room.Room
 import dagger.Binds
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
 import dagger.Module
 import dagger.Provides
-import ru.ama.whereme.data.location.PlatformLocationSource
-import ru.ama.whereme.data.location.RoomLocationRecorder
-import ru.ama.whereme.data.sync.LocationBatchUploader
-import ru.ama.whereme.data.tracking.DataStoreRecordingSessionStore
-import ru.ama.whereme.domain.tracking.RecordingSessionStore
-import ru.ama.whereme.domain.tracking.LocationRecorder
-import ru.ama.whereme.domain.tracking.PendingLocationUploader
-import ru.ama.whereme.data.network.WmApiService
-import ru.ama.whereme.data.database.AppDatabase
-import ru.ama.whereme.data.database.LocationDao
-import androidx.room.Room
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import ru.ama.whereme.data.BuildConfig
+import ru.ama.whereme.data.database.AppDatabase
+import ru.ama.whereme.data.database.LocationDao
+import ru.ama.whereme.data.location.PlatformLocationSource
+import ru.ama.whereme.data.location.RoomLocationRecorder
+import ru.ama.whereme.data.network.WmApiService
+import ru.ama.whereme.data.repository.*
+import ru.ama.whereme.data.session.DataStoreSessionRepository
+import ru.ama.whereme.data.settings.DataStoreSettingsRepository
+import ru.ama.whereme.data.sync.LocationBatchUploader
 import ru.ama.whereme.data.sync.PendingLocationStore
 import ru.ama.whereme.data.sync.RoomPendingLocationStore
-import ru.ama.whereme.data.repository.*
-import ru.ama.whereme.data.settings.DataStoreSettingsRepository
-import ru.ama.whereme.data.session.DataStoreSessionRepository
-import javax.inject.Singleton
+import ru.ama.whereme.data.tracking.DataStoreRecordingSessionStore
 import ru.ama.whereme.domain.repository.*
+import ru.ama.whereme.domain.tracking.LocationRecorder
+import ru.ama.whereme.domain.tracking.PendingLocationUploader
+import ru.ama.whereme.domain.tracking.RecordingSessionStore
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -60,15 +60,16 @@ interface DataModule {
     @Binds
     fun bindLocationHistoryRepository(impl: RoomLocationHistoryRepository): LocationHistoryRepository
 
-
     @Binds
     fun bindPendingLocationStore(impl: RoomPendingLocationStore): PendingLocationStore
 
     companion object {
+        private const val DATABASE_NAME = "main.db"
+        private const val JSON_MEDIA_TYPE = "application/json"
 
         @Provides
         @Singleton
-        fun provideDatabase(application: Application): AppDatabase = Room.databaseBuilder(application, AppDatabase::class.java, "main.db")
+        fun provideDatabase(application: Application): AppDatabase = Room.databaseBuilder(application, AppDatabase::class.java, DATABASE_NAME)
             .addMigrations(AppDatabase.MIGRATION_3_4).build()
 
         @Provides
@@ -86,7 +87,7 @@ interface DataModule {
 
         @Provides @Singleton
         fun provideApiService(json: Json): WmApiService = Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL).addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .baseUrl(BuildConfig.BASE_URL).addConverterFactory(json.asConverterFactory(JSON_MEDIA_TYPE.toMediaType()))
             .build().create(WmApiService::class.java)
 
     }

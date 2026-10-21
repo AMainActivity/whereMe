@@ -50,6 +50,7 @@ class MapScreenTest {
                 MapComponent(
                     DefaultComponentContext(lifecycle),
                     object : LocationHistoryRepository {
+                        override val lastRecordedTime = kotlinx.coroutines.flow.flowOf<Long?>(null)
                         override fun getLocationById(date: String) = flowOf(emptyList<LocationDb>())
                     },
                 )

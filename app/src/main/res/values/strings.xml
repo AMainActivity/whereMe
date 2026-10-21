@@ -7,14 +7,13 @@
   <string name="service_notify_title">служба</string>
   <string name="storage_read_failed">Не удалось прочитать сохранённые данные. Они не были удалены.</string>
   <string name="storage_retry">Повторить</string>
-  <string name="tracking_collecting">Определяем местоположение</string>
-  <string name="tracking_waiting">Точка сохранена. Ожидаем следующий замер</string>
-  <string name="tracking_no_fix">Координаты пока не получены. Повторим замер</string>
+  <string name="tracking_recording">Запись местоположений</string>
+  <string name="tracking_last_fix">Последняя точка: %1$s</string>
+  <string name="tracking_no_recorded_fix">Местоположение ещё не получено</string>
+  <string name="tracking_history_failed">Не удалось прочитать время последней точки</string>
+  <string name="tracking_fix_failed">Не удалось определить местоположение. Повторим замер</string>
+  <string name="tracking_storage_failed">Не удалось сохранить последнюю точку</string>
   <string name="tracking_stop">Остановить запись</string>
-  <string name="tracking_starting">Подготавливаем запись</string>
-  <string name="tracking_saving">Сохраняем точку</string>
-  <string name="tracking_uploading">Проверяем отправку сохранённых точек</string>
   <string name="tracking_stopping">Останавливаем запись</string>
-  <string name="tracking_sample_failed">Не удалось выполнить замер. Повторим по следующему будильнику</string>
-  <string name="tracking_sync_failed">Отправить точки пока не удалось. Запись продолжается</string>
+  <string name="menu_about_short">Инфо</string>
 </resources>

@@ -20,12 +20,12 @@ class AlarmClockTrackingAlarm @Inject constructor(private val application: Appli
     private val manager = application.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     override fun schedule(session: RecordingSession) {
-        check(Build.VERSION.SDK_INT < 31 || manager.canScheduleExactAlarms()) { "Exact alarm access required" }
-        val open = PendingIntent.getActivity(application, 0,
+        check(Build.VERSION.SDK_INT < Build.VERSION_CODES.S || manager.canScheduleExactAlarms()) { "Exact alarm access required" }
+        val open = PendingIntent.getActivity(application, OPEN_APP_REQUEST_CODE,
             Intent(application, SplashActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         manager.setAlarmClock(AlarmManager.AlarmClockInfo(session.nextAtMillis, open),
             requireNotNull(pending(MyForegroundService.wakeIntent(application, session), PendingIntent.FLAG_UPDATE_CURRENT)))
-        Log.d("TrackingAlarm", "Next sampling alarm: ${session.nextAtMillis}")
+        Log.d(TAG, "Next sampling alarm: ${session.nextAtMillis}")
     }
 
     override fun cancel() {
@@ -35,7 +35,12 @@ class AlarmClockTrackingAlarm @Inject constructor(private val application: Appli
         }
     }
 
-    private fun pending(intent: Intent, flags: Int): PendingIntent? = if (Build.VERSION.SDK_INT >= 26)
-        PendingIntent.getForegroundService(application, 2, intent, flags or PendingIntent.FLAG_IMMUTABLE)
-    else PendingIntent.getService(application, 2, intent, flags or PendingIntent.FLAG_IMMUTABLE)
+    private fun pending(intent: Intent, flags: Int): PendingIntent? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        PendingIntent.getForegroundService(application, SAMPLE_REQUEST_CODE, intent, flags or PendingIntent.FLAG_IMMUTABLE)
+    else PendingIntent.getService(application, SAMPLE_REQUEST_CODE, intent, flags or PendingIntent.FLAG_IMMUTABLE)
+    private companion object {
+        const val OPEN_APP_REQUEST_CODE = 0
+        const val SAMPLE_REQUEST_CODE = 2
+        const val TAG = "TrackingAlarm"
+    }
 }

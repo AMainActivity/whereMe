@@ -133,7 +133,7 @@ class TrackingAccessRequestTest {
         }
     }
 
-    private fun start() = compose.onNodeWithText("Начать запись").performClick()
+    private fun start() = compose.onNodeWithText("Запись местоположений").performClick()
 
     private fun proceed() = compose.onNodeWithText("Продолжить").performClick()
 
@@ -163,10 +163,11 @@ class TrackingAccessRequestTest {
         compose.waitForIdle()
     }
 
-    private fun assertSettings(action: String) = compose.runOnIdle {
-        assertEquals(action, launches.last().intent.action)
-        assertEquals(0, starts)
-    }
+    private fun assertSettings(action: String) =
+        compose.runOnIdle {
+            assertEquals(action, launches.last().intent.action)
+            assertEquals(0, starts)
+        }
 
     @Test
     fun firstStartTraversesLocationSettingsBackgroundAndAlarmBeforeStartingOnce() {

@@ -9,7 +9,8 @@
         <item name="android:navigationBarColor">#101914</item>
     </style>
     <style name="Theme.WhereMe.NoActionBar" parent="Theme.WhereMe" />
-    <style name="SplashTheme" parent="Theme.WhereMe">
-        <item name="android:windowBackground">@drawable/background_splash2</item>
+    <style name="SplashTheme.Base" parent="Theme.WhereMe">
+        <item name="android:windowBackground">@drawable/splash_background</item>
     </style>
+    <style name="SplashTheme" parent="SplashTheme.Base" />
 </resources>

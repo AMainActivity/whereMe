@@ -1,7 +1,7 @@
 package ru.ama.whereme.domain.tracking
 
-import ru.ama.whereme.domain.reportFailure
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -18,6 +18,7 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import ru.ama.whereme.domain.entity.LocationOutcome
 import ru.ama.whereme.domain.entity.SettingsDomModel
+import ru.ama.whereme.domain.reportFailure
 import ru.ama.whereme.domain.repository.LocationSource
 import ru.ama.whereme.domain.repository.SettingsRepository
 import ru.ama.whereme.domain.usecase.SchedulePolicy
@@ -205,16 +206,16 @@ class TrackingCoordinator(
         val now = clock.nowMillis()
         val end = SchedulePolicy.activeUntil(configuration, now, clock.timeZone())
         val value = saved ?: end?.let {
-            RecordingSession(UUID.randomUUID().toString(), TrackingMode.SCHEDULED, now + 1_000)
+            RecordingSession(UUID.randomUUID().toString(), TrackingMode.SCHEDULED, now + RESTORE_ALARM_DELAY_MILLIS)
         }
-        if (value == null || (value.mode == TrackingMode.SCHEDULED && end == null)) {
+        if (value == null || (followsSchedule(value.mode, configuration) && end == null)) {
             sessions.write(null)
             alarm.cancel()
             if (current == null) mutableState.value = TrackingState.Stopped
             return
         }
-        val deadline = if (value.nextAtMillis >= now) value.nextAtMillis else now + 1_000
-        val next = if (value.mode == TrackingMode.SCHEDULED) minOf(deadline, requireNotNull(end)) else deadline
+        val deadline = if (value.nextAtMillis >= now) value.nextAtMillis else now + RESTORE_ALARM_DELAY_MILLIS
+        val next = if (followsSchedule(value.mode, configuration)) minOf(deadline, requireNotNull(end)) else deadline
         val restored = value.copy(nextAtMillis = next)
         sessions.write(restored)
         arm(restored)
@@ -298,9 +299,9 @@ class TrackingCoordinator(
             // A period boundary is not Stop. Let the bounded measurement return its best fix
             // and commit it; Measured will start the pending period without overlapping jobs.
             val configuration = session.configuration ?: return
-            val end = if (saved.mode == TrackingMode.SCHEDULED)
+            val end = if (followsSchedule(saved.mode, configuration))
                 SchedulePolicy.activeUntil(configuration, clock.nowMillis(), clock.timeZone()) else null
-            if (saved.mode == TrackingMode.MANUAL || end != null) {
+            if (!followsSchedule(saved.mode, configuration) || end != null) {
                 armNext(session, command.due, configuration, end)
             }
             publish(session, state.value)
@@ -327,7 +328,8 @@ class TrackingCoordinator(
             val measurementChanged = previous == null || previous.accuracy != configuration.accuracy ||
                 previous.minDist != configuration.minDist || previous.timeOfWaitAccuracy != configuration.timeOfWaitAccuracy ||
                 previous.timeOfWorkingWM != configuration.timeOfWorkingWM
-            if (session.mode != null && (measurementChanged || session.mode == TrackingMode.SCHEDULED)) {
+            if (session.mode != null && (measurementChanged || session.mode == TrackingMode.SCHEDULED ||
+                    previous?.isEnable == true || configuration.isEnable)) {
                 cancelRun(session, cancelSync = false)
                 beginRun(session, session.pendingDue ?: clock.nowMillis())
                 session.pendingDue = null
@@ -385,8 +387,8 @@ class TrackingCoordinator(
         publish(session, TrackingState.Starting(mode))
         val configuration = session.configuration ?: return
         val now = clock.nowMillis()
-        val end = if (mode == TrackingMode.SCHEDULED) SchedulePolicy.activeUntil(configuration, now, clock.timeZone()) else null
-        if (mode == TrackingMode.SCHEDULED && end == null) {
+        val end = if (followsSchedule(mode, configuration)) SchedulePolicy.activeUntil(configuration, now, clock.timeZone()) else null
+        if (followsSchedule(mode, configuration) && end == null) {
             finish(session, TrackingState.Stopped)
             return
         }
@@ -405,7 +407,7 @@ class TrackingCoordinator(
     }
 
     private suspend fun armNext(session: Session, due: Long, configuration: SettingsDomModel, end: Long?) {
-        val period = configuration.timeOfWorkingWM.toLong() * 1000
+        val period = TimeUnit.SECONDS.toMillis(configuration.timeOfWorkingWM.toLong())
         val next = due + ((clock.nowMillis() - due).coerceAtLeast(0) / period + 1) * period
         val recording = requireNotNull(session.recording).copy(nextAtMillis = minOf(next, end ?: Long.MAX_VALUE))
         sessions.write(recording)
@@ -421,9 +423,9 @@ class TrackingCoordinator(
             is TrackingMeasurement.Result.Completed -> {
                 if (result.rowId != null) session.previousRowId = result.rowId
                 val mode = session.mode ?: return
-                if (mode == TrackingMode.SCHEDULED && session.configuration?.let {
-                        SchedulePolicy.activeUntil(it, clock.nowMillis(), clock.timeZone())
-                    } == null) {
+                val configuration = requireNotNull(session.configuration)
+                if (followsSchedule(mode, configuration) &&
+                    SchedulePolicy.activeUntil(configuration, clock.nowMillis(), clock.timeZone()) == null) {
                     finish(session, TrackingState.Stopped)
                     return
                 }
@@ -467,8 +469,15 @@ class TrackingCoordinator(
         }
     }
 
+    /** An enabled daily schedule also bounds recording started with the manual button. */
+    private fun followsSchedule(mode: TrackingMode, configuration: SettingsDomModel) =
+        mode == TrackingMode.SCHEDULED || configuration.isEnable
+
     private fun publish(session: Session, value: TrackingState) {
         mutableState.value = value
         session.handle.publish(session.startId, value)
+    }
+    private companion object {
+        const val RESTORE_ALARM_DELAY_MILLIS = 1_000L
     }
 }

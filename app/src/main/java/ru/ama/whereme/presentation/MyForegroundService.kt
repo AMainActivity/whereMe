@@ -13,25 +13,26 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import ru.ama.whereme.domain.entity.LocationOutcome
-import ru.ama.whereme.domain.tracking.TrackingClock
+import ru.ama.whereme.domain.repository.LocationHistoryRepository
+import ru.ama.whereme.domain.state.asLoadState
+import ru.ama.whereme.domain.tracking.RecordingSession
 import ru.ama.whereme.domain.tracking.TrackingCoordinator
 import ru.ama.whereme.domain.tracking.TrackingFailure
 import ru.ama.whereme.domain.tracking.TrackingMode
-import ru.ama.whereme.domain.tracking.RecordingSession
-import ru.ama.whereme.tracking.TrackingNotification
 import ru.ama.whereme.domain.tracking.TrackingRequirement
+import ru.ama.whereme.tracking.TrackingNotification
 import ru.ama.whereme.tracking.trackingCapabilities
 
 @AndroidEntryPoint
 class MyForegroundService : LifecycleService() {
     @Inject lateinit var coordinator: TrackingCoordinator
     @Inject lateinit var sync: ru.ama.whereme.sync.LocationSyncScheduler
-    @Inject lateinit var clock: TrackingClock
+    @Inject lateinit var history: LocationHistoryRepository
     private lateinit var handle: TrackingCoordinator.Handle
-    private val notification by lazy { TrackingNotification(this, clock) }
+    private val notification by lazy { TrackingNotification(this) }
     private var foregroundStarted = false
     private var lastStartId = 0
 
@@ -42,11 +43,13 @@ class MyForegroundService : LifecycleService() {
             addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
         }, ContextCompat.RECEIVER_NOT_EXPORTED)
         lifecycleScope.launch {
-            handle.state.collectLatest { snapshot ->
-                if (snapshot.startId != lastStartId || lastStartId == 0) return@collectLatest
-                Log.d("TrackingService", "State: ${snapshot.state}")
+            combine(handle.state, history.lastRecordedTime.asLoadState()) { snapshot, lastRecorded ->
+                snapshot to lastRecorded
+            }.collect { (snapshot, lastRecorded) ->
+                if (snapshot.startId != lastStartId || lastStartId == 0) return@collect
+                Log.d(TAG, "State: ${snapshot.state}")
                 if (snapshot.state.isRunning) {
-                    notification.render(snapshot.state)
+                    notification.render(snapshot.state, lastRecorded)
                 } else if (stopSelfResult(lastStartId)) {
                     // Android also checks for a newer startId which has not reached onStartCommand yet.
                     removeForeground()
@@ -66,7 +69,7 @@ class MyForegroundService : LifecycleService() {
                 val due = intent.getLongExtra(EXTRA_DUE, 0)
                 if (id.isNullOrBlank() || due <= 0) stopSelfResult(startId)
                 else {
-                    Log.d("TrackingAlarm", "Sampling alarm delivered; due=$due")
+                    Log.d(ALARM_TAG, "Sampling alarm delivered; due=$due")
                     handle.wake(id, due, startId)
                 }
             }
@@ -87,7 +90,7 @@ class MyForegroundService : LifecycleService() {
         if (foregroundStarted) return true
         return try {
             val initial = notification.initial()
-            if (Build.VERSION.SDK_INT >= 29) startForeground(TrackingNotification.ID, initial, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) startForeground(TrackingNotification.ID, initial, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
             else startForeground(TrackingNotification.ID, initial)
             foregroundStarted = true
             true
@@ -130,6 +133,8 @@ class MyForegroundService : LifecycleService() {
     }
 
     companion object {
+        private const val TAG = "TrackingService"
+        private const val ALARM_TAG = "TrackingAlarm"
         private const val EXTRA_SCHEDULED = "scheduled"
         private const val ACTION_STOP = "ru.ama.whereme.STOP_TRACKING"
         private const val ACTION_WAKE = "ru.ama.whereme.SAMPLE_LOCATION"
