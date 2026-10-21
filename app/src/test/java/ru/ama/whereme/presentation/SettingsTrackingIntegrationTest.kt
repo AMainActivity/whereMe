@@ -1,5 +1,7 @@
 package ru.ama.whereme.presentation
 
+import java.time.ZoneId
+import java.time.LocalTime
 import android.Manifest
 import android.app.AlarmManager
 import android.app.Application
@@ -11,7 +13,6 @@ import com.arkivanov.essenty.lifecycle.destroy
 import com.arkivanov.essenty.lifecycle.resume
 import com.arkivanov.essenty.statekeeper.StateKeeperDispatcher
 import java.time.Instant
-import java.util.TimeZone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -72,11 +73,11 @@ class SettingsTrackingIntegrationTest {
     ): SettingsComponent {
         val clock =
             object : TrackingClock {
-                override fun nowMillis() = noon + testScheduler.currentTime
+                override fun now() = Instant.ofEpochMilli(noon + testScheduler.currentTime)
 
                 override fun elapsedRealtimeNanos() = testScheduler.currentTime * 1_000_000
 
-                override fun timeZone(): TimeZone = TimeZone.getTimeZone("UTC")
+                override fun zoneId(): ZoneId = ZoneId.of("UTC")
             }
         coordinator =
             TrackingCoordinator(
@@ -139,7 +140,7 @@ class SettingsTrackingIntegrationTest {
     fun dailyAlarmStartsServiceAtPeriodBeginningAndArmsNextSelectedDay() = runTest(dispatcher) {
         model()
         repository.settings.value = SettingsDomModel.DEFAULT.copy(
-            isEnable = true, start = "12:01", end = "13:00",
+            isEnable = true, start = LocalTime.parse("12:01"), end = LocalTime.parse("13:00"),
             days = listOf("1", "0", "1", "0", "0", "0", "0"),
         )
         val app = RuntimeEnvironment.getApplication()
@@ -161,7 +162,7 @@ class SettingsTrackingIntegrationTest {
     @Test
     fun lateDailyAlarmAfterPeriodEndDoesNotStartServiceButKeepsNextDay() = runTest(dispatcher) {
         model()
-        repository.settings.value = SettingsDomModel.DEFAULT.copy(isEnable = true, start = "11:00", end = "12:00")
+        repository.settings.value = SettingsDomModel.DEFAULT.copy(isEnable = true, start = LocalTime.parse("11:00"), end = LocalTime.parse("12:00"))
         val app = RuntimeEnvironment.getApplication()
         ru.ama.whereme.data.alarms.AlarmClockStart().apply { repo = scheduler }.startScheduledTracking(app)
         assertNull(shadowOf(app).nextStartedService)
@@ -194,7 +195,7 @@ class SettingsTrackingIntegrationTest {
             assertNull(vm.state.value.error)
             val start = requireNotNull(pending)
             assertEquals(TrackingMode.SCHEDULED, start.mode)
-            assertEquals(noon + 1_000, start.nextAtMillis)
+            assertEquals(Instant.ofEpochMilli(noon + 1_000), start.nextAt)
             val app = RuntimeEnvironment.getApplication()
             val alarms = app.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             assertEquals(
@@ -202,7 +203,7 @@ class SettingsTrackingIntegrationTest {
                 alarms.nextAlarmClock.triggerTime,
             )
             advanceTimeBy(1_000)
-            coordinator.attach().wake(start.id, start.nextAtMillis)
+            coordinator.attach().wake(start.id, start.nextAt)
             runCurrent()
             assertEquals(1, sourceCalls)
         }
@@ -211,7 +212,7 @@ class SettingsTrackingIntegrationTest {
     fun enablingOutsideIntervalOnlySchedulesTheFutureStart() =
         runTest(dispatcher) {
             repository.settings.value =
-                repository.settings.value.copy(start = "13:00", end = "17:00")
+                repository.settings.value.copy(start = LocalTime.parse("13:00"), end = LocalTime.parse("17:00"))
             val vm = model()
             runCurrent()
             vm.setSchedule(true)
@@ -231,13 +232,13 @@ class SettingsTrackingIntegrationTest {
     fun changingEnabledScheduleToIncludeNowPreparesSampling() =
         runTest(dispatcher) {
             repository.settings.value =
-                repository.settings.value.copy(isEnable = true, start = "13:00", end = "17:00")
+                repository.settings.value.copy(isEnable = true, start = LocalTime.parse("13:00"), end = LocalTime.parse("17:00"))
             val vm = model()
             runCurrent()
-            vm.accept(SettingsIntent.Time(true, "11:00"))
+            vm.accept(SettingsIntent.Time(true, LocalTime.parse("11:00")))
             runCurrent()
             assertEquals(TrackingMode.SCHEDULED, pending?.mode)
-            assertEquals(noon + 1_000, pending?.nextAtMillis)
+            assertEquals(Instant.ofEpochMilli(noon + 1_000), pending?.nextAt)
         }
 
     @Test
@@ -267,7 +268,7 @@ class SettingsTrackingIntegrationTest {
             assertNull(pending)
             assertNull(recording)
             advanceTimeBy(1_000)
-            coordinator.attach().wake(start.id, start.nextAtMillis)
+            coordinator.attach().wake(start.id, start.nextAt)
             runCurrent()
             assertEquals(0, sourceCalls)
         }
@@ -377,10 +378,10 @@ class SettingsTrackingIntegrationTest {
             val vm = model()
             runCurrent()
             vm.accept(SettingsIntent.Edit(MeasurementField.PERIOD, "150"))
-            repository.settings.value = repository.settings.value.copy(start = "10:00")
+            repository.settings.value = repository.settings.value.copy(start = LocalTime.parse("10:00"))
             vm.accept(SettingsIntent.Apply)
             runCurrent()
-            assertEquals("10:00", repository.settings.value.start)
+            assertEquals(LocalTime.parse("10:00"), repository.settings.value.start)
             assertEquals(150, repository.settings.value.timeOfWorkingWM)
         }
 }

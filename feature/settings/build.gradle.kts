@@ -10,6 +10,7 @@ android {
     compileSdk = 36
     defaultConfig { minSdk = 24 }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -20,6 +21,7 @@ kotlin { jvmToolchain(17) }
 dependencyLocking { lockAllConfigurations() }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk)
     implementation(project(":domain"))
     implementation(platform(libs.compose.bom))
     implementation(libs.androidx.core.ktx)

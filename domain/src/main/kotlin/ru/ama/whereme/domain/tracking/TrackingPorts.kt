@@ -1,13 +1,14 @@
 package ru.ama.whereme.domain.tracking
 
-import java.util.TimeZone
+import java.time.ZoneId
+import java.time.Instant
 import ru.ama.whereme.domain.entity.LocationSample
 import ru.ama.whereme.domain.entity.SettingsDomModel
 
 interface TrackingClock {
-    fun nowMillis(): Long
+    fun now(): Instant
     fun elapsedRealtimeNanos(): Long
-    fun timeZone(): TimeZone
+    fun zoneId(): ZoneId
 }
 
 fun interface LocationRecorder {
@@ -24,8 +25,8 @@ fun interface PendingLocationUploader {
 enum class UploadResult { SKIPPED, SENT, FAILED }
 
 /** Durable recording intent, independent of the service instance and authentication session. */
-data class RecordingSession(val id: String, val mode: TrackingMode, val nextAtMillis: Long) {
-    init { require(id.isNotBlank() && nextAtMillis > 0) }
+data class RecordingSession(val id: String, val mode: TrackingMode, val nextAt: Instant) {
+    init { require(id.isNotBlank() && nextAt > Instant.EPOCH) }
 }
 
 interface RecordingSessionStore {

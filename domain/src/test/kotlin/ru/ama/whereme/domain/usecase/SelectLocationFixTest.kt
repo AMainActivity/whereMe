@@ -1,5 +1,6 @@
 package ru.ama.whereme.domain.usecase
 
+import java.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
@@ -16,7 +17,7 @@ import ru.ama.whereme.domain.entity.LocationSample
 @OptIn(ExperimentalCoroutinesApi::class)
 class SelectLocationFixTest {
     private fun fix(accuracy: Float, time: Long = 1) =
-        LocationOutcome.Fix(LocationSample(1.0, 2.0, accuracy, 0f, time, time))
+        LocationOutcome.Fix(LocationSample(1.0, 2.0, accuracy, 0f, Instant.ofEpochMilli(time), time))
 
     @Test fun targetAccuracyEndsCollectionAndReleasesTheSource() = runTest {
         var released = false

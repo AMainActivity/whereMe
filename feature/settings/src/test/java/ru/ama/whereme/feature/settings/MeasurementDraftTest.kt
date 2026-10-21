@@ -1,5 +1,6 @@
 package ru.ama.whereme.feature.settings
 
+import java.time.LocalTime
 import org.junit.Assert.*
 import org.junit.Test
 import ru.ama.whereme.domain.entity.SettingsDomModel
@@ -15,7 +16,7 @@ class MeasurementDraftTest {
 
     @Test
     fun applyChangesOnlyMeasurementFields() {
-        val saved = SettingsDomModel.DEFAULT.copy(start = "11:00", isEnable = true)
+        val saved = SettingsDomModel.DEFAULT.copy(start = LocalTime.parse("11:00"), isEnable = true)
         val draft = MeasurementDraft.from(saved).edit(MeasurementField.PERIOD, "150")
         assertEquals(saved.copy(timeOfWorkingWM = 150), draft.applyTo(saved))
     }

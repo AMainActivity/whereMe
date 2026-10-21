@@ -1,5 +1,6 @@
 package ru.ama.whereme.data.location
 
+import java.time.Instant
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Application
@@ -61,7 +62,7 @@ class PlatformLocationSource @Inject constructor(private val application: Applic
                                     if (!location.hasAccuracy()) return
                                     val sample = LocationSample(location.latitude, location.longitude,
                                         location.accuracy, if (location.hasSpeed()) location.speed else 0f,
-                                        location.time, location.elapsedRealtimeNanos)
+                                        Instant.ofEpochMilli(location.time), location.elapsedRealtimeNanos)
                                     if (sample.isUsable(SystemClock.elapsedRealtimeNanos())) {
                                         trySend(LocationOutcome.Fix(sample))
                                     }

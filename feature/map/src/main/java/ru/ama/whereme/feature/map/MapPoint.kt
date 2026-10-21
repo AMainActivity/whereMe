@@ -1,5 +1,9 @@
 package ru.ama.whereme.feature.map
 
+import java.util.Locale
+import java.time.format.DateTimeFormatter
+import java.time.ZoneId
+import java.time.Instant
 import kotlinx.serialization.Serializable
 import ru.ama.whereme.domain.entity.LocationDb
 
@@ -19,12 +23,16 @@ data class MapPoint(
     val isWrite: Int,
 ) {
     companion object {
+        private val dateTimeFormat = DateTimeFormatter.ofPattern("dd.MM.uuuu HH:mm:ss", Locale.ROOT)
+        private fun format(time: Instant): String =
+            dateTimeFormat.withZone(ZoneId.systemDefault()).format(time)
+
         fun from(location: LocationDb) =
             MapPoint(
                 location._id,
                 location.datetime,
-                location.datestart,
-                location.dateend,
+                format(location.datestart),
+                location.dateend?.let(::format),
                 location.info,
                 location.latitude,
                 location.longitude,

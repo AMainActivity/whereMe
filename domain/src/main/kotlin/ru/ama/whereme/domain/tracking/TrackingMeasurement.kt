@@ -1,5 +1,7 @@
 package ru.ama.whereme.domain.tracking
 
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import ru.ama.whereme.domain.entity.LocationOutcome
@@ -16,7 +18,7 @@ internal class TrackingMeasurement(
     data class Request(
         val mode: TrackingMode,
         val settings: SettingsDomModel,
-        val endsAtMillis: Long?,
+        val endsAt: Instant?,
         val previousRowId: Long?
     )
 
@@ -32,14 +34,14 @@ internal class TrackingMeasurement(
     ): Result {
         var stage = TrackingFailure.LOCATION
         return try {
-            val end = request.endsAtMillis
-            if (end != null && clock.nowMillis() >= end) return Result.Ended(TrackingState.Stopped)
+            val end = request.endsAt
+            if (end != null && clock.now() >= end) return Result.Ended(TrackingState.Stopped)
             suspend fun collect(): Result {
                 ensureOpen()
                 val timeout = minOf(
                     TimeUnit.SECONDS.toMillis(request.settings.timeOfWaitAccuracy.toLong()),
                     TimeUnit.SECONDS.toMillis(request.settings.timeOfWorkingWM.toLong()),
-                    (end?.minus(clock.nowMillis()) ?: Long.MAX_VALUE).coerceAtLeast(1)
+                    (end?.let { Duration.between(clock.now(), it).toMillis() } ?: Long.MAX_VALUE).coerceAtLeast(1)
                 )
                 progress(TrackingState.Collecting(request.mode, TimeUnit.NANOSECONDS.toMillis(clock.elapsedRealtimeNanos()) + timeout, timeout))
                 val result = source.locate(request.settings.accuracy, timeout)

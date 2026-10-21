@@ -23,6 +23,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -40,6 +41,7 @@ ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 dependencyLocking { lockAllConfigurations() }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk)
     implementation(libs.datastore.preferences)
     implementation(project(":domain"))
     implementation(libs.coroutines.core)

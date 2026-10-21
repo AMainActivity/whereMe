@@ -1,5 +1,7 @@
 package ru.ama.whereme.ui
 
+import java.time.Instant
+import java.time.LocalDate
 import android.app.Application
 import android.view.View
 import android.view.ViewGroup
@@ -50,8 +52,8 @@ class MapScreenTest {
                 MapComponent(
                     DefaultComponentContext(lifecycle),
                     object : LocationHistoryRepository {
-                        override val lastRecordedTime = kotlinx.coroutines.flow.flowOf<Long?>(null)
-                        override fun getLocationById(date: String) = flowOf(emptyList<LocationDb>())
+                        override val lastRecordedTime = kotlinx.coroutines.flow.flowOf<Instant?>(null)
+                        override fun getLocationById(date: LocalDate) = flowOf(emptyList<LocationDb>())
                     },
                 )
             }

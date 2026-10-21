@@ -30,6 +30,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -53,6 +54,7 @@ dependencyLocking {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk)
     implementation(project(":feature:settings"))
     implementation(project(":feature:profile"))
     implementation(project(":feature:map"))

@@ -1,5 +1,6 @@
 package ru.ama.whereme.data.database
 
+import java.time.Instant
 import androidx.room.Room
 import androidx.room.withTransaction
 import android.content.Context
@@ -224,10 +225,10 @@ abstract class LocationDatabaseContract {
     @Test
     fun repeatedSampleExtendsItsOwnRowEvenWhenRecordedOnAnotherCalendarDate() = runBlocking {
         val recorder = ru.ama.whereme.data.location.RoomLocationRecorder(database, dao, sessions)
-        val sample = ru.ama.whereme.domain.entity.LocationSample(1.0, 2.0, 5f, 0f, 1_000L, 1L)
+        val sample = ru.ama.whereme.domain.entity.LocationSample(1.0, 2.0, 5f, 0f, Instant.ofEpochMilli(1_000L), 1L)
         val settings = ru.ama.whereme.domain.entity.SettingsDomModel.DEFAULT
         val first = recorder.record(sample, settings, null)
-        assertEquals(first, recorder.record(sample.copy(timeMillis = 2_000), settings, first))
+        assertEquals(first, recorder.record(sample.copy(time = Instant.ofEpochMilli(2_000)), settings, first))
         assertEquals(2_000L, dao.getLocation(first)?.dateend)
         assertEquals(initialSession.profile.ownerKey, dao.getLocation(first)?.ownerKey)
     }
@@ -235,10 +236,10 @@ abstract class LocationDatabaseContract {
     @Test
     fun movingBeyondMinimumDistanceCreatesANewRowWithOriginalSampleFields() = runBlocking {
         val recorder = ru.ama.whereme.data.location.RoomLocationRecorder(database, dao, sessions)
-        val sample = ru.ama.whereme.domain.entity.LocationSample(1.0, 2.0, 5f, 3f, 1_000L, 1L)
+        val sample = ru.ama.whereme.domain.entity.LocationSample(1.0, 2.0, 5f, 3f, Instant.ofEpochMilli(1_000L), 1L)
         val settings = ru.ama.whereme.domain.entity.SettingsDomModel.DEFAULT
         val first = recorder.record(sample, settings, null)
-        val moved = sample.copy(latitude = 1.01, accuracyMeters = 8f, speedMetersPerSecond = 4f, timeMillis = 2_000)
+        val moved = sample.copy(latitude = 1.01, accuracyMeters = 8f, speedMetersPerSecond = 4f, time = Instant.ofEpochMilli(2_000))
         val second = recorder.record(moved, settings, first)
         org.junit.Assert.assertNotEquals(first, second)
         val row = requireNotNull(dao.getLocation(second))
@@ -246,7 +247,7 @@ abstract class LocationDatabaseContract {
         assertEquals(moved.longitude, row.longitude, 0.0)
         assertEquals(moved.accuracyMeters, row.accuracy)
         assertEquals(moved.speedMetersPerSecond, row.velocity)
-        assertEquals(moved.timeMillis, row.datestart)
+        assertEquals(moved.time.toEpochMilli(), row.datestart)
         assertEquals(0, row.isWrite)
         assertNull(dao.getLocation(first)?.dateend)
     }
@@ -254,13 +255,13 @@ abstract class LocationDatabaseContract {
     @Test
     fun gapAtLimitExtendsIntervalButLargerGapCreatesANewRow() = runBlocking {
         val recorder = ru.ama.whereme.data.location.RoomLocationRecorder(database, dao, sessions)
-        val sample = ru.ama.whereme.domain.entity.LocationSample(1.0, 2.0, 5f, 0f, 1_000L, 1L)
+        val sample = ru.ama.whereme.domain.entity.LocationSample(1.0, 2.0, 5f, 0f, Instant.ofEpochMilli(1_000L), 1L)
         val settings = ru.ama.whereme.domain.entity.SettingsDomModel.DEFAULT
         val maxGap = (settings.timeOfWorkingWM.toLong() + settings.timeOfWaitAccuracy) * 1_000
         val first = recorder.record(sample, settings, null)
-        val extendedAt = sample.timeMillis + maxGap
-        assertEquals(first, recorder.record(sample.copy(timeMillis = extendedAt), settings, first))
-        val second = recorder.record(sample.copy(timeMillis = extendedAt + maxGap + 1), settings, first)
+        val extendedAt = sample.time.toEpochMilli() + maxGap
+        assertEquals(first, recorder.record(sample.copy(time = Instant.ofEpochMilli(extendedAt)), settings, first))
+        val second = recorder.record(sample.copy(time = Instant.ofEpochMilli(extendedAt + maxGap + 1)), settings, first)
         org.junit.Assert.assertNotEquals(first, second)
         assertEquals(extendedAt, dao.getLocation(first)?.dateend)
     }
@@ -268,11 +269,11 @@ abstract class LocationDatabaseContract {
     @Test
     fun changingOwnerStartsANewIntervalInsteadOfExtendingTheOldUsersRow() = runBlocking {
         val recorder = ru.ama.whereme.data.location.RoomLocationRecorder(database, dao, sessions)
-        val sample = ru.ama.whereme.domain.entity.LocationSample(1.0, 2.0, 5f, 0f, 1_000L, 1L)
+        val sample = ru.ama.whereme.domain.entity.LocationSample(1.0, 2.0, 5f, 0f, Instant.ofEpochMilli(1_000L), 1L)
         val settings = ru.ama.whereme.domain.entity.SettingsDomModel.DEFAULT
         val first = recorder.record(sample, settings, null)
         session = initialSession.copy(profile = initialSession.profile.copy(posId = 99), generation = "new")
-        val second = recorder.record(sample.copy(timeMillis = 2_000), settings, first)
+        val second = recorder.record(sample.copy(time = Instant.ofEpochMilli(2_000)), settings, first)
         org.junit.Assert.assertNotEquals(first, second)
         assertNull(dao.getLocation(first)?.dateend)
         assertEquals(session.profile.ownerKey, dao.getLocation(second)?.ownerKey)
@@ -281,11 +282,11 @@ abstract class LocationDatabaseContract {
     @Test
     fun midnightStartsANewHistoryRowForTheNextDay() = runBlocking {
         val recorder = ru.ama.whereme.data.location.RoomLocationRecorder(database, dao, sessions)
-        val end = ru.ama.whereme.domain.usecase.DayRange.parse("19.10.2026").end
-        val sample = ru.ama.whereme.domain.entity.LocationSample(1.0, 2.0, 5f, 0f, end - 1_000, 1L)
+        val end = ru.ama.whereme.domain.usecase.DayRange.of(java.time.LocalDate.parse("2026-10-19")).end.toEpochMilli()
+        val sample = ru.ama.whereme.domain.entity.LocationSample(1.0, 2.0, 5f, 0f, Instant.ofEpochMilli(end - 1_000), 1L)
         val settings = ru.ama.whereme.domain.entity.SettingsDomModel.DEFAULT
         val first = recorder.record(sample, settings, null)
-        val second = recorder.record(sample.copy(timeMillis = end), settings, first)
+        val second = recorder.record(sample.copy(time = Instant.ofEpochMilli(end)), settings, first)
         org.junit.Assert.assertNotEquals(first, second)
         assertEquals(listOf(second), dao.getLocations(end, end + 1_000).first().map { it._id })
     }

@@ -1,5 +1,7 @@
 package ru.ama.whereme.ui
 
+import java.time.Instant
+import java.time.LocalDate
 import android.app.Application
 import android.content.Intent
 import androidx.compose.foundation.layout.padding
@@ -147,11 +149,11 @@ class ToolbarActionsTest {
                 MapComponent(
                     DefaultComponentContext(lifecycle),
                     object : LocationHistoryRepository {
-                        override val lastRecordedTime = kotlinx.coroutines.flow.flowOf<Long?>(null)
-                        override fun getLocationById(date: String) = flowOf(emptyList<LocationDb>())
+                        override val lastRecordedTime = kotlinx.coroutines.flow.flowOf<Instant?>(null)
+                        override fun getLocationById(date: LocalDate) = flowOf(emptyList<LocationDb>())
                     },
                 )
-            component.accept(MapIntent.SelectDate("10.10.2026"))
+            component.accept(MapIntent.SelectDate(LocalDate.parse("2026-10-10")))
         }
         compose.setContent {
             WhereMeTheme(dark = true) {
@@ -163,6 +165,6 @@ class ToolbarActionsTest {
         compose.onNodeWithText("10.10.2026").assertExists()
         compose.onNodeWithContentDescription("Выбрать дату").performClick()
         compose.onNodeWithText("Отмена").performClick()
-        compose.runOnIdle { assertEquals("10.10.2026", component.state.value.date) }
+        compose.runOnIdle { assertEquals(LocalDate.parse("2026-10-10"), component.state.value.date) }
     }
 }

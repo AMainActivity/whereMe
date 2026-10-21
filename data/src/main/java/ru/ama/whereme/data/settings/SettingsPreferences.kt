@@ -1,5 +1,6 @@
 package ru.ama.whereme.data.settings
 
+import java.time.LocalTime
 import androidx.datastore.preferences.core.*
 import java.io.IOException
 import ru.ama.whereme.domain.entity.SettingsDomModel
@@ -25,7 +26,7 @@ internal object SettingsPreferences {
         val mask = p[DAYS] ?: ALL_DAYS_MASK
         require(mask in 0..ALL_DAYS_MASK)
         return SettingsDomModel(List(SettingsDomModel.DAYS_PER_WEEK) { if (mask and (1 shl it) != 0) SettingsDomModel.DAY_ENABLED else SettingsDomModel.DAY_DISABLED },
-            p[START] ?: d.start, p[END] ?: d.end, p[DISTANCE] ?: d.minDist,
+            p[START]?.let(LocalTime::parse) ?: d.start, p[END]?.let(LocalTime::parse) ?: d.end, p[DISTANCE] ?: d.minDist,
             p[ACCURACY] ?: d.accuracy, p[WAIT] ?: d.timeOfWaitAccuracy,
             p[PERIOD] ?: d.timeOfWorkingWM, p[ENABLED] ?: d.isEnable)
     }
@@ -33,8 +34,8 @@ internal object SettingsPreferences {
         validateVersion(p)
         p[VERSION] = FORMAT_VERSION
         p[DAYS] = value.days.withIndex().sumOf { (i, day) -> if (day == SettingsDomModel.DAY_ENABLED) 1 shl i else 0 }
-        p[START] = value.start
-        p[END] = value.end
+        p[START] = value.start.toString()
+        p[END] = value.end.toString()
         p[DISTANCE] = value.minDist
         p[ACCURACY] = value.accuracy
         p[WAIT] = value.timeOfWaitAccuracy

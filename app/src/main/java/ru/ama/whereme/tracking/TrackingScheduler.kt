@@ -31,7 +31,7 @@ class TrackingScheduler @Inject constructor(
     suspend fun getWorkingTime() = settings.settings.first()
 
     suspend fun isTimeToGetLocation(): Boolean {
-        return SchedulePolicy.activeUntil(getWorkingTime(), clock.nowMillis(), clock.timeZone()) != null
+        return SchedulePolicy.activeUntil(getWorkingTime(), clock.now(), clock.zoneId()) != null
     }
 
     suspend fun runAlarmClock() = updates.withLock {
@@ -60,13 +60,13 @@ class TrackingScheduler @Inject constructor(
         val pending = pendingIntent()
         // Keep the existing alarm if reading storage fails. setAlarmClock replaces the same identity.
         val value = getWorkingTime()
-        val next = SchedulePolicy.nextStart(value, clock.nowMillis(), clock.timeZone())
+        val next = SchedulePolicy.nextStart(value, clock.now(), clock.zoneId())
         if (next == null) {
             alarm.cancel(pending)
         } else {
             val open = PendingIntent.getActivity(application, OPEN_APP_REQUEST_CODE, Intent(application, SplashActivity::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            alarm.setAlarmClock(AlarmManager.AlarmClockInfo(next, open), pending)
+            alarm.setAlarmClock(AlarmManager.AlarmClockInfo(next.toEpochMilli(), open), pending)
         }
     }
 

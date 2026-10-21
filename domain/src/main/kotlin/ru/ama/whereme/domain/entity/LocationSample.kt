@@ -1,11 +1,12 @@
 package ru.ama.whereme.domain.entity
 
+import java.time.Instant
 data class LocationSample(
     val latitude: Double,
     val longitude: Double,
     val accuracyMeters: Float,
     val speedMetersPerSecond: Float,
-    val timeMillis: Long,
+    val time: Instant,
     val elapsedRealtimeNanos: Long
 ) {
     fun isUsable(nowElapsedRealtimeNanos: Long): Boolean =
@@ -13,7 +14,7 @@ data class LocationSample(
             longitude.isFinite() && longitude in LONGITUDE_RANGE &&
             accuracyMeters.isFinite() && accuracyMeters >= 0 &&
             speedMetersPerSecond.isFinite() && speedMetersPerSecond >= 0 &&
-            timeMillis > 0 && elapsedRealtimeNanos > 0 &&
+            time > Instant.EPOCH && elapsedRealtimeNanos > 0 &&
             nowElapsedRealtimeNanos >= elapsedRealtimeNanos
 
     companion object {

@@ -1,5 +1,7 @@
 package ru.ama.whereme.feature.map
 
+import java.time.Instant
+import java.time.LocalDate
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.essenty.lifecycle.create
@@ -40,9 +42,9 @@ class MapComponentTest {
     private var rows = emptyList<LocationDb>()
     private val history =
         object : LocationHistoryRepository {
-            override val lastRecordedTime = kotlinx.coroutines.flow.flowOf<Long?>(null)
-            override fun getLocationById(date: String): Flow<List<LocationDb>> = flow {
-                queries.add(date)
+            override val lastRecordedTime = kotlinx.coroutines.flow.flowOf<Instant?>(null)
+            override fun getLocationById(date: LocalDate): Flow<List<LocationDb>> = flow {
+                queries.add(date.format(MAP_DATE_FORMAT))
                 if (fail) throw IOException("unavailable")
                 activeQueries++
                 try {
@@ -105,7 +107,7 @@ class MapComponentTest {
             lifecycles.last().stop()
             runCurrent()
             assertEquals(0, activeQueries)
-            rows = listOf(LocationDb(9, "1000", "start", null, null, 55.25, 37.5, 1, 5f, 0f, 0))
+            rows = listOf(LocationDb(9, "1000", Instant.ofEpochMilli(1000), null, null, 55.25, 37.5, 1, 5f, 0f, 0))
             lifecycles.last().resume()
             runCurrent()
             assertEquals(listOf("18.10.2026", "18.10.2026"), queries)
@@ -121,7 +123,7 @@ class MapComponentTest {
             val vm = model(savedDate())
             runCurrent()
             assertEquals(listOf("18.10.2026"), queries)
-            assertEquals("18.10.2026", vm.state.value.date)
+            assertEquals(LocalDate.parse("2026-10-18"), vm.state.value.date)
         }
 
     @Test
@@ -133,9 +135,9 @@ class MapComponentTest {
             runCurrent()
             assertEquals(LoadState.Failed, vm.state.value.locations)
             fail = false
-            vm.accept(MapIntent.SelectDate("19.10.2026"))
+            vm.accept(MapIntent.SelectDate(LocalDate.parse("2026-10-19")))
             runCurrent()
-            assertEquals("19.10.2026", vm.state.value.date)
+            assertEquals(LocalDate.parse("2026-10-19"), vm.state.value.date)
             assertEquals(
                 "19.10.2026",
                 StateKeeperDispatcher(saved.save()).consume("selected_date", String.serializer()),
@@ -148,7 +150,7 @@ class MapComponentTest {
             val cpu = PausedDispatcher()
             rows =
                 listOf(
-                    LocationDb(7, "1000", "start", null, "Имя \"тест\"", 55.25, 37.5, 1, 5f, 0f, 0)
+                    LocationDb(7, "1000", Instant.ofEpochMilli(1000), null, "Имя \"тест\"", 55.25, 37.5, 1, 5f, 0f, 0)
                 )
             val vm = model(savedDate(), cpu)
             runCurrent()
@@ -162,7 +164,7 @@ class MapComponentTest {
                     .jsonArray
                     .single()
                     .jsonObject
-            assertEquals("18.10.2026", day.date)
+            assertEquals(LocalDate.parse("2026-10-18"), day.date)
             assertEquals(7L, point.getValue("_id").jsonPrimitive.long)
             assertEquals("Имя \"тест\"", point.getValue("info").jsonPrimitive.content)
             assertFalse(point.containsKey("dateend"))
@@ -174,14 +176,14 @@ class MapComponentTest {
             val cpu = PausedDispatcher()
             val vm = model(savedDate(), cpu)
             runCurrent()
-            vm.accept(MapIntent.SelectDate("19.10.2026"))
+            vm.accept(MapIntent.SelectDate(LocalDate.parse("2026-10-19")))
             runCurrent()
             cpu.runPending()
             runCurrent()
             cpu.runPending()
             runCurrent()
             val day = vm.state.value
-            assertEquals("19.10.2026", day.date)
+            assertEquals(LocalDate.parse("2026-10-19"), day.date)
             assertEquals("[]", (day.locations as LoadState.Ready).value)
         }
 

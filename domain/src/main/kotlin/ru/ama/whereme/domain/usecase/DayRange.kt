@@ -1,29 +1,18 @@
 package ru.ama.whereme.domain.usecase
 
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
-import java.util.TimeZone
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
-/** Local calendar day, including 23/25-hour DST days. SQL compares indexed epoch timestamps. */
-data class DayRange(val start: Long, val end: Long) {
+/** Local calendar day, including 23/25-hour DST days; end is exclusive. */
+data class DayRange(val start: Instant, val end: Instant) {
     companion object {
-        const val DATE_PATTERN = "dd.MM.yyyy"
-        fun parse(date: String, zone: TimeZone = TimeZone.getDefault()): DayRange {
-            val format = SimpleDateFormat(DATE_PATTERN, Locale.ROOT).apply { timeZone = zone; isLenient = false }
-            val value = requireNotNull(format.parse(date))
-            require(format.format(value) == date)
-            return containing(value.time, zone)
-        }
-        fun containing(timeMillis: Long, zone: TimeZone = TimeZone.getDefault()): DayRange {
-            val calendar = Calendar.getInstance(zone).apply {
-                this.timeInMillis = timeMillis
-                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-            }
-            val start = calendar.timeInMillis
-            calendar.add(Calendar.DAY_OF_YEAR, 1)
-            return DayRange(start, calendar.timeInMillis)
-        }
+        fun of(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()) = DayRange(
+            date.atStartOfDay(zone).toInstant(),
+            date.plusDays(1).atStartOfDay(zone).toInstant(),
+        )
+
+        fun containing(time: Instant, zone: ZoneId = ZoneId.systemDefault()) =
+            of(time.atZone(zone).toLocalDate(), zone)
     }
 }

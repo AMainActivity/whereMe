@@ -1,5 +1,6 @@
 package ru.ama.whereme.data.network
 
+import java.time.Instant
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
@@ -14,6 +15,9 @@ import ru.ama.whereme.data.network.model.*
 import ru.ama.whereme.domain.entity.LocationDb
 
 class JsonContractTest {
+    private val originalZone = java.util.TimeZone.getDefault()
+    @org.junit.Before fun useUtc() { java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC")) }
+    @org.junit.After fun restoreZone() { java.util.TimeZone.setDefault(originalZone) }
     private val json = DataModule.provideJson()
     private val retrofit = Retrofit.Builder().baseUrl("https://example.test/")
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType())).build()
@@ -53,7 +57,7 @@ class JsonContractTest {
     }
 
     @Test fun mapAndUploadKeepAllLegacyLocationFieldsAndOmitNulls() {
-        val location = LocationDb(7, "1000", "01.01.1970 00:00:01", null, "Имя \"тест\"\n<&>",
+        val location = LocationDb(7, "1000", Instant.ofEpochMilli(1000), null, "Имя \"тест\"\n<&>",
             55.25, 37.5, 1, 5f, 0f, 0)
         val points = listOf(LocationDto.from(location))
         val map = json.encodeToString(points)
@@ -66,9 +70,9 @@ class JsonContractTest {
     }
 
     @Test fun completedLocationKeepsEndTimeAndNullableInfoIsOmitted() {
-        val point = LocationDto.from(LocationDb(8, "1000", "start", "end", null, 0.0, 0.0, 2, 50f, 0f, 1))
+        val point = LocationDto.from(LocationDb(8, "1000", Instant.ofEpochMilli(1000), Instant.ofEpochMilli(2000), null, 0.0, 0.0, 2, 50f, 0f, 1))
         val encoded = Json.parseToJsonElement(json.encodeToString(point)).jsonObject
-        assertEquals("end", encoded.getValue("dateend").jsonPrimitive.content)
+        assertEquals("01.01.1970 00:00:02", encoded.getValue("dateend").jsonPrimitive.content)
         assertFalse(encoded.containsKey("info"))
     }
 }

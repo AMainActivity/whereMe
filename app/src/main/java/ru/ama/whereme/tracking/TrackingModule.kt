@@ -1,11 +1,12 @@
 package ru.ama.whereme.tracking
 
+import java.time.ZoneId
+import java.time.Instant
 import android.os.SystemClock
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import java.util.TimeZone
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,9 +29,9 @@ object TrackingModule {
 
     @Provides @Singleton
     fun clock(): TrackingClock = object : TrackingClock {
-        override fun nowMillis() = System.currentTimeMillis()
+        override fun now() = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
         override fun elapsedRealtimeNanos() = SystemClock.elapsedRealtimeNanos()
-        override fun timeZone(): TimeZone = TimeZone.getDefault()
+        override fun zoneId(): ZoneId = ZoneId.systemDefault()
     }
 
     @Provides @Singleton

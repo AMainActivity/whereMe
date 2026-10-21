@@ -1,5 +1,6 @@
 package ru.ama.whereme.data.settings
 
+import java.time.LocalTime
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.okio.OkioStorage
 import okio.FileSystem
@@ -22,7 +23,7 @@ class StorageRepositoryTest {
     @get:Rule val temporary = TemporaryFolder()
     private val scopes = mutableListOf<CoroutineScope>()
     private val profile = SettingsUserInfoDomModel("synthetic-token", 12, 34, "Тест", "https://example.com/profile", true)
-    private val previous = SettingsDomModel(listOf("0", "1", "0", "1", "0", "1", "0"), "06:15", "22:45", 123, 76, 88, 321, true)
+    private val previous = SettingsDomModel(listOf("0", "1", "0", "1", "0", "1", "0"), LocalTime.parse("06:15"), LocalTime.parse("22:45"), 123, 76, 88, 321, true)
     private val key = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
     private val cipher = SessionCipher { key }
 
@@ -307,6 +308,23 @@ class StorageRepositoryTest {
         repository.signIn(profile.copy(posId = 99))
         assertEquals(profile.ownerKey, owners.first())
         assertEquals("34:99", repository.current().profile.ownerKey)
+    }
+
+    @Test fun legacyScheduleStringsRoundTripThroughLocalTime() = runBlocking {
+        val data = store(file())
+        val original = data.edit {
+            it[intPreferencesKey("migration_version")] = 1
+            it[stringPreferencesKey("start")] = "06:15"
+            it[stringPreferencesKey("end")] = "22:45"
+        }
+        val repository = DataStoreSettingsRepository(data)
+        val value = repository.settings.first()
+        assertEquals(LocalTime.of(6, 15), value.start)
+        assertEquals(LocalTime.of(22, 45), value.end)
+        assertEquals(original, data.data.first()) // Reading does not rewrite the existing installation.
+        repository.updateSettings { it.copy(start = LocalTime.of(7, 5)) }
+        assertEquals("07:05", data.data.first()[stringPreferencesKey("start")])
+        assertEquals("22:45", data.data.first()[stringPreferencesKey("end")])
     }
 
 }

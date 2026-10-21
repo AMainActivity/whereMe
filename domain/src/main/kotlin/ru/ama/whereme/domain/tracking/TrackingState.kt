@@ -1,5 +1,6 @@
 package ru.ama.whereme.domain.tracking
 
+import java.time.Instant
 import ru.ama.whereme.domain.entity.LocationOutcome
 
 enum class TrackingMode { MANUAL, SCHEDULED }
@@ -10,7 +11,7 @@ sealed interface TrackingState {
         this is Uploading || this is Waiting || this is Armed || this is Stopping
 
     data class Starting(val mode: TrackingMode) : TrackingState
-    data class Armed(val mode: TrackingMode, val nextAtMillis: Long) : TrackingState
+    data class Armed(val mode: TrackingMode, val nextAt: Instant) : TrackingState
     data class Collecting(val mode: TrackingMode, val deadlineElapsedMillis: Long, val timeoutMillis: Long) : TrackingState
     data class Saving(val mode: TrackingMode) : TrackingState
     data class Uploading(val mode: TrackingMode, val noFix: Boolean) : TrackingState

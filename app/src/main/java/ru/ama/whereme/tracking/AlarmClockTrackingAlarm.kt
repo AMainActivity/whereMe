@@ -23,9 +23,9 @@ class AlarmClockTrackingAlarm @Inject constructor(private val application: Appli
         check(Build.VERSION.SDK_INT < Build.VERSION_CODES.S || manager.canScheduleExactAlarms()) { "Exact alarm access required" }
         val open = PendingIntent.getActivity(application, OPEN_APP_REQUEST_CODE,
             Intent(application, SplashActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        manager.setAlarmClock(AlarmManager.AlarmClockInfo(session.nextAtMillis, open),
+        manager.setAlarmClock(AlarmManager.AlarmClockInfo(session.nextAt.toEpochMilli(), open),
             requireNotNull(pending(MyForegroundService.wakeIntent(application, session), PendingIntent.FLAG_UPDATE_CURRENT)))
-        Log.d(TAG, "Next sampling alarm: ${session.nextAtMillis}")
+        Log.d(TAG, "Next sampling alarm: ${session.nextAt}")
     }
 
     override fun cancel() {

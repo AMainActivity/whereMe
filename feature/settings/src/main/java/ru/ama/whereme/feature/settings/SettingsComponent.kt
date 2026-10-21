@@ -1,5 +1,6 @@
 package ru.ama.whereme.feature.settings
 
+import java.time.LocalTime
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.essenty.lifecycle.coroutines.coroutineScope
 import com.arkivanov.essenty.lifecycle.doOnDestroy
@@ -223,7 +224,7 @@ sealed interface SettingsIntent {
 
     data class Day(val index: Int) : SettingsIntent
 
-    data class Time(val start: Boolean, val value: String) : SettingsIntent
+    data class Time(val start: Boolean, val value: LocalTime) : SettingsIntent
 
     data class Schedule(val enabled: Boolean) : SettingsIntent
 

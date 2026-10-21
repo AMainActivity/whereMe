@@ -1,5 +1,7 @@
 package ru.ama.whereme.feature.map
 
+import java.time.ZoneOffset
+import java.time.Instant
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
@@ -20,11 +22,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.TimeZone
 import ru.ama.whereme.domain.state.LoadState
-import ru.ama.whereme.domain.usecase.DayRange
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -190,13 +189,8 @@ fun MapToolbarActions(component: MapComponent) {
         Icon(painterResource(R.drawable.ic_calendar), stringResource(R.string.map_choose_date))
     }
     if (datePicker) {
-        val formatter = remember {
-            SimpleDateFormat(DayRange.DATE_PATTERN, Locale.ROOT).apply {
-                timeZone = TimeZone.getTimeZone(DATE_PICKER_TIME_ZONE)
-            }
-        }
         val picker =
-            rememberDatePickerState(initialSelectedDateMillis = formatter.parse(date)?.time)
+            rememberDatePickerState(initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
         DatePickerDialog(
             onDismissRequest = { datePicker = false },
             confirmButton = {
@@ -205,7 +199,7 @@ fun MapToolbarActions(component: MapComponent) {
                     onClick = {
                         picker.selectedDateMillis?.let {
                             component.accept(
-                                MapIntent.SelectDate(formatter.format(java.util.Date(it)))
+                                MapIntent.SelectDate(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate())
                             )
                         }
                         datePicker = false
@@ -228,4 +222,3 @@ fun MapToolbarActions(component: MapComponent) {
 private const val ROUTE_URI_FORMAT = "dgis://2gis.ru/routeSearch/rsType/car/from/%s,%s/to/%s,%s"
 private const val ROUTE_APP_STORE_URI = "market://details?id=ru.dublgis.dgismobile"
 private const val EMPTY_POINTS_JSON = "[]"
-private const val DATE_PICKER_TIME_ZONE = "UTC"

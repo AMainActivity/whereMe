@@ -1,5 +1,6 @@
 package ru.ama.whereme.presentation
 
+import java.time.Instant
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -70,7 +71,7 @@ class MyForegroundService : LifecycleService() {
                 if (id.isNullOrBlank() || due <= 0) stopSelfResult(startId)
                 else {
                     Log.d(ALARM_TAG, "Sampling alarm delivered; due=$due")
-                    handle.wake(id, due, startId)
+                    handle.wake(id, Instant.ofEpochMilli(due), startId)
                 }
             }
             intent.action == ACTION_WAKE -> stopSelfResult(startId)
@@ -144,7 +145,7 @@ class MyForegroundService : LifecycleService() {
             Intent(context, MyForegroundService::class.java).setAction(ACTION_WAKE).apply {
                 if (session != null) {
                     putExtra(EXTRA_RECORDING, session.id)
-                    putExtra(EXTRA_DUE, session.nextAtMillis)
+                    putExtra(EXTRA_DUE, session.nextAt.toEpochMilli())
                 }
             }
         fun stopIntent(context: Context): Intent = newIntent(context).setAction(ACTION_STOP)

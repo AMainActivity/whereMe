@@ -1,11 +1,13 @@
 package ru.ama.whereme.domain.entity
 
+import java.time.Instant
 
 data class LocationDb(
     val _id: Long,
+    // Legacy wire field: passed through unchanged; date arithmetic uses datestart/dateend.
     val datetime: String,
-    val datestart: String,
-    val dateend: String? = null,
+    val datestart: Instant,
+    val dateend: Instant? = null,
     val info: String? = null,
     val latitude: Double,
     val longitude: Double,
@@ -13,9 +15,4 @@ data class LocationDb(
     val accuracy: Float,
     val velocity: Float,
     val isWrite: Int
-) {
-    companion object {
-        // Existing map/server contract; unlike UI dates, it is not locale-dependent.
-        const val DATE_TIME_PATTERN = "dd.MM.yyyy HH:mm:ss"
-    }
-}
+)

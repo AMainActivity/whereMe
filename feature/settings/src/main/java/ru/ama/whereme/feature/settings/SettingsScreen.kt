@@ -1,5 +1,6 @@
 package ru.ama.whereme.feature.settings
 
+import java.time.LocalTime
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.provider.Settings
@@ -28,7 +29,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import java.util.Locale
 import ru.ama.whereme.domain.entity.LocationOutcome
 import ru.ama.whereme.domain.entity.SettingsDomModel
 import ru.ama.whereme.domain.entity.ThemeMode
@@ -339,14 +339,12 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RecordingTimeDialog(
-    value: String,
+    value: LocalTime,
     title: String,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
+    onConfirm: (LocalTime) -> Unit,
 ) {
-    val parts = value.split(':').map(String::toInt)
-    val (hour, minute) = parts
-    val picker = rememberTimePickerState(hour, minute, is24Hour = true)
+    val picker = rememberTimePickerState(value.hour, value.minute, is24Hour = true)
     var keyboard by rememberSaveable { mutableStateOf(false) }
     Dialog(
         onDismissRequest = onDismiss,
@@ -384,12 +382,7 @@ private fun RecordingTimeDialog(
                     TextButton(
                         onClick = {
                             onConfirm(
-                                String.format(
-                                    Locale.ROOT,
-                                    SettingsDomModel.TIME_FORMAT,
-                                    picker.hour,
-                                    picker.minute,
-                                )
+                                LocalTime.of(picker.hour, picker.minute)
                             )
                         }
                     ) {

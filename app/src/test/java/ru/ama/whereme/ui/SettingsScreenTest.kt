@@ -1,5 +1,6 @@
 package ru.ama.whereme.ui
 
+import java.time.LocalTime
 import android.Manifest
 import android.app.Application
 import android.graphics.Bitmap
@@ -206,7 +207,7 @@ class SettingsScreenTest {
         compose.onNodeWithContentDescription("Ввести время вручную").assertIsDisplayed()
         compose.onNodeWithText("Готово").performClick()
         compose.runOnIdle {
-            assertEquals("09:45", repository.settings.value.start)
+            assertEquals(LocalTime.parse("09:45"), repository.settings.value.start)
             assertEquals(1, writes)
         }
     }

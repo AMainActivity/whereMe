@@ -1,5 +1,6 @@
 package ru.ama.whereme.ui
 
+import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -128,7 +129,7 @@ internal fun ScreenToolbar(screen: Screen) {
     when (screen) {
         is Screen.Map -> {
             val state by screen.component.state.collectAsStateWithLifecycle()
-            AppToolbar(stringResource(R.string.menu_map), subtitle = state.date) {
+            AppToolbar(stringResource(R.string.menu_map), subtitle = state.date.format(DateTimeFormatter.ofPattern("dd.MM.uuuu", java.util.Locale.ROOT))) {
                 MapToolbarActions(screen.component)
             }
         }

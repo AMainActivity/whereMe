@@ -1,5 +1,7 @@
 package ru.ama.whereme.domain.tracking
 
+import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
@@ -87,7 +89,7 @@ class TrackingCoordinator(
         val state = mutableState.asStateFlow()
 
         fun start(mode: TrackingMode, startId: Int = 0) = submit(Command.Start(this, startId, mode))
-        fun wake(id: String, dueAtMillis: Long, startId: Int = 0) = submit(Command.Wake(this, startId, id, dueAtMillis))
+        fun wake(id: String, dueAt: Instant, startId: Int = 0) = submit(Command.Wake(this, startId, id, dueAt))
         fun stop(startId: Int = 0) = submit(Command.Stop(this, startId, TrackingState.Stopped))
         fun block(reason: LocationOutcome.Reason, startId: Int = 0) =
             submit(Command.Stop(this, startId, TrackingState.LocationUnavailable(reason)))
@@ -113,7 +115,7 @@ class TrackingCoordinator(
         var startId = 0
         var recording: RecordingSession? = null
         val mode: TrackingMode? get() = recording?.mode
-        var pendingDue: Long? = null
+        var pendingDue: Instant? = null
         var configuration: SettingsDomModel? = null
         var observer: Job? = null
         var job: Job? = null
@@ -129,7 +131,7 @@ class TrackingCoordinator(
         sealed interface Connected : Command { val handle: Handle }
         data class Detach(override val handle: Handle) : Connected
         data class Start(override val handle: Handle, val startId: Int, val mode: TrackingMode) : Connected
-        data class Wake(override val handle: Handle, val startId: Int, val id: String, val due: Long) : Connected
+        data class Wake(override val handle: Handle, val startId: Int, val id: String, val due: Instant) : Connected
         data class Stop(override val handle: Handle, val startId: Int, val terminal: TrackingState) : Connected
         data class Configuration(override val handle: Handle, val observer: Job, val value: Result<SettingsDomModel>) : Connected
         data class Progress(override val handle: Handle, val worker: Job, val value: TrackingState) : Connected
@@ -149,7 +151,7 @@ class TrackingCoordinator(
 
     private suspend fun loadSavedState() {
         try {
-            sessions.read()?.let { mutableState.value = TrackingState.Armed(it.mode, it.nextAtMillis) }
+            sessions.read()?.let { mutableState.value = TrackingState.Armed(it.mode, it.nextAt) }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
@@ -193,6 +195,7 @@ class TrackingCoordinator(
         if (running != null) {
             if (reason == RestoreReason.SYSTEM_CHANGE) {
                 cancelRun(running)
+                running.pendingDue = null // The replacement measurement consumes any deferred period.
                 beginRun(running)
             }
             return
@@ -203,10 +206,10 @@ class TrackingCoordinator(
             return
         }
         val configuration = settings.settings.first()
-        val now = clock.nowMillis()
-        val end = SchedulePolicy.activeUntil(configuration, now, clock.timeZone())
+        val now = clock.now()
+        val end = SchedulePolicy.activeUntil(configuration, now, clock.zoneId())
         val value = saved ?: end?.let {
-            RecordingSession(UUID.randomUUID().toString(), TrackingMode.SCHEDULED, now + RESTORE_ALARM_DELAY_MILLIS)
+            RecordingSession(UUID.randomUUID().toString(), TrackingMode.SCHEDULED, now.plusMillis(RESTORE_ALARM_DELAY_MILLIS))
         }
         if (value == null || (followsSchedule(value.mode, configuration) && end == null)) {
             sessions.write(null)
@@ -214,12 +217,16 @@ class TrackingCoordinator(
             if (current == null) mutableState.value = TrackingState.Stopped
             return
         }
-        val deadline = if (value.nextAtMillis >= now) value.nextAtMillis else now + RESTORE_ALARM_DELAY_MILLIS
+        // A stored wall-clock deadline may be far ahead after the clock was set back.
+        // Preserve normal cadence, but recover stale deadlines within the next period.
+        val latest = now.plusSeconds(configuration.timeOfWorkingWM.toLong())
+        val deadline = if (value.nextAt >= now && value.nextAt <= latest) value.nextAt
+            else now.plusMillis(RESTORE_ALARM_DELAY_MILLIS)
         val next = if (followsSchedule(value.mode, configuration)) minOf(deadline, requireNotNull(end)) else deadline
-        val restored = value.copy(nextAtMillis = next)
+        val restored = value.copy(nextAt = next)
         sessions.write(restored)
         arm(restored)
-        if (current == null) mutableState.value = TrackingState.Armed(restored.mode, restored.nextAtMillis)
+        if (current == null) mutableState.value = TrackingState.Armed(restored.mode, restored.nextAt)
     }
 
     private suspend fun attach(handle: Handle) {
@@ -240,7 +247,7 @@ class TrackingCoordinator(
         session.observer?.cancelAndJoin()
         if (wasRunning) {
             val saved = session.recording
-            mutableState.value = if (saved != null) TrackingState.Armed(saved.mode, saved.nextAtMillis)
+            mutableState.value = if (saved != null) TrackingState.Armed(saved.mode, saved.nextAt)
                 else TrackingState.Stopped
         }
         current = null
@@ -273,7 +280,7 @@ class TrackingCoordinator(
         cancelRun(session)
         session.pendingDue = null
         session.previousRowId = null
-        session.recording = RecordingSession(UUID.randomUUID().toString(), mode, clock.nowMillis())
+        session.recording = RecordingSession(UUID.randomUUID().toString(), mode, clock.now())
         if (session.observer?.isActive != true) {
             session.configuration = null
             observeSettings(session)
@@ -284,11 +291,11 @@ class TrackingCoordinator(
     private suspend fun wake(session: Session, command: Command.Wake) {
         session.startId = command.startId
         val saved = sessions.read()
-        if (saved == null || saved.id != command.id || saved.nextAtMillis != command.due) {
+        if (saved == null || saved.id != command.id || saved.nextAt != command.due) {
             publish(session, state.value)
             return
         }
-        if (clock.nowMillis() < command.due) {
+        if (clock.now() < command.due) {
             arm(saved)
             publish(session, state.value)
             return
@@ -300,7 +307,7 @@ class TrackingCoordinator(
             // and commit it; Measured will start the pending period without overlapping jobs.
             val configuration = session.configuration ?: return
             val end = if (followsSchedule(saved.mode, configuration))
-                SchedulePolicy.activeUntil(configuration, clock.nowMillis(), clock.timeZone()) else null
+                SchedulePolicy.activeUntil(configuration, clock.now(), clock.zoneId()) else null
             if (!followsSchedule(saved.mode, configuration) || end != null) {
                 armNext(session, command.due, configuration, end)
             }
@@ -331,7 +338,7 @@ class TrackingCoordinator(
             if (session.mode != null && (measurementChanged || session.mode == TrackingMode.SCHEDULED ||
                     previous?.isEnable == true || configuration.isEnable)) {
                 cancelRun(session, cancelSync = false)
-                beginRun(session, session.pendingDue ?: clock.nowMillis())
+                beginRun(session, session.pendingDue ?: clock.now())
                 session.pendingDue = null
             }
         }
@@ -381,13 +388,13 @@ class TrackingCoordinator(
         publish(session, terminal)
     }
 
-    private suspend fun beginRun(session: Session, due: Long = clock.nowMillis()) {
+    private suspend fun beginRun(session: Session, due: Instant = clock.now()) {
         if (session.handle.closed) return
         val mode = session.mode ?: return
         publish(session, TrackingState.Starting(mode))
         val configuration = session.configuration ?: return
-        val now = clock.nowMillis()
-        val end = if (followsSchedule(mode, configuration)) SchedulePolicy.activeUntil(configuration, now, clock.timeZone()) else null
+        val now = clock.now()
+        val end = if (followsSchedule(mode, configuration)) SchedulePolicy.activeUntil(configuration, now, clock.zoneId()) else null
         if (followsSchedule(mode, configuration) && end == null) {
             finish(session, TrackingState.Stopped)
             return
@@ -406,10 +413,11 @@ class TrackingCoordinator(
         session.job?.start()
     }
 
-    private suspend fun armNext(session: Session, due: Long, configuration: SettingsDomModel, end: Long?) {
+    private suspend fun armNext(session: Session, due: Instant, configuration: SettingsDomModel, end: Instant?) {
         val period = TimeUnit.SECONDS.toMillis(configuration.timeOfWorkingWM.toLong())
-        val next = due + ((clock.nowMillis() - due).coerceAtLeast(0) / period + 1) * period
-        val recording = requireNotNull(session.recording).copy(nextAtMillis = minOf(next, end ?: Long.MAX_VALUE))
+        val elapsed = Duration.between(due, clock.now()).toMillis().coerceAtLeast(0)
+        val next = due.plusMillis((elapsed / period + 1) * period)
+        val recording = requireNotNull(session.recording).copy(nextAt = minOf(next, end ?: Instant.MAX))
         sessions.write(recording)
         session.recording = recording
         arm(recording)
@@ -425,7 +433,7 @@ class TrackingCoordinator(
                 val mode = session.mode ?: return
                 val configuration = requireNotNull(session.configuration)
                 if (followsSchedule(mode, configuration) &&
-                    SchedulePolicy.activeUntil(configuration, clock.nowMillis(), clock.timeZone()) == null) {
+                    SchedulePolicy.activeUntil(configuration, clock.now(), clock.zoneId()) == null) {
                     finish(session, TrackingState.Stopped)
                     return
                 }

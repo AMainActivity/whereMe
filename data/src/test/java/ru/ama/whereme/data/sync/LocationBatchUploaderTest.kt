@@ -1,5 +1,6 @@
 package ru.ama.whereme.data.sync
 
+import java.time.Instant
 import kotlinx.serialization.json.*
 import kotlinx.serialization.encodeToString
 import ru.ama.whereme.data.network.model.DatasToJson
@@ -28,9 +29,12 @@ import ru.ama.whereme.domain.entity.SessionSnapshot
 import ru.ama.whereme.domain.tracking.UploadResult
 
 class LocationBatchUploaderTest {
+    private val originalZone = java.util.TimeZone.getDefault()
+    @org.junit.Before fun useUtc() { java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC")) }
+    @org.junit.After fun restoreZone() { java.util.TimeZone.setDefault(originalZone) }
     private val session = SessionSnapshot(SettingsUserInfoDomModel("test-token", 12, 34, "Test", null, true), "test-generation")
     private val row = LocationDbModel("1000", 1000, null, "sample", 1.5, 2.5, 1, 5f, 0f, 0).apply { _id = 7 }
-    private val wire = LocationDb(7, "1000", "01.01.1970 00:00:01", null, "sample", 2.5, 4.5, 1, 5f, 0f, 0)
+    private val wire = LocationDb(7, "1000", Instant.ofEpochMilli(1000), null, "sample", 2.5, 4.5, 1, 5f, 0f, 0)
     private val batch = PendingLocationBatch(session, listOf(row), listOf(wire))
 
     @Test
@@ -83,7 +87,7 @@ class LocationBatchUploaderTest {
         assertEquals(session.profile.tokenJwt, body.getValue("tokenJWT").jsonPrimitive.content)
         val point = body.getValue("mdata").jsonArray.single().jsonObject
         assertEquals(7L, point.getValue("_id").jsonPrimitive.long)
-        assertEquals(wire.datestart, point.getValue("datestart").jsonPrimitive.content)
+        assertEquals("01.01.1970 00:00:01", point.getValue("datestart").jsonPrimitive.content)
         assertEquals(wire.latitude, point.getValue("latitude").jsonPrimitive.double, 0.0)
         assertEquals(wire.longitude, point.getValue("longitude").jsonPrimitive.double, 0.0)
     }

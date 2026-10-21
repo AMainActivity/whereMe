@@ -1,5 +1,8 @@
 package ru.ama.whereme.tracking
 
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.time.Instant
 import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
@@ -12,8 +15,6 @@ import android.os.Build
 import android.text.format.DateFormat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import ru.ama.whereme.R
 import ru.ama.whereme.domain.state.LoadState
@@ -70,12 +71,12 @@ internal class TrackingNotification(private val context: Context) {
             .setShowWhen(false)
             .build()
 
-    fun render(state: TrackingState, lastRecorded: LoadState<Long?>) {
+    fun render(state: TrackingState, lastRecorded: LoadState<Instant?>) {
         if (!state.isRunning) return
         post(build(state, lastRecorded))
     }
 
-    private fun build(state: TrackingState, lastRecorded: LoadState<Long?>): Notification {
+    private fun build(state: TrackingState, lastRecorded: LoadState<Instant?>): Notification {
         val text =
             when (lastRecorded) {
                 LoadState.Loading -> context.getString(R.string.tracking_recording)
@@ -86,12 +87,14 @@ internal class TrackingNotification(private val context: Context) {
                         val skeleton =
                             if (DateFormat.is24HourFormat(context)) DATE_TIME_24_HOUR
                             else DATE_TIME_12_HOUR
+                        // Android supplies a java.text/ICU pattern, not a java.time pattern.
+                        // Keep the compatible formatter local to this platform boundary.
                         val formatter =
                             SimpleDateFormat(
                                 DateFormat.getBestDateTimePattern(locale, skeleton),
                                 locale,
                             )
-                        context.getString(R.string.tracking_last_fix, formatter.format(Date(time)))
+                        context.getString(R.string.tracking_last_fix, formatter.format(Date(time.toEpochMilli())))
                     } ?: context.getString(R.string.tracking_no_recorded_fix)
             }
         val problem =

@@ -1,5 +1,6 @@
 package ru.ama.whereme.data.tracking
 
+import java.time.Instant
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.okio.OkioStorage
 import androidx.datastore.preferences.core.Preferences
@@ -47,7 +48,7 @@ class RecordingSessionStoreTest {
     @Test fun bothModesAndTheirExactAlarmDeadlineSurviveProcessReopening() = runBlocking {
         val file = File(temporary.newFolder(), "recording.preferences_pb")
         for (mode in TrackingMode.entries) {
-            val expected = RecordingSession("session-${mode.name}", mode, 1_792_400_015_000)
+            val expected = RecordingSession("session-${mode.name}", mode, Instant.ofEpochMilli(1_792_400_015_000))
             DataStoreRecordingSessionStore(store(file)).write(expected)
             closeStores()
             assertEquals(expected, DataStoreRecordingSessionStore(store(file)).read())
@@ -58,7 +59,7 @@ class RecordingSessionStoreTest {
     @Test fun stopIsDurableAndCannotRestoreThePreviousRecording() = runBlocking {
         val file = File(temporary.newFolder(), "recording.preferences_pb")
         val repository = DataStoreRecordingSessionStore(store(file))
-        repository.write(RecordingSession("active", TrackingMode.MANUAL, 1_792_400_015_000))
+        repository.write(RecordingSession("active", TrackingMode.MANUAL, Instant.ofEpochMilli(1_792_400_015_000)))
         repository.write(null)
         closeStores()
         assertNull(DataStoreRecordingSessionStore(store(file)).read())
@@ -84,4 +85,19 @@ class RecordingSessionStoreTest {
         try { repository.read(); fail("Incomplete state must fail") } catch (_: IOException) { }
         assertEquals(expected, data.data.first())
     }
+    @Test fun legacyMillisDeadlineIsReadAsInstantWithoutChangingStorage() = runBlocking {
+        val data = store(File(temporary.newFolder(), "recording.preferences_pb"))
+        val original = data.edit {
+            it[intPreferencesKey("version")] = 1
+            it[stringPreferencesKey("recording_id")] = "legacy"
+            it[stringPreferencesKey("mode")] = "SCHEDULED"
+            it[androidx.datastore.preferences.core.longPreferencesKey("next_at_millis")] = 1_792_400_015_123L
+        }
+        val repository = DataStoreRecordingSessionStore(data)
+        val session = requireNotNull(repository.read())
+        assertEquals(Instant.ofEpochMilli(1_792_400_015_123L), session.nextAt)
+        repository.write(session)
+        assertEquals(original, data.data.first())
+    }
+
 }

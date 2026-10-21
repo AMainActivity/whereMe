@@ -1,5 +1,6 @@
 package ru.ama.whereme.data.tracking
 
+import java.time.Instant
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -29,7 +30,7 @@ class DataStoreRecordingSessionStore @Inject constructor(
             if (session == null) {
                 p.remove(ID); p.remove(MODE); p.remove(NEXT)
             } else {
-                p[ID] = session.id; p[MODE] = session.mode.name; p[NEXT] = session.nextAtMillis
+                p[ID] = session.id; p[MODE] = session.mode.name; p[NEXT] = session.nextAt.toEpochMilli()
             }
         }
     }
@@ -45,7 +46,7 @@ class DataStoreRecordingSessionStore @Inject constructor(
         if (id.isNullOrBlank() || kind == null || next == null || next <= 0) {
             throw IOException("Invalid recording state; stored data retained")
         }
-        return RecordingSession(id, kind, next)
+        return RecordingSession(id, kind, Instant.ofEpochMilli(next))
     }
 
     private companion object {

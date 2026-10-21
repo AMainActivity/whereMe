@@ -1,5 +1,6 @@
 package ru.ama.whereme.tracking
 
+import java.time.Instant
 import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
@@ -30,7 +31,7 @@ class TrackingNotificationTest {
     private val mode = TrackingMode.MANUAL
     private val originalLocale = Locale.getDefault()
     private val originalZone = TimeZone.getDefault()
-    private val fix = LoadState.Ready(1_792_501_542_000L) // 20 October 2026, 13:05:42 UTC.
+    private val fix = LoadState.Ready(Instant.ofEpochMilli(1_792_501_542_000L)) // 20 October 2026, 13:05:42 UTC.
 
     @Before
     fun setUp() {
@@ -45,7 +46,7 @@ class TrackingNotificationTest {
         TimeZone.setDefault(originalZone)
     }
 
-    private fun render(state: TrackingState, time: LoadState<Long?> = fix): Notification {
+    private fun render(state: TrackingState, time: LoadState<Instant?> = fix): Notification {
         TrackingNotification(context).render(state, time)
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         return manager.activeNotifications.single().notification
@@ -106,4 +107,33 @@ class TrackingNotificationTest {
             storage.text(),
         )
     }
+    @Test
+    @Config(shadows = [LocalizedDateFormat::class])
+    fun icuLiteralHashPatternDoesNotCrashNotificationRendering() {
+        Locale.setDefault(Locale.forLanguageTag("tok"))
+        val notification = render(TrackingState.Waiting(mode, false, false))
+        assertEquals(context.getString(R.string.tracking_last_fix, "#2026)#10)#20 #13:05:42"), notification.text())
+    }
+
+    @Test
+    @Config(shadows = [LocalizedDateFormat::class])
+    fun twelveHourNotificationUsesTheCurrentTimeZoneAndAmPm() {
+        Settings.System.putString(context.contentResolver, Settings.System.TIME_12_24, "12")
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Yekaterinburg"))
+        val notification = render(TrackingState.Waiting(mode, false, false))
+        assertEquals(context.getString(R.string.tracking_last_fix, "10/20/2026, 6:05:42 PM"), notification.text())
+    }
+
+    // Fixed real ICU patterns bypass Robolectric's skeleton-only shadow without adding a library.
+    @org.robolectric.annotation.Implements(android.text.format.DateFormat::class)
+    class LocalizedDateFormat {
+        companion object {
+            @JvmStatic
+            @org.robolectric.annotation.Implementation
+            fun getBestDateTimePattern(locale: Locale, skeleton: String): String =
+                if (locale.language == "tok") "#y)#M)#d #HH:mm:ss"
+                else if ('H' in skeleton) "M/d/y, HH:mm:ss" else "M/d/y, h:mm:ss a"
+        }
+    }
+
 }
