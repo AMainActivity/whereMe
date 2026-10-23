@@ -1,0 +1,11 @@
+{
+  "uniqueId": "npm:ol",
+  "artifactVersion": "10.11.0",
+  "name": "OpenLayers",
+  "description": "OpenLayers mapping library",
+  "website": "https://openlayers.org/",
+  "developers": [],
+  "licenses": [
+    "map-ol"
+  ]
+}

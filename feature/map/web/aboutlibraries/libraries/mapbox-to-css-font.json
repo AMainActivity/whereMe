@@ -1,0 +1,11 @@
+{
+  "uniqueId": "npm:mapbox-to-css-font",
+  "artifactVersion": "3.3.0",
+  "name": "mapbox-to-css-font",
+  "description": "Utility to convert Mapbox GL Style font names to CSS font definitions",
+  "website": "https://www.npmjs.com/package/mapbox-to-css-font",
+  "developers": [],
+  "licenses": [
+    "map-mapbox-to-css-font"
+  ]
+}

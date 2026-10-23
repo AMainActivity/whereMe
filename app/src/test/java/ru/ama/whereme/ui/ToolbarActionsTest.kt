@@ -152,13 +152,14 @@ class ToolbarActionsTest {
                         override val lastRecordedTime = kotlinx.coroutines.flow.flowOf<Instant?>(null)
                         override fun getLocationById(date: LocalDate) = flowOf(emptyList<LocationDb>())
                     },
+                    locateCurrent = { error("Location not requested in this test") },
                 )
             component.accept(MapIntent.SelectDate(LocalDate.parse("2026-10-10")))
         }
         compose.setContent {
             WhereMeTheme(dark = true) {
                 Scaffold(topBar = { ScreenToolbar(Screen.Map(component)) }) { padding ->
-                    MapScreen(component, Modifier.padding(padding))
+                    MapScreen(component, darkTheme = true, Modifier.padding(padding))
                 }
             }
         }

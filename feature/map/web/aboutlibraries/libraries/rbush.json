@@ -1,0 +1,11 @@
+{
+  "uniqueId": "npm:rbush",
+  "artifactVersion": "4.0.1",
+  "name": "rbush",
+  "description": "High-performance 2D spatial index for rectangles (based on R*-tree with bulk loading and bulk insertion algorithms)",
+  "website": "https://github.com/mourner/rbush",
+  "developers": [],
+  "licenses": [
+    "map-rbush"
+  ]
+}

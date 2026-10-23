@@ -28,7 +28,8 @@ class LocationTimeContractTest {
                 TimeZone.setDefault(TimeZone.getTimeZone(zone))
                 val upload = json.parseToJsonElement(json.encodeToString(LocationDto.from(location)))
                 val map = json.parseToJsonElement(json.encodeToString(MapPoint.from(location)))
-                assertEquals(upload, map)
+                assertEquals(upload.jsonObject.getValue("datestart"), map.jsonObject.getValue("datestart"))
+                assertEquals(upload.jsonObject.getValue("dateend"), map.jsonObject.getValue("dateend"))
                 val fields = upload.jsonObject
                 assertEquals("1234", fields.getValue("datetime").jsonPrimitive.content)
                 assertEquals("01.01.1970 $hour:00:01", fields.getValue("datestart").jsonPrimitive.content)
@@ -44,7 +45,6 @@ class LocationTimeContractTest {
         val location = WmMapper().mapDbModelsToEntities(listOf(stored)).single()
         assertEquals(stored.datetime, location.datetime)
         assertEquals(stored.datetime, LocationDto.from(location).datetime)
-        assertEquals(stored.datetime, MapPoint.from(location).datetime)
     }
 
 }

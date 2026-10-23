@@ -1,0 +1,11 @@
+{
+  "uniqueId": "openfreemap-styles",
+  "artifactVersion": "2026-10-22",
+  "name": "OpenFreeMap styles and sprites",
+  "description": "Positron and Dark, adapted to system fonts and improved night contrast; icons from OpenFreeMap.",
+  "website": "https://github.com/hyperknot/openfreemap-styles",
+  "developers": [],
+  "licenses": [
+    "map-openfreemap-styles"
+  ]
+}

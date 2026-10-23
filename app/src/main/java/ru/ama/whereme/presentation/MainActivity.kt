@@ -58,10 +58,11 @@ class MainActivity : ComponentActivity() {
                                 root,
                                 BuildConfig.VERSION_NAME,
                                 R.raw.aboutlibraries,
+                                dark,
                                 Modifier.weight(1f),
                             )
                         }
-                    else RootScreen(root, BuildConfig.VERSION_NAME, R.raw.aboutlibraries)
+                    else RootScreen(root, BuildConfig.VERSION_NAME, R.raw.aboutlibraries, dark)
                 }
             }
         }

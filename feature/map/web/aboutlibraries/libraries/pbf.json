@@ -1,0 +1,11 @@
+{
+  "uniqueId": "npm:pbf",
+  "artifactVersion": "5.1.2",
+  "name": "pbf",
+  "description": "a low-level, lightweight protocol buffers implementation in JavaScript",
+  "website": "https://github.com/mapbox/pbf",
+  "developers": [],
+  "licenses": [
+    "map-pbf"
+  ]
+}

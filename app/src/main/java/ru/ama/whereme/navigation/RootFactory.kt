@@ -4,6 +4,8 @@ import com.arkivanov.decompose.ComponentContext
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
+import java.time.Duration
 import ru.ama.whereme.data.di.ApplicationScope
 import ru.ama.whereme.data.di.DefaultDispatcher
 import ru.ama.whereme.domain.repository.*
@@ -20,6 +22,7 @@ constructor(
     private val settings: SettingsRepository,
     private val sessions: SessionRepository,
     private val history: LocationHistoryRepository,
+    private val locationSource: LocationSource,
     private val checkCode: CheckSignInCode,
     private val signOut: SignOut,
     private val refresh: RefreshSessionUseCase,
@@ -30,7 +33,20 @@ constructor(
     fun create(context: ComponentContext) =
         RootComponent(context, settings) { tab, child ->
             when (tab) {
-                Tab.MAP -> Screen.Map(MapComponent(child, history, defaultDispatcher))
+                Tab.MAP -> Screen.Map(
+                    MapComponent(
+                        child,
+                        history,
+                        locateCurrent = {
+                            val config = settings.settings.first()
+                            locationSource.locate(
+                                config.accuracy,
+                                Duration.ofSeconds(config.timeOfWaitAccuracy.toLong()).toMillis(),
+                            )
+                        },
+                        defaultDispatcher = defaultDispatcher,
+                    )
+                )
                 Tab.SETTINGS ->
                     Screen.Settings(SettingsComponent(child, settings, tracking, applicationScope))
                 Tab.PROFILE ->

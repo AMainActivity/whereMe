@@ -8,6 +8,10 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+aboutLibraries {
+    collect { configPath = rootProject.file("feature/map/web/aboutlibraries") }
+}
+
 android {
     namespace = "ru.ama.whereme"
     compileSdk = 36

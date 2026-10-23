@@ -1,0 +1,11 @@
+{
+  "uniqueId": "npm:quickselect",
+  "artifactVersion": "3.0.0",
+  "name": "quickselect",
+  "description": "A tiny and fast selection algorithm in JavaScript.",
+  "website": "https://www.npmjs.com/package/quickselect",
+  "developers": [],
+  "licenses": [
+    "map-quickselect"
+  ]
+}

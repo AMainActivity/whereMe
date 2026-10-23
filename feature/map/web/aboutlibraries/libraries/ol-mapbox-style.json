@@ -1,0 +1,11 @@
+{
+  "uniqueId": "npm:ol-mapbox-style",
+  "artifactVersion": "13.8.0",
+  "name": "ol-mapbox-style",
+  "description": "Create OpenLayers layers or maps from Mapbox/MapLibre styles",
+  "website": "https://openlayers.org/ol-mapbox-style/",
+  "developers": [],
+  "licenses": [
+    "map-ol-mapbox-style"
+  ]
+}

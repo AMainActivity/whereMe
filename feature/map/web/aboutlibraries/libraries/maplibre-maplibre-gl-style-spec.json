@@ -1,0 +1,11 @@
+{
+  "uniqueId": "npm:@maplibre/maplibre-gl-style-spec",
+  "artifactVersion": "26.4.4",
+  "name": "@maplibre/maplibre-gl-style-spec",
+  "description": "a specification for maplibre styles",
+  "website": "https://maplibre.org/maplibre-style-spec/",
+  "developers": [],
+  "licenses": [
+    "map-maplibre-maplibre-gl-style-spec"
+  ]
+}

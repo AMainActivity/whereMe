@@ -2,7 +2,7 @@ package ru.ama.whereme.feature.map
 
 import ru.ama.whereme.domain.entity.LocationSample
 
-/** Legacy web contract: fromLatitude#fromLongitude#toLatitude#toLongitude. */
+/** Validated native coordinates for an external 2GIS route. */
 @ConsistentCopyVisibility
 data class RouteRequest
 private constructor(
@@ -12,15 +12,8 @@ private constructor(
     val toLongitude: Double,
 ) {
     companion object {
-        private const val MAX_PAYLOAD_LENGTH = 256
-        private const val COORDINATE_COUNT = 4
-
-        fun parse(payload: String): RouteRequest? {
-            if (payload.length > MAX_PAYLOAD_LENGTH) return null
-            val parts = payload.split('#')
-            if (parts.size != COORDINATE_COUNT) return null
-            val values = parts.map { it.toDoubleOrNull() ?: return null }
-            val (fromLatitude, fromLongitude, toLatitude, toLongitude) = values
+        fun create(fromLatitude: Double, fromLongitude: Double, toLatitude: Double, toLongitude: Double): RouteRequest? {
+            val values = listOf(fromLatitude, fromLongitude, toLatitude, toLongitude)
             if (values.any { !it.isFinite() }) return null
             if (
                 fromLatitude !in LocationSample.LATITUDE_RANGE ||

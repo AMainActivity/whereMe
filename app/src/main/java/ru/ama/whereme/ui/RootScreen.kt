@@ -27,6 +27,7 @@ fun RootScreen(
     root: RootComponent,
     version: String,
     licensesResource: Int,
+    darkTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val pages by root.pages.subscribeAsState()
@@ -81,7 +82,7 @@ fun RootScreen(
                 holder.SaveableStateProvider(pages.items[selected].configuration.name) {
                     Box(Modifier.weight(1f).fillMaxHeight().imePadding()) {
                         when (val screen = pages.items[selected].instance) {
-                            is Screen.Map -> MapScreen(screen.component)
+                            is Screen.Map -> MapScreen(screen.component, darkTheme)
                             is Screen.Settings -> SettingsScreen(screen.component)
                             is Screen.Profile -> ProfileScreen(screen.component)
                             is Screen.About ->

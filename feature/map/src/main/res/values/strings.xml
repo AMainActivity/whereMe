@@ -4,10 +4,26 @@
   <string name="map_cancel">Отмена</string>
   <string name="map_retry">Повторить</string>
   <string name="map_loading">Загрузка карты…</string>
-  <string name="map_failed">Не удалось загрузить карту. Проверьте подключение к интернету. Запись точек работает независимо от карты.</string>
+  <string name="map_failed">Не удалось открыть карту. Запись точек работает независимо от карты.</string>
   <string name="map_storage_failed">Не удалось прочитать точки за выбранный день.</string>
   <string name="map_empty">За этот день пока нет точек.</string>
   <string name="map_route">Построить маршрут в 2ГИС?</string>
   <string name="map_external_failed">Не удалось открыть приложение для этого действия.</string>
     <string name="map_route_coordinates">%1$s, %2$s → %3$s, %4$s</string>
+  <string name="map_tiles_failed">Подложка недоступна. Проверьте сеть. Сохранённые точки доступны.</string>
+  <string name="map_fit">Показать весь трек</string>
+  <string name="map_last_point">Последняя точка</string>
+  <string name="map_layers">Слои карты</string>
+  <string name="map_previous_points">Предыдущие точки</string>
+  <string name="map_track">Линия трека</string>
+  <string name="map_my_location">Моё местоположение</string>
+  <string name="map_locating">Определяем местоположение…</string>
+  <string name="map_permission_required">Разрешите доступ к местоположению.</string>
+  <string name="map_location_disabled">Включите геолокацию на телефоне.</string>
+  <string name="map_location_failed">Не удалось определить местоположение. Попробуйте ещё раз.</string>
+  <string name="map_open_settings">Настройки</string>
+  <string name="map_interval">%1$s — %2$s</string>
+  <string name="map_accuracy">Точность: %1$.0f м</string>
+  <string name="map_route_action">Построить маршрут</string>
+  <string name="map_location_settings_failed">Не удалось прочитать настройки геолокации. Попробуйте запросить местоположение ещё раз.</string>
 </resources>
