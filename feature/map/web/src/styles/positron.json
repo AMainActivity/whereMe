@@ -1946,9 +1946,10 @@
         ]
       },
       "paint": {
-        "text-color": "#51465c",
+        "icon-opacity": 0.6,
+        "text-color": "#686e75",
         "text-halo-color": "#ffffff",
-        "text-halo-width": 1.5
+        "text-halo-width": 1
       }
     },
     {

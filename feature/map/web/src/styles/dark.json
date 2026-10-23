@@ -397,9 +397,10 @@
         ]
       },
       "paint": {
-        "text-color": "#e4d9ee",
+        "icon-opacity": 0.6,
+        "text-color": "#9ba1a9",
         "text-halo-color": "#0c0c0c",
-        "text-halo-width": 1.5
+        "text-halo-width": 1
       }
     },
     {
